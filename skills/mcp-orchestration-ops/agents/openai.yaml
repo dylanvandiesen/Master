@@ -1,0 +1,4 @@
+interface:
+  display_name: "MCP Orchestration Ops"
+  short_description: "Configure and validate local and remote MCP servers."
+  default_prompt: "Use this skill to wire MCP servers, validate config.toml and .vscode/mcp.json, and troubleshoot connector setup."

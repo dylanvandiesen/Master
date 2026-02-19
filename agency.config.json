@@ -1,0 +1,107 @@
+{
+  "projectsDir": "projects",
+  "distDir": "dist/projects",
+  "activeProject": "csscroll",
+  "dev": {
+    "mode": "single",
+    "livereloadPort": 35729,
+    "maxPortAttempts": 20
+  },
+  "server": {
+    "host": "127.0.0.1",
+    "startPort": 5173,
+    "maxPortAttempts": 50,
+    "indexFile": "index.html",
+    "spaFallback": true,
+    "autoGenerateManifest": true,
+    "manifestDir": ".agency/dev-servers"
+  },
+  "scaffold": {
+    "enabled": true,
+    "templateDir": "templates/project",
+    "migrateLegacyLayout": true
+  },
+  "build": {
+    "minify": true,
+    "sourcemaps": true
+  },
+  "styles": {
+    "entries": [
+      "src/scss/main.scss"
+    ],
+    "loadPaths": [
+      "src/scss"
+    ]
+  },
+  "scripts": {
+    "engine": "esbuild",
+    "mode": "dual",
+    "entries": [
+      "src/js/main.js"
+    ],
+    "legacyEntries": [
+      "src/js/**/*.js",
+      "src/js/**/*.mjs"
+    ],
+    "legacyOutputName": "main.js",
+    "target": "es2018",
+    "format": "iife",
+    "platform": "browser"
+  },
+  "watch": {
+    "project": [
+      "**/*"
+    ],
+    "debounceMs": 200
+  },
+  "images": {
+    "pattern": "src/images/**/*",
+    "jpgQuality": 80,
+    "webpQuality": 80,
+    "pngCompressionLevel": 9
+  },
+  "static": {
+    "html": [
+      "src/**/*.html"
+    ],
+    "fonts": [
+      "src/fonts/**/*"
+    ],
+    "docs": [
+      "src/docs/**/*"
+    ],
+    "misc": [
+      "src/static/**/*"
+    ]
+  },
+  "vendor": {
+    "scripts": [
+      "node_modules/gsap/dist/gsap.min.js",
+      "node_modules/gsap/dist/ScrollTrigger.min.js",
+      "node_modules/gsap/dist/ScrollSmoother.min.js"
+    ]
+  },
+  "projectDefaults": {
+    "styles": {
+      "entries": [
+        "src/scss/main.scss"
+      ]
+    },
+    "scripts": {
+      "engine": "esbuild",
+      "entries": [
+        "src/js/main.js"
+      ],
+      "legacyEntries": [
+        "src/js/**/*.js",
+        "src/js/**/*.mjs"
+      ]
+    },
+    "watch": {
+      "extra": []
+    },
+    "vendor": {
+      "scripts": []
+    }
+  }
+}

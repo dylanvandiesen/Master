@@ -1,0 +1,48 @@
+{
+  "servers": {
+    "gh-pull_requests": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/x/pull_requests"
+    },
+    "github_modern_remote": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${input:github_mcp_pat}"
+      }
+    },
+    "filesystem_local": {
+      "command": "node",
+      "args": [
+        "${workspaceFolder}/mcp/node_modules/@modelcontextprotocol/server-filesystem/dist/index.js",
+        "${workspaceFolder}"
+      ]
+    },
+    "memory_local": {
+      "command": "node",
+      "args": [
+        "${workspaceFolder}/mcp/node_modules/@modelcontextprotocol/server-memory/dist/index.js"
+      ],
+      "env": {
+        "MEMORY_FILE_PATH": "${workspaceFolder}/mcp/data/memory.jsonl"
+      }
+    },
+    "github_legacy_local": {
+      "command": "node",
+      "args": [
+        "${workspaceFolder}/mcp/node_modules/@modelcontextprotocol/server-github/dist/index.js"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${env:GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    }
+  },
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "github_mcp_pat",
+      "description": "GitHub Personal Access Token for github_modern_remote",
+      "password": true
+    }
+  ]
+}

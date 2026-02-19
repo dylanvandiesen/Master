@@ -1,0 +1,25 @@
+# Node dependencies
+node_modules/
+mcp/node_modules/
+mcp/Master/
+
+# Build outputs
+dist/
+.agency/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/*.code-workspace
+.lh/

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agency Playground Ops"
+  short_description: "Operate agency builds, dev, and scaffold workflows."
+  default_prompt: "Use this skill to scaffold, build, serve, and troubleshoot agency projects under projects/."

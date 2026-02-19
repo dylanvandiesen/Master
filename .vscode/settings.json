@@ -1,0 +1,6 @@
+{
+    "chatgpt.openOnStartup": true,
+    "chatgpt.composerEnterBehavior": "cmdIfMultiline",
+    "chatgpt.followUpQueueMode": "queue",
+    "chatgpt.runCodexInWindowsSubsystemForLinux": true
+}

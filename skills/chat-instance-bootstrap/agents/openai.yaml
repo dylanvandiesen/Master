@@ -1,0 +1,4 @@
+interface:
+  display_name: "Chat Instance Bootstrap"
+  short_description: "Prepare a fresh chat session for agency and MCP workflows."
+  default_prompt: "Use this skill to initialize env/config checks and generate startup commands for a new chat session."

@@ -1,0 +1,20 @@
+{
+  "name": "playground-mcp-hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local MCP server hub for Playground",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start:filesystem": "node node_modules/@modelcontextprotocol/server-filesystem/dist/index.js \"../\"",
+    "start:memory": "node node_modules/@modelcontextprotocol/server-memory/dist/index.js",
+    "start:github": "node node_modules/@modelcontextprotocol/server-github/dist/index.js",
+    "start:github:legacy": "node node_modules/@modelcontextprotocol/server-github/dist/index.js",
+    "start:github:modern:docker": "docker run -i --rm -e GITHUB_PERSONAL_ACCESS_TOKEN ghcr.io/github/github-mcp-server",
+    "list": "npm ls --depth=0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server-filesystem": "^2026.1.14",
+    "@modelcontextprotocol/server-github": "^2025.4.8",
+    "@modelcontextprotocol/server-memory": "^2026.1.26"
+  }
+}

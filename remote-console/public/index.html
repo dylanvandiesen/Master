@@ -1,0 +1,102 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Playground Remote Console</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <section id="loginView" class="panel login-panel">
+        <h1>Remote Console</h1>
+        <p class="muted">Secure control panel for agency builds, dev server, and live previews.</p>
+        <form id="loginForm" autocomplete="off">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" required />
+          <button type="submit">Sign In</button>
+        </form>
+        <p id="loginError" class="error" hidden></p>
+      </section>
+
+      <section id="appView" class="app" hidden>
+        <header class="topbar panel">
+          <div>
+            <h1>Playground Remote Console</h1>
+            <p id="statusLine" class="muted">Loading session...</p>
+          </div>
+          <div class="topbar-actions">
+            <button id="refreshBtn" type="button">Refresh</button>
+            <button id="logoutBtn" type="button" class="danger-lite">Sign Out</button>
+          </div>
+        </header>
+
+        <section class="grid">
+          <article class="panel controls">
+            <h2>Command Controls</h2>
+            <div class="field-grid">
+              <label for="projectSelect">Project</label>
+              <select id="projectSelect"></select>
+
+              <label for="portInput">Dev Port</label>
+              <input id="portInput" type="number" min="1024" max="65535" placeholder="5173" />
+            </div>
+            <div class="button-row">
+              <button id="scaffoldBtn" type="button">Scaffold</button>
+              <button id="buildBtn" type="button">Build Project</button>
+              <button id="buildAllBtn" type="button">Build All</button>
+              <button id="chatQuickBtn" type="button">Chat Prep Quick</button>
+              <button id="chatBriefingBtn" type="button">Generate Briefing</button>
+            </div>
+            <div class="button-row">
+              <button id="startDevSingleBtn" type="button" class="accent">Start Dev (Single)</button>
+              <button id="startDevAllBtn" type="button" class="accent">Start Dev (All)</button>
+              <button id="stopDevBtn" type="button" class="danger">Stop Dev</button>
+            </div>
+            <pre id="commandResult" class="command-result">No command executed yet.</pre>
+          </article>
+
+          <article class="panel note-panel">
+            <h2>Remote Notes For Codex</h2>
+            <p class="muted">Stores note files under <code>.agency/remote/inbox/</code>.</p>
+            <label for="noteTitle">Title</label>
+            <input id="noteTitle" type="text" placeholder="Fix nav animation regression" />
+            <label for="noteMessage">Message</label>
+            <textarea id="noteMessage" rows="6" placeholder="Describe what you want the active session to do next."></textarea>
+            <button id="sendNoteBtn" type="button">Send Note</button>
+            <p id="noteStatus" class="muted"></p>
+          </article>
+        </section>
+
+        <section class="grid">
+          <article class="panel preview-panel">
+            <h2>Live Preview</h2>
+            <div class="field-grid">
+              <label for="manifestSelect">Preview Source</label>
+              <select id="manifestSelect"></select>
+
+              <label for="refreshMsInput">Auto Refresh (ms)</label>
+              <input id="refreshMsInput" type="number" min="1000" max="20000" step="500" />
+            </div>
+            <div class="button-row">
+              <button id="loadPreviewBtn" type="button" class="accent">Load Preview</button>
+              <button id="openPreviewTabBtn" type="button">Open In Tab</button>
+              <label class="checkbox-wrap">
+                <input id="autoRefreshToggle" type="checkbox" checked />
+                <span>Auto refresh</span>
+              </label>
+            </div>
+            <iframe id="previewFrame" title="Live Preview" sandbox="allow-same-origin allow-scripts allow-forms"></iframe>
+          </article>
+
+          <article class="panel log-panel">
+            <h2>Live Logs</h2>
+            <pre id="logsOutput" class="logs-output"></pre>
+          </article>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

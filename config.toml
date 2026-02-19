@@ -1,0 +1,21 @@
+[features]
+multi_agent = true
+
+[mcp_servers.filesystem_local]
+command = "node"
+args = ["mcp/node_modules/@modelcontextprotocol/server-filesystem/dist/index.js", "."]
+
+[mcp_servers.memory_local]
+command = "node"
+args = ["mcp/node_modules/@modelcontextprotocol/server-memory/dist/index.js"]
+
+[mcp_servers.memory_local.env]
+MEMORY_FILE_PATH = "mcp/data/memory.jsonl"
+
+[mcp_servers.github_local]
+command = "node"
+args = ["mcp/node_modules/@modelcontextprotocol/server-github/dist/index.js"]
+
+[mcp_servers.github_modern_docker]
+command = "docker"
+args = ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"]
