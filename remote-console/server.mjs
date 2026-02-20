@@ -569,7 +569,17 @@ function setSecurityHeaders(res) {
   res.setHeader("X-Frame-Options", "SAMEORIGIN");
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; frame-src 'self'; object-src 'none'; base-uri 'none';"
+    [
+      "default-src 'self'",
+      "script-src 'self'",
+      "style-src 'self' 'unsafe-inline'",
+      "font-src 'self' data:",
+      "connect-src 'self'",
+      "img-src 'self' data:",
+      "frame-src 'self'",
+      "object-src 'none'",
+      "base-uri 'none'",
+    ].join("; ")
   );
 }
 
@@ -1599,7 +1609,7 @@ async function listManifests() {
   return manifests;
 }
 
-async function appendRemoteNote({ title, message, ip }) {
+async function appendRemoteNote({ message, ip }) {
   await fsp.mkdir(INBOX_DIR, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const fileName = `${stamp}.md`;
@@ -1609,7 +1619,6 @@ async function appendRemoteNote({ title, message, ip }) {
     "",
     `- Time: ${timestamp()}`,
     `- Source IP: ${ip}`,
-    `- Title: ${title || "(no title)"}`,
     "",
     "## Message",
     "",
@@ -1896,6 +1905,35 @@ async function readChatHistory(limit = CHAT_MAX_MESSAGES) {
   return merged.slice(-limit);
 }
 
+function estimateTokenCountFromText(text) {
+  const content = String(text || "").trim();
+  if (!content) {
+    return 0;
+  }
+  return Math.max(1, Math.ceil(content.length / 4));
+}
+
+function buildChatUsageSummary(history) {
+  let promptTokens = 0;
+  let completionTokens = 0;
+  for (const message of history || []) {
+    const tokens = estimateTokenCountFromText(message?.text || "");
+    if (message?.role === "assistant") {
+      completionTokens += tokens;
+    } else {
+      promptTokens += tokens;
+    }
+  }
+  return {
+    estimated: true,
+    basis: "chars_div_4",
+    promptTokens,
+    completionTokens,
+    totalTokens: promptTokens + completionTokens,
+    messageCount: Array.isArray(history) ? history.length : 0,
+  };
+}
+
 function buildChatSignature(snapshot) {
   const lastMessage = snapshot.history[snapshot.history.length - 1];
   return JSON.stringify({
@@ -1903,12 +1941,14 @@ function buildChatSignature(snapshot) {
     statusUpdatedAt: snapshot.status?.updatedAt || "",
     historyCount: snapshot.history.length,
     lastMessageId: lastMessage?.id || "",
+    usageTotalTokens: Number.parseInt(String(snapshot?.usage?.totalTokens || 0), 10) || 0,
   });
 }
 
 async function buildChatSnapshot(limit = CHAT_MAX_MESSAGES) {
   const [status, history] = await Promise.all([readAgentStatus(), readChatHistory(limit)]);
-  return { status, history };
+  const usage = buildChatUsageSummary(history);
+  return { status, history, usage };
 }
 
 function wsSend(ws, payload) {
@@ -2076,6 +2116,10 @@ async function serveStatic(req, res, pathname) {
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
     ".ico": "image/x-icon",
+    ".woff": "font/woff",
+    ".woff2": "font/woff2",
+    ".ttf": "font/ttf",
+    ".eot": "application/vnd.ms-fontobject",
   };
 
   setSecurityHeaders(res);
@@ -3198,7 +3242,7 @@ async function handleApi(req, res, pathname, ip) {
       });
       const status = await writeAgentStatus({
         state: stateAfterReply,
-        message: `Reply sent: ${reply.fileName}`,
+        message: "Reply published.",
         source: "panel-reply",
       });
       await appendActivityEvent({
@@ -3232,7 +3276,6 @@ async function handleApi(req, res, pathname, ip) {
       return;
     }
 
-    const title = String(body.title || "").trim();
     const message = String(body.message || "").trim();
     if (!message) {
       badRequest(res, "Message is required.");
@@ -3244,7 +3287,6 @@ async function handleApi(req, res, pathname, ip) {
     }
 
     const note = await appendRemoteNote({
-      title,
       message,
       ip,
     });
@@ -3260,7 +3302,6 @@ async function handleApi(req, res, pathname, ip) {
       source: "panel-note",
       meta: {
         file: note.filePath,
-        title,
       },
     }).catch(() => null);
 
@@ -3308,7 +3349,6 @@ wsServer.on("connection", (ws, req) => {
       }
 
       if (messageType === "chat:send") {
-        const title = String(payload?.title || "").trim();
         const message = String(payload?.message || "").trim();
         const ip = normalizeIp(req.socket.remoteAddress || "");
         if (!message) {
@@ -3327,7 +3367,6 @@ wsServer.on("connection", (ws, req) => {
         }
 
         const note = await appendRemoteNote({
-          title,
           message,
           ip,
         });
@@ -3343,7 +3382,6 @@ wsServer.on("connection", (ws, req) => {
           source: "panel-ws",
           meta: {
             file: note.filePath,
-            title,
           },
         }).catch(() => null);
         pushLog("note", `Stored remote note at ${note.filePath}`);

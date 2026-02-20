@@ -10,6 +10,7 @@ const state = {
   activeRelay: null,
   activeTunnel: null,
   chatMessages: [],
+  chatUsage: null,
   agentStatus: null,
   activityEvents: [],
   codexRegistry: null,
@@ -56,7 +57,8 @@ const els = {
   chatRuntimeSummary: document.getElementById("chatRuntimeSummary"),
   chatRuntimeValues: document.getElementById("chatRuntimeValues"),
   chatStream: document.getElementById("chatStream"),
-  noteTitle: document.getElementById("noteTitle"),
+  chatTokenUsage: document.getElementById("chatTokenUsage"),
+  chatMessageCount: document.getElementById("chatMessageCount"),
   noteMessage: document.getElementById("noteMessage"),
   sendNoteBtn: document.getElementById("sendNoteBtn"),
   chatRefreshBtn: document.getElementById("chatRefreshBtn"),
@@ -111,6 +113,104 @@ const els = {
 };
 
 const RUNTIME_STRIP_STORAGE_KEY = "remote.chat.runtime.strip.collapsed";
+const TOOLTIP_TEXTS = {
+  statusLine: "Current workspace runtime summary.",
+  refreshBtn: "Reload session, projects, manifests, chat, and activity data.",
+  logoutBtn: "Sign out from this remote panel session.",
+  mobileMenuBtn: "Open panel navigation on mobile.",
+  mobileNavCloseBtn: "Close panel navigation.",
+  navPreviewBtn: "Open preview tools.",
+  navActivityBtn: "Open Codex activity feed.",
+  navSessionsBtn: "Open sessions and preparation tools.",
+  navConnectionBtn: "Open remote access and tunnel controls.",
+  navOutputBtn: "Open operation output logs.",
+  navTogglePanelsBtn: "Hide or show the utility panel area.",
+  chatPreviewBtn: "Jump to the preview panel.",
+  chatConnection: "Realtime chat socket connection status.",
+  agentStateBadge: "Current Codex agent state.",
+  chatLiveStatus: "Latest high-level Codex activity message.",
+  chatRuntimeDetails: "Expanded runtime checks for chat, relay, preview, and network.",
+  chatRuntimeSummary: "Compact runtime checks summary.",
+  chatStream: "Conversation timeline between you and Codex.",
+  chatTokenUsage: "Estimated token usage from current chat history.",
+  chatMessageCount: "Message count in the visible chat timeline.",
+  noteMessage: "Message sent to Codex through the remote inbox bridge.",
+  sendNoteBtn: "Send message to Codex.",
+  chatRefreshBtn: "Refresh chat history manually.",
+  noteStatus: "Message delivery and sync status.",
+  manifestSelect: "Select which dev server manifest to preview.",
+  refreshMsInput: "Preview auto-refresh interval in milliseconds.",
+  autoRefreshToggle: "Enable or disable preview auto-refresh.",
+  loadPreviewBtn: "Load the selected preview manifest in the embedded frame.",
+  previewFullscreenBtn: "Open embedded preview in fullscreen mode.",
+  openPreviewTabBtn: "Open current preview in a new browser tab.",
+  previewFrame: "Embedded live preview of the selected manifest.",
+  previewViewport: "Preview container.",
+  previewStatus: "Current preview load status.",
+  activityRefreshBtn: "Refresh activity status and event feed.",
+  agentStatusText: "Current agent status text from relay/runtime.",
+  activityStatus: "Last activity refresh timestamp.",
+  activityFeed: "Recent Codex activity events and transitions.",
+  codexSessionSelect: "Choose a registered Codex session profile.",
+  codexSessionName: "Session alias name used by relay tooling.",
+  codexSessionTarget: "Target thread/session ID or alias.",
+  codexSessionProject: "Optional project slug for scoped relay context.",
+  codexSessionNotes: "Optional notes saved with this session profile.",
+  codexRefreshBtn: "Reload session registry from disk.",
+  codexUpsertBtn: "Save or update the current session profile.",
+  codexCreateBtn: "Create a new Codex session and register it.",
+  codexSetDefaultBtn: "Set selected session as default.",
+  codexRetireBtn: "Mark selected session as retired.",
+  codexPrepQuickBtn: "Run fast context preparation for this project.",
+  codexPrepFullBtn: "Run full context preparation including installs.",
+  relayStartBtn: "Start realtime Codex relay watcher.",
+  relayStopBtn: "Stop realtime Codex relay watcher.",
+  relayRefreshBtn: "Refresh relay process state.",
+  relayStatusText: "Current relay watcher status.",
+  codexSessionStatus: "Latest session/relay action result.",
+  codexSessionPreview: "Registry summary for sessions and defaults.",
+  connectionMode: "Network bind mode and security mode summary.",
+  mobileUrlText: "Best URL to open this panel from mobile.",
+  refreshConnectionHelpBtn: "Refresh connection and network guidance.",
+  copyMobileUrlBtn: "Copy the recommended mobile URL.",
+  tunnelUrlText: "External tunnel status and public URL.",
+  tunnelStartBtn: "Start a public HTTPS tunnel for outside access.",
+  tunnelStopBtn: "Stop the currently running tunnel.",
+  tunnelRefreshBtn: "Refresh tunnel status from the server.",
+  openTunnelUrlBtn: "Open the active tunnel URL in a new tab.",
+  enableHttpsBtn: "Require HTTPS for incoming remote clients.",
+  useAdaptiveSecurityBtn: "Use adaptive security based on client network.",
+  connectionAdvice: "Connection recommendations and actions.",
+  commandResult: "Raw output from recent panel operations.",
+};
+
+function runtimeCheckHelp(label) {
+  const map = {
+    auth: "Panel authentication token availability.",
+    socket: "WebSocket connection state for realtime chat updates.",
+    agent: "Codex agent state from relay status.",
+    relay: "Relay watcher process state.",
+    tunnel: "Public HTTPS tunnel availability.",
+    security: "Panel security mode currently in effect.",
+    preview: "Currently selected preview manifest.",
+    refresh: "Preview auto-refresh setting.",
+    session: "Selected Codex session alias.",
+    mobile: "Recommended URL for phone or remote access.",
+    tokens: "Estimated chat token usage based on message text length.",
+    messages: "Total number of chat messages currently loaded.",
+  };
+  return map[String(label || "").toLowerCase()] || "Runtime check value.";
+}
+
+function applyStaticTooltips() {
+  for (const [id, text] of Object.entries(TOOLTIP_TEXTS)) {
+    const node = document.getElementById(id);
+    if (!node || !text) {
+      continue;
+    }
+    node.title = text;
+  }
+}
 
 async function api(path, options = {}) {
   const method = options.method || "GET";
@@ -175,7 +275,11 @@ function setMobileNavOpen(open) {
 function setUtilityCollapsed(collapsed) {
   state.utilityCollapsed = Boolean(collapsed);
   els.utilityDock.classList.toggle("collapsed", state.utilityCollapsed);
-  els.navTogglePanelsBtn.textContent = state.utilityCollapsed ? "OPEN" : "HIDE";
+  const toggleLabel = els.navTogglePanelsBtn.querySelector("span");
+  if (toggleLabel) {
+    toggleLabel.textContent = state.utilityCollapsed ? "Show" : "Hide";
+  }
+  els.navTogglePanelsBtn.title = state.utilityCollapsed ? "Show utility panels" : "Hide utility panels";
 }
 
 function setActiveUtilityPanel(panelId, options = {}) {
@@ -251,11 +355,13 @@ function renderTopStatus() {
   const relay = state.activeRelay ? " | relay active" : "";
   const tunnel = state.activeTunnel ? " | tunnel live" : "";
   els.statusLine.textContent = `${formatDevStatus()}${relay}${tunnel}${agent}${command}`;
+  els.statusLine.title = `Workspace status: ${els.statusLine.textContent}`;
   renderChatRuntimeStrip();
 }
 
 function renderRelayStatus() {
   els.relayStatusText.value = formatRelayStatus();
+  els.relayStatusText.title = `Relay watcher: ${els.relayStatusText.value}`;
   const running = Boolean(state.activeRelay);
   els.relayStartBtn.disabled = running;
   els.relayStopBtn.disabled = !running;
@@ -273,6 +379,7 @@ function renderTunnelStatus() {
   } else {
     els.tunnelUrlText.value = "Tunnel stopped";
   }
+  els.tunnelUrlText.title = `Tunnel state: ${els.tunnelUrlText.value}`;
   els.tunnelStartBtn.disabled = hasActiveTunnel;
   els.tunnelStopBtn.disabled = !hasActiveTunnel;
   els.openTunnelUrlBtn.disabled = !activeUrl;
@@ -285,6 +392,17 @@ function formatClock(raw) {
     return String(raw || "");
   }
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function sanitizeAgentMessage(raw) {
+  const message = String(raw || "").trim();
+  if (!message) {
+    return "";
+  }
+  if (/^reply sent:\s+.+\.md$/i.test(message)) {
+    return "";
+  }
+  return message;
 }
 
 function formatNoteClock(raw) {
@@ -336,12 +454,56 @@ function preferredSessionLabel() {
   return "n/a";
 }
 
+function parseUsageCount(value) {
+  const parsed = Number.parseInt(String(value ?? ""), 10);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return 0;
+  }
+  return parsed;
+}
+
+function normalizeChatUsage() {
+  const usage = state.chatUsage && typeof state.chatUsage === "object" ? state.chatUsage : {};
+  const promptTokens = parseUsageCount(usage.promptTokens);
+  const completionTokens = parseUsageCount(usage.completionTokens);
+  const totalTokens = parseUsageCount(usage.totalTokens) || promptTokens + completionTokens;
+  const messageCount = parseUsageCount(usage.messageCount) || state.chatMessages.length;
+  const estimated = usage.estimated !== false;
+  return {
+    promptTokens,
+    completionTokens,
+    totalTokens,
+    messageCount,
+    estimated,
+  };
+}
+
+function formatNumber(value) {
+  const count = parseUsageCount(value);
+  return count.toLocaleString();
+}
+
+function renderChatUsage() {
+  if (!els.chatTokenUsage || !els.chatMessageCount) {
+    return;
+  }
+  const usage = normalizeChatUsage();
+  const estimatePrefix = usage.estimated ? "~" : "";
+  const tokenText = usage.totalTokens > 0 ? `${estimatePrefix}${formatNumber(usage.totalTokens)} tokens` : "tokens n/a";
+  const messageText = `${formatNumber(usage.messageCount)} messages`;
+  els.chatTokenUsage.textContent = tokenText;
+  els.chatTokenUsage.title = `Prompt: ${formatNumber(usage.promptTokens)} | Completion: ${formatNumber(usage.completionTokens)} | Total: ${formatNumber(usage.totalTokens)}${usage.estimated ? " (estimated)" : ""}`;
+  els.chatMessageCount.textContent = messageText;
+  els.chatMessageCount.title = `Loaded chat messages: ${formatNumber(usage.messageCount)}`;
+}
+
 function renderChatRuntimeStrip() {
   const details = els.chatRuntimeDetails;
   if (!details) {
     return;
   }
 
+  const usage = normalizeChatUsage();
   const securityMode = String(state.connectionHelp?.panel?.securityMode || "unknown");
   const refreshMs = Number.parseInt(els.refreshMsInput.value, 10);
   const refreshLabel = Number.isFinite(refreshMs) ? `${els.autoRefreshToggle.checked ? "on" : "off"} @ ${refreshMs}ms` : "off";
@@ -359,14 +521,17 @@ function renderChatRuntimeStrip() {
     { label: "relay", value: relayState },
     { label: "tunnel", value: tunnelState },
     { label: "security", value: securityMode },
+    { label: "tokens", value: usage.totalTokens ? `${usage.estimated ? "~" : ""}${formatNumber(usage.totalTokens)}` : "n/a" },
+    { label: "messages", value: formatNumber(usage.messageCount) },
     { label: "preview", value: state.activePreviewId || "none" },
     { label: "refresh", value: refreshLabel },
     { label: "session", value: preferredSessionLabel() },
     { label: "mobile", value: mobile },
   ];
 
-  const summary = `socket ${socketState} | agent ${agentState || "idle"} | relay ${relayState} | tunnel ${tunnelState}`;
+  const summary = `socket ${socketState} | agent ${agentState || "idle"} | relay ${relayState} | tokens ${usage.totalTokens ? `${usage.estimated ? "~" : ""}${formatNumber(usage.totalTokens)}` : "n/a"}`;
   els.chatRuntimeSummary.textContent = summary;
+  els.chatRuntimeSummary.title = `Runtime summary: ${summary}`;
 
   const container = els.chatRuntimeValues;
   container.innerHTML = "";
@@ -380,16 +545,19 @@ function renderChatRuntimeStrip() {
 
     const val = document.createElement("span");
     val.textContent = String(item.value || "n/a");
+    pill.title = `${runtimeCheckHelp(item.label)} Current value: ${val.textContent}.`;
 
     pill.appendChild(key);
     pill.appendChild(val);
     fragment.appendChild(pill);
   }
   container.appendChild(fragment);
+  renderChatUsage();
 }
 
 function setChatConnectionState(text, isConnected = false) {
   els.chatConnection.textContent = text;
+  els.chatConnection.title = `Realtime socket status: ${text}`;
   els.chatConnection.classList.remove("ok", "bad");
   if (isConnected) {
     els.chatConnection.classList.add("ok");
@@ -435,16 +603,19 @@ function syncThinkingCloudIndicator() {
 
 function renderAgentStatus() {
   const status = state.agentStatus || { state: "idle", message: "No status yet." };
-  const label = `${status.state || "idle"} | ${status.message || ""}`.trim();
+  const cleanMessage = sanitizeAgentMessage(status.message);
+  const label = cleanMessage ? `${status.state || "idle"} | ${cleanMessage}` : `${status.state || "idle"}`;
   els.agentStatusText.value = label;
+  els.agentStatusText.title = `Agent status: ${label}`;
 
   const badge = els.agentStateBadge;
   badge.textContent = status.state || "idle";
+  badge.title = `Agent state: ${badge.textContent}`;
   badge.classList.remove("idle", "pending", "thinking", "working", "blocked");
   badge.classList.add(String(status.state || "idle"));
 
   const stateText = String(status.state || "idle").toLowerCase();
-  const message = String(status.message || "").trim();
+  const message = cleanMessage;
   const liveMap = {
     idle: "Codex is idle.",
     pending: "Codex has queued work.",
@@ -454,6 +625,7 @@ function renderAgentStatus() {
   };
   const liveText = message || liveMap[stateText] || "Codex status updated.";
   els.chatLiveStatus.textContent = liveText;
+  els.chatLiveStatus.title = `Live status: ${liveText}`;
   els.chatLiveStatus.classList.remove("idle", "pending", "thinking", "working", "blocked");
   els.chatLiveStatus.classList.add(stateText);
   syncThinkingCloudIndicator();
@@ -466,6 +638,7 @@ function renderChatMessages() {
     empty.className = "muted";
     empty.textContent = "No messages yet.";
     els.chatStream.appendChild(empty);
+    renderChatUsage();
     return;
   }
 
@@ -489,6 +662,7 @@ function renderChatMessages() {
   }
   syncThinkingCloudIndicator();
   els.chatStream.scrollTop = els.chatStream.scrollHeight;
+  renderChatUsage();
 }
 
 function applyChatSnapshot(snapshot) {
@@ -497,6 +671,11 @@ function applyChatSnapshot(snapshot) {
   }
   if (Array.isArray(snapshot.history)) {
     state.chatMessages = snapshot.history.slice(-200);
+  }
+  if (snapshot.usage && typeof snapshot.usage === "object") {
+    state.chatUsage = snapshot.usage;
+  } else {
+    state.chatUsage = null;
   }
   renderAgentStatus();
   renderChatMessages();
@@ -658,7 +837,6 @@ async function refreshChatHistory() {
 }
 
 async function sendChatMessage() {
-  const title = els.noteTitle.value.trim();
   const message = els.noteMessage.value.trim();
   if (!message) {
     els.noteStatus.textContent = "Message is required.";
@@ -666,7 +844,7 @@ async function sendChatMessage() {
   }
 
   if (state.wsConnected && state.ws && state.ws.readyState === WebSocket.OPEN) {
-    state.ws.send(JSON.stringify({ type: "chat:send", title, message }));
+    state.ws.send(JSON.stringify({ type: "chat:send", message }));
     els.noteMessage.value = "";
     els.noteStatus.textContent = "Sending...";
     return;
@@ -674,7 +852,7 @@ async function sendChatMessage() {
 
   const result = await api("/api/note", {
     method: "POST",
-    body: { title, message },
+    body: { message },
   });
   els.noteMessage.value = "";
   els.noteStatus.textContent = `Queued: ${result?.note?.filePath || "ok"}`;
@@ -690,6 +868,7 @@ function updatePreviewFrame() {
   const target = previewUrlFor(state.activePreviewId);
   els.previewFrame.src = target;
   els.previewStatus.textContent = state.activePreviewId ? `Loaded ${state.activePreviewId}` : "No preview selected.";
+  els.previewStatus.title = `Preview status: ${els.previewStatus.textContent}`;
   renderChatRuntimeStrip();
 }
 
@@ -979,9 +1158,13 @@ function renderConnectionHelp() {
   const help = state.connectionHelp;
   if (!help) {
     els.connectionMode.textContent = "Connection details unavailable.";
+    els.connectionMode.title = "Connection details are not available yet.";
     els.mobileUrlText.value = "";
+    els.mobileUrlText.title = "No recommended mobile URL available.";
     els.tunnelUrlText.value = "";
+    els.tunnelUrlText.title = "No tunnel information available.";
     els.connectionAdvice.textContent = "";
+    els.connectionAdvice.title = "No connection guidance available.";
     els.enableHttpsBtn.disabled = false;
     els.useAdaptiveSecurityBtn.disabled = false;
     renderTunnelStatus();
@@ -1010,10 +1193,13 @@ function renderConnectionHelp() {
     mobile = isHttpsRequired ? "(HTTPS tunnel URL required)" : "(No LAN URL available)";
   }
   els.connectionMode.textContent = `${bindLabel} | ${security}`;
+  els.connectionMode.title = `Connection mode: ${els.connectionMode.textContent}`;
   els.mobileUrlText.value = mobile;
+  els.mobileUrlText.title = `Recommended mobile URL: ${mobile}`;
   els.connectionAdvice.textContent = activeTunnelUrl
     ? `External tunnel live: ${activeTunnelUrl}`
     : String(help?.guidance?.action || "");
+  els.connectionAdvice.title = `Connection guidance: ${els.connectionAdvice.textContent}`;
   els.enableHttpsBtn.disabled = securityMode === "on";
   els.useAdaptiveSecurityBtn.disabled = securityMode === "auto";
   renderTunnelStatus();
@@ -1473,6 +1659,7 @@ function bindEvents() {
 }
 
 bindEvents();
+applyStaticTooltips();
 initializeRuntimeStrip();
 setActiveUtilityPanel("preview", { expand: false });
 applyResponsiveUtilityDefaults(true);

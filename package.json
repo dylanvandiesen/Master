@@ -34,6 +34,7 @@
     "remote:relay:codex:once": "node scripts/remote/codex-interactive-relay.mjs once --session-name=codex-chat --codex-use-last=false"
   },
   "devDependencies": {
+    "@girder/fontello": "^3.2.11",
     "autoprefixer": "^10.4.14",
     "del": "^7.0.0",
     "esbuild": "^0.27.3",

@@ -4,12 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Playground Remote Console</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="stylesheet" href="/vendor/fontello/css/fontello.css" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
@@ -26,61 +21,85 @@
       </section>
 
       <section id="appView" class="app" hidden>
-        <header class="topbar panel">
-          <div>
-            <h1>Codex Remote Workspace</h1>
-            <p id="statusLine" class="muted">Loading session...</p>
-          </div>
-          <div class="topbar-actions">
-            <button
-              id="mobileMenuBtn"
-              class="menu-btn"
-              type="button"
-              aria-label="Open panel menu"
-              aria-controls="panelNav"
-              aria-expanded="false"
-            >
-              <span></span>
-              <span></span>
-              <span></span>
-            </button>
-            <button id="refreshBtn" type="button">Refresh</button>
-            <button id="logoutBtn" type="button" class="danger-lite">Sign Out</button>
-          </div>
-        </header>
-
         <section class="workspace-shell">
           <nav id="panelNav" class="icon-nav panel" aria-label="Panel Navigation">
             <div class="icon-nav-head">
               <strong>Panels</strong>
-              <button id="mobileNavCloseBtn" class="icon-nav-close" type="button" aria-label="Close panel menu">X</button>
+              <button id="mobileNavCloseBtn" class="icon-nav-close icon-circle" type="button" aria-label="Close panel menu">
+                <i class="icon-cancel" aria-hidden="true"></i>
+              </button>
             </div>
-            <button id="navPreviewBtn" class="nav-btn" type="button" title="Preview" data-panel-target="preview">PV</button>
-            <button id="navActivityBtn" class="nav-btn" type="button" title="Activity" data-panel-target="activity">ACT</button>
-            <button id="navSessionsBtn" class="nav-btn" type="button" title="Sessions" data-panel-target="sessions">SES</button>
-            <button id="navConnectionBtn" class="nav-btn" type="button" title="Remote" data-panel-target="connection">NET</button>
-            <button id="navOutputBtn" class="nav-btn" type="button" title="Output" data-panel-target="output">LOG</button>
-            <button id="navTogglePanelsBtn" class="nav-btn toggle" type="button" title="Hide or show utility panels">HIDE</button>
+            <button id="navPreviewBtn" class="nav-btn active" type="button" title="Preview" data-panel-target="preview">
+              <i class="icon-eye" aria-hidden="true"></i>
+              <span>Preview</span>
+            </button>
+            <button id="navActivityBtn" class="nav-btn" type="button" title="Activity" data-panel-target="activity">
+              <i class="icon-chat" aria-hidden="true"></i>
+              <span>Activity</span>
+            </button>
+            <button id="navSessionsBtn" class="nav-btn" type="button" title="Sessions" data-panel-target="sessions">
+              <i class="icon-folder" aria-hidden="true"></i>
+              <span>Sessions</span>
+            </button>
+            <button id="navConnectionBtn" class="nav-btn" type="button" title="Remote" data-panel-target="connection">
+              <i class="icon-globe" aria-hidden="true"></i>
+              <span>Remote</span>
+            </button>
+            <button id="navOutputBtn" class="nav-btn" type="button" title="Output" data-panel-target="output">
+              <i class="icon-terminal" aria-hidden="true"></i>
+              <span>Output</span>
+            </button>
+            <button id="navTogglePanelsBtn" class="nav-btn toggle" type="button" title="Hide or show utility panels">
+              <i class="icon-columns" aria-hidden="true"></i>
+              <span>Hide</span>
+            </button>
+            <div class="icon-nav-footer">
+              <button id="refreshBtn" type="button" class="nav-btn nav-utility">
+                <i class="icon-arrows-cw" aria-hidden="true"></i>
+                <span>Refresh</span>
+              </button>
+              <button id="logoutBtn" type="button" class="nav-btn nav-utility danger-lite">
+                <i class="icon-logout" aria-hidden="true"></i>
+                <span>Sign Out</span>
+              </button>
+            </div>
           </nav>
           <button id="mobileNavBackdrop" class="mobile-nav-backdrop" type="button" aria-hidden="true" hidden></button>
 
           <section class="main-stage">
             <article class="panel chat-panel">
               <div class="chat-head">
-                <div>
-                  <h2>Codex Chat</h2>
-                  <p class="muted">Realtime chat over inbox/outbox with persistent session context.</p>
+                <div class="chat-head-start">
+                  <button
+                    id="mobileMenuBtn"
+                    class="menu-btn icon-circle"
+                    type="button"
+                    aria-label="Open panel menu"
+                    aria-controls="panelNav"
+                    aria-expanded="false"
+                  >
+                    <i class="icon-menu" aria-hidden="true"></i>
+                  </button>
+                  <span class="chat-head-label">Realtime Relay</span>
                 </div>
                 <div class="chat-meta">
-                  <button id="chatPreviewBtn" type="button">Preview</button>
+                  <button id="chatPreviewBtn" type="button" class="chip-btn">
+                    <i class="icon-eye" aria-hidden="true"></i>
+                    <span>Preview</span>
+                  </button>
                   <span id="chatConnection" class="chip muted">Connecting...</span>
                   <span id="agentStateBadge" class="chip">idle</span>
                 </div>
               </div>
               <p id="chatLiveStatus" class="chat-live muted">Waiting for Codex activity...</p>
+              <div class="chat-statusbar">
+                <p id="statusLine" class="status-line muted">Loading session...</p>
+                <span id="chatTokenUsage" class="chip muted">Tokens est: n/a</span>
+                <span id="chatMessageCount" class="chip muted">0 messages</span>
+              </div>
               <details id="chatRuntimeDetails" class="chat-runtime" open>
                 <summary>
-                  <span>Runtime Checks</span>
+                  <span><i class="icon-cog-alt" aria-hidden="true"></i> Runtime Checks</span>
                   <span id="chatRuntimeSummary" class="muted">loading...</span>
                 </summary>
                 <div id="chatRuntimeValues" class="chat-runtime-values"></div>
@@ -89,13 +108,17 @@
               <div id="chatStream" class="chat-stream" aria-live="polite"></div>
 
               <div class="composer">
-                <label for="noteTitle">Context (optional)</label>
-                <input id="noteTitle" type="text" placeholder="short context label" />
-                <label for="noteMessage">Message</label>
-                <textarea id="noteMessage" rows="4" placeholder="Type a message for Codex..."></textarea>
-                <div class="button-row">
-                  <button id="sendNoteBtn" type="button" class="accent">Send</button>
-                  <button id="chatRefreshBtn" type="button">Sync</button>
+                <label for="noteMessage" class="sr-only">Message</label>
+                <div class="composer-shell">
+                  <textarea id="noteMessage" rows="3" placeholder="Type a message for Codex..."></textarea>
+                  <div class="composer-actions">
+                    <button id="chatRefreshBtn" type="button" class="icon-circle composer-btn" aria-label="Sync chat">
+                      <i class="icon-arrows-cw" aria-hidden="true"></i>
+                    </button>
+                    <button id="sendNoteBtn" type="button" class="icon-circle composer-btn accent" aria-label="Send message">
+                      <i class="icon-right-circled2" aria-hidden="true"></i>
+                    </button>
+                  </div>
                 </div>
                 <p id="noteStatus" class="muted"></p>
               </div>
@@ -116,23 +139,35 @@
                 <input id="refreshMsInput" type="number" min="1000" max="20000" step="500" />
               </div>
               <div class="button-row">
-                <button id="loadPreviewBtn" type="button" class="accent">Load</button>
-                <button id="previewFullscreenBtn" type="button">Fullscreen</button>
-                <button id="openPreviewTabBtn" type="button">Open Tab</button>
+                <button id="loadPreviewBtn" type="button" class="accent">
+                  <i class="icon-play" aria-hidden="true"></i>
+                  <span>Load</span>
+                </button>
+                <button id="previewFullscreenBtn" type="button">
+                  <i class="icon-resize-full" aria-hidden="true"></i>
+                  <span>Fullscreen</span>
+                </button>
+                <button id="openPreviewTabBtn" type="button">
+                  <i class="icon-link-ext" aria-hidden="true"></i>
+                  <span>Open Tab</span>
+                </button>
                 <label class="checkbox-wrap">
                   <input id="autoRefreshToggle" type="checkbox" checked />
                   <span>Auto refresh</span>
                 </label>
               </div>
               <div id="previewViewport" class="preview-viewport">
-                <iframe id="previewFrame" title="Live Preview" sandbox="allow-same-origin allow-scripts allow-forms"></iframe>
+                <iframe id="previewFrame" title="Live Preview" sandbox="allow-scripts allow-forms"></iframe>
               </div>
             </article>
 
             <article class="panel activity-panel utility-card" data-panel-id="activity" hidden>
               <div class="panel-head">
                 <h3>Codex Activity</h3>
-                <button id="activityRefreshBtn" type="button">Refresh</button>
+                <button id="activityRefreshBtn" type="button">
+                  <i class="icon-arrows-cw" aria-hidden="true"></i>
+                  <span>Refresh</span>
+                </button>
               </div>
               <label for="agentStatusText">Current Status</label>
               <input id="agentStatusText" type="text" readonly placeholder="idle | waiting for work" />
@@ -159,18 +194,48 @@
                 <textarea id="codexSessionNotes" rows="2" placeholder="optional notes"></textarea>
               </div>
               <div class="button-row">
-                <button id="codexRefreshBtn" type="button">Refresh</button>
-                <button id="codexUpsertBtn" type="button">Save</button>
-                <button id="codexCreateBtn" type="button">Create</button>
-                <button id="codexSetDefaultBtn" type="button">Set Default</button>
-                <button id="codexRetireBtn" type="button" class="danger-lite">Retire</button>
-                <button id="codexPrepQuickBtn" type="button" class="accent">Prep Quick</button>
-                <button id="codexPrepFullBtn" type="button" class="accent">Prep Full</button>
+                <button id="codexRefreshBtn" type="button">
+                  <i class="icon-arrows-cw" aria-hidden="true"></i>
+                  <span>Refresh</span>
+                </button>
+                <button id="codexUpsertBtn" type="button">
+                  <i class="icon-doc-text" aria-hidden="true"></i>
+                  <span>Save</span>
+                </button>
+                <button id="codexCreateBtn" type="button">
+                  <i class="icon-plus-circled" aria-hidden="true"></i>
+                  <span>Create</span>
+                </button>
+                <button id="codexSetDefaultBtn" type="button">
+                  <i class="icon-star" aria-hidden="true"></i>
+                  <span>Set Default</span>
+                </button>
+                <button id="codexRetireBtn" type="button" class="danger-lite">
+                  <i class="icon-minus-circled" aria-hidden="true"></i>
+                  <span>Retire</span>
+                </button>
+                <button id="codexPrepQuickBtn" type="button" class="accent">
+                  <i class="icon-flash" aria-hidden="true"></i>
+                  <span>Prep Quick</span>
+                </button>
+                <button id="codexPrepFullBtn" type="button" class="accent">
+                  <i class="icon-rocket" aria-hidden="true"></i>
+                  <span>Prep Full</span>
+                </button>
               </div>
               <div class="button-row">
-                <button id="relayStartBtn" type="button" class="accent">Start Relay</button>
-                <button id="relayStopBtn" type="button" class="danger-lite">Stop Relay</button>
-                <button id="relayRefreshBtn" type="button">Relay Status</button>
+                <button id="relayStartBtn" type="button" class="accent">
+                  <i class="icon-play-circled2" aria-hidden="true"></i>
+                  <span>Start Relay</span>
+                </button>
+                <button id="relayStopBtn" type="button" class="danger-lite">
+                  <i class="icon-stop" aria-hidden="true"></i>
+                  <span>Stop Relay</span>
+                </button>
+                <button id="relayRefreshBtn" type="button">
+                  <i class="icon-arrows-cw" aria-hidden="true"></i>
+                  <span>Relay Status</span>
+                </button>
               </div>
               <label for="relayStatusText">Relay Watcher</label>
               <input id="relayStatusText" type="text" readonly placeholder="not running" />
@@ -184,20 +249,44 @@
               <label for="mobileUrlText">Mobile URL</label>
               <input id="mobileUrlText" type="text" readonly />
               <div class="button-row">
-                <button id="refreshConnectionHelpBtn" type="button">Refresh Connection</button>
-                <button id="copyMobileUrlBtn" type="button">Copy URL</button>
+                <button id="refreshConnectionHelpBtn" type="button">
+                  <i class="icon-arrows-cw" aria-hidden="true"></i>
+                  <span>Refresh Connection</span>
+                </button>
+                <button id="copyMobileUrlBtn" type="button">
+                  <i class="icon-doc-text" aria-hidden="true"></i>
+                  <span>Copy URL</span>
+                </button>
               </div>
               <label for="tunnelUrlText">External Tunnel</label>
               <input id="tunnelUrlText" type="text" readonly placeholder="tunnel stopped" />
               <div class="button-row">
-                <button id="tunnelStartBtn" type="button" class="accent">Start Tunnel</button>
-                <button id="tunnelStopBtn" type="button" class="danger-lite">Stop Tunnel</button>
-                <button id="tunnelRefreshBtn" type="button">Tunnel Status</button>
-                <button id="openTunnelUrlBtn" type="button">Open Tunnel</button>
+                <button id="tunnelStartBtn" type="button" class="accent">
+                  <i class="icon-play-circled2" aria-hidden="true"></i>
+                  <span>Start Tunnel</span>
+                </button>
+                <button id="tunnelStopBtn" type="button" class="danger-lite">
+                  <i class="icon-stop" aria-hidden="true"></i>
+                  <span>Stop Tunnel</span>
+                </button>
+                <button id="tunnelRefreshBtn" type="button">
+                  <i class="icon-arrows-cw" aria-hidden="true"></i>
+                  <span>Tunnel Status</span>
+                </button>
+                <button id="openTunnelUrlBtn" type="button">
+                  <i class="icon-link-ext" aria-hidden="true"></i>
+                  <span>Open Tunnel</span>
+                </button>
               </div>
               <div class="button-row">
-                <button id="enableHttpsBtn" type="button" class="accent">Enable HTTPS</button>
-                <button id="useAdaptiveSecurityBtn" type="button">Use Adaptive</button>
+                <button id="enableHttpsBtn" type="button" class="accent">
+                  <i class="icon-lock" aria-hidden="true"></i>
+                  <span>Enable HTTPS</span>
+                </button>
+                <button id="useAdaptiveSecurityBtn" type="button">
+                  <i class="icon-sliders" aria-hidden="true"></i>
+                  <span>Use Adaptive</span>
+                </button>
               </div>
               <p id="connectionAdvice" class="muted"></p>
             </article>

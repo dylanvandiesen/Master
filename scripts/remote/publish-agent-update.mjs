@@ -82,7 +82,7 @@ async function writeReply({ message, inReplyTo = "", state = "idle" }) {
   await fs.writeFile(filePath, buildReplyMarkdown({ message, inReplyTo }), "utf8");
   const status = await writeStatus({
     state,
-    message: `Reply sent: ${fileName}`,
+    message: "Reply published.",
     source: "manual-cli-reply",
   });
   return {
