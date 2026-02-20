@@ -118,7 +118,7 @@ body.utility-dock-open {
   border: 1px solid rgba(141, 170, 220, 0.38);
   background: rgba(20, 33, 54, 0.88);
   color: #cfe1ff;
-  display: none;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0;
@@ -129,21 +129,40 @@ body.utility-dock-open {
   min-height: 0;
   overflow: hidden;
   display: grid;
-  grid-template-columns: 124px minmax(0, 1fr) minmax(340px, 39vw);
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 39vw);
   gap: 10px;
 }
 
 .icon-nav {
   min-height: 0;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: min(84vw, 320px);
+  border-radius: 0 18px 18px 0;
+  z-index: 90;
+  transform: translateX(-110%);
+  transition: transform 200ms ease;
+  overflow: auto;
   display: grid;
   grid-template-rows: auto repeat(6, minmax(44px, auto)) auto;
   align-content: start;
   gap: 8px;
-  padding: 10px 10px 12px;
+  padding: 12px;
+}
+
+body.mobile-nav-open .icon-nav {
+  transform: translateX(0);
 }
 
 .icon-nav-head {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 2px 0 8px;
+  color: #d3e4ff;
+  font-size: 0.92rem;
 }
 
 .icon-nav-close {
@@ -158,7 +177,7 @@ body.utility-dock-open {
 }
 
 .mobile-nav-backdrop {
-  display: none;
+  display: block;
   position: fixed;
   inset: 0;
   border: 0;
@@ -899,7 +918,7 @@ pre {
 
 @media (max-width: 1280px) {
   .workspace-shell {
-    grid-template-columns: 124px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .utility-dock {
@@ -935,10 +954,6 @@ pre {
     gap: 8px;
   }
 
-  .menu-btn {
-    display: inline-flex;
-  }
-
   .workspace-shell {
     grid-template-columns: 1fr;
     min-height: 0;
@@ -947,36 +962,12 @@ pre {
   }
 
   .icon-nav {
-    position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
     width: min(84vw, 320px);
-    border-radius: 0 18px 18px 0;
-    z-index: 90;
-    transform: translateX(-110%);
-    transition: transform 200ms ease;
-    overflow: auto;
-    grid-auto-rows: 50px;
-    grid-template-rows: auto repeat(6, minmax(44px, auto)) auto;
     padding: 12px;
   }
 
-  body.mobile-nav-open .icon-nav {
-    transform: translateX(0);
-  }
-
   .icon-nav-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin: 2px 0 8px;
-    color: #d3e4ff;
-    font-size: 0.92rem;
-  }
-
-  .mobile-nav-backdrop {
-    display: block;
+    font-size: 0.88rem;
   }
 
   .utility-dock-backdrop {

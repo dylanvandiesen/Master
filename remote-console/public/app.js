@@ -119,7 +119,7 @@ const TOOLTIP_TEXTS = {
   statusLine: "Current workspace runtime summary.",
   refreshBtn: "Reload session, projects, manifests, chat, and activity data.",
   logoutBtn: "Sign out from this remote panel session.",
-  mobileMenuBtn: "Open panel navigation on mobile.",
+  mobileMenuBtn: "Open panel navigation.",
   mobileNavCloseBtn: "Close panel navigation.",
   utilityDockBackdrop: "Tap to close the currently open utility panel.",
   utilityDockCloseBtn: "Close the currently open utility panel.",
@@ -265,7 +265,7 @@ function isMobileViewport() {
 }
 
 function setMobileNavOpen(open) {
-  const next = Boolean(open) && isMobileViewport();
+  const next = Boolean(open);
   state.mobileNavOpen = next;
   document.body.classList.toggle("mobile-nav-open", next);
   if (els.mobileNavBackdrop) {
@@ -313,7 +313,7 @@ function setActiveUtilityPanel(panelId, options = {}) {
     button.classList.toggle("active", key === next);
   }
 
-  if (state.mobileNavOpen && isMobileViewport()) {
+  if (state.mobileNavOpen) {
     setMobileNavOpen(false);
   }
 
@@ -326,9 +326,6 @@ function applyResponsiveUtilityDefaults(force = false) {
   const utilityNarrow = window.matchMedia("(max-width: 1240px)").matches;
   if (force || utilityNarrow) {
     setUtilityCollapsed(utilityNarrow);
-  }
-  if (!isMobileViewport() && state.mobileNavOpen) {
-    setMobileNavOpen(false);
   }
   updateUtilityOverlayState();
 }
