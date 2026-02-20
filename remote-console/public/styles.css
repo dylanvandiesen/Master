@@ -195,7 +195,7 @@ body.utility-dock-open {
   gap: 8px;
   padding: 8px 10px;
   cursor: pointer;
-  transition: transform 130ms ease, background 130ms ease, border-color 130ms ease;
+  transition: transform 130ms ease, background 130ms ease, border-color 130ms ease, box-shadow 130ms ease;
 }
 
 .nav-btn i {
@@ -206,6 +206,11 @@ body.utility-dock-open {
 .nav-btn:hover {
   transform: translateY(-1px);
   border-color: var(--border-strong);
+  box-shadow: 0 10px 24px rgba(6, 15, 29, 0.32);
+}
+
+.nav-btn:active {
+  transform: translateY(0) scale(0.99);
 }
 
 .nav-btn.active {
@@ -279,6 +284,15 @@ body.utility-dock-open {
   background: rgba(26, 39, 63, 0.84);
   color: #d6e6ff;
   padding: 6px 11px;
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.chip-btn:hover {
+  border-color: rgba(166, 199, 245, 0.46);
+}
+
+.chip-btn:active {
+  transform: scale(0.98);
 }
 
 .chat-live {
@@ -468,6 +482,7 @@ body.utility-dock-open {
   background: linear-gradient(180deg, rgba(12, 20, 36, 0.8) 0%, rgba(10, 17, 30, 0.94) 100%);
   padding: 12px;
   overflow: auto;
+  scrollbar-gutter: stable;
 }
 
 .chat-bubble {
@@ -575,6 +590,7 @@ body.utility-dock-open {
   justify-content: center;
   padding: 0;
   flex: 0 0 auto;
+  transition: transform 120ms ease, border-color 120ms ease, filter 120ms ease;
 }
 
 .composer-btn {
@@ -586,6 +602,14 @@ body.utility-dock-open {
 
 .composer-btn.accent {
   border: 1px solid rgba(107, 217, 255, 0.5);
+}
+
+.composer-btn:hover {
+  border-color: rgba(160, 193, 241, 0.56);
+}
+
+.composer-btn:active {
+  transform: scale(0.96);
 }
 
 .utility-dock {
@@ -747,6 +771,14 @@ button {
   padding: 8px 12px;
   cursor: pointer;
   transition: transform 120ms ease, border-color 120ms ease, filter 120ms ease, background 120ms ease;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid rgba(120, 212, 255, 0.86);
+  outline-offset: 1px;
 }
 
 button > i {
@@ -1014,27 +1046,107 @@ pre {
 }
 
 @media (max-width: 620px) {
+  .panel {
+    padding: 11px;
+  }
+
   .chat-panel {
-    gap: 8px;
+    gap: 7px;
+    border-radius: 18px;
   }
 
   .chat-head {
     align-items: flex-start;
     flex-direction: column;
+    gap: 6px;
+  }
+
+  .chat-head-label {
+    font-size: 0.76rem;
+    letter-spacing: 0.03em;
   }
 
   .chat-meta {
     width: 100%;
     justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .chip,
+  .chip-btn {
+    font-size: 0.75rem;
+    padding: 5px 9px;
+  }
+
+  .chat-live {
+    min-height: 20px;
+    font-size: 0.8rem;
   }
 
   .chat-statusbar {
     gap: 6px;
+    padding: 7px 8px;
   }
 
   .status-line {
     flex-basis: 100%;
     white-space: normal;
+    font-size: 0.76rem;
+  }
+
+  .chat-runtime {
+    padding: 7px 8px;
+  }
+
+  .runtime-pill {
+    font-size: 0.7rem;
+    padding: 4px 7px;
+  }
+
+  .runtime-pill strong {
+    font-size: 0.63rem;
+  }
+
+  .chat-stream {
+    border-radius: 12px;
+    padding: 10px;
+  }
+
+  .chat-bubble {
+    margin-bottom: 8px;
+    padding: 9px 10px;
+    border-radius: 12px;
+  }
+
+  .chat-bubble header {
+    font-size: 0.72rem;
+    margin-bottom: 5px;
+  }
+
+  .composer {
+    padding: 8px;
+    border-radius: 14px;
+  }
+
+  .composer-shell {
+    gap: 7px;
+  }
+
+  #noteMessage {
+    min-height: 50px;
+    max-height: 30dvh;
+    font-size: 16px;
+    padding: 9px 10px;
+  }
+
+  .composer-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .menu-btn {
+    width: 36px;
+    height: 36px;
   }
 
   .chat-runtime > summary {
@@ -1050,5 +1162,71 @@ pre {
 
   .button-row button {
     flex: 1 1 auto;
+    min-height: 40px;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 430px) {
+  .layout {
+    padding:
+      max(6px, env(safe-area-inset-top))
+      max(6px, env(safe-area-inset-right))
+      max(6px, env(safe-area-inset-bottom))
+      max(6px, env(safe-area-inset-left));
+  }
+
+  .icon-nav {
+    width: min(86vw, 300px);
+    padding: 10px;
+  }
+
+  .nav-btn {
+    min-height: 42px;
+    font-size: 0.76rem;
+    gap: 7px;
+    padding: 7px 9px;
+  }
+
+  .utility-dock {
+    padding:
+      max(6px, env(safe-area-inset-top))
+      max(6px, env(safe-area-inset-right))
+      max(6px, env(safe-area-inset-bottom))
+      max(6px, env(safe-area-inset-left));
+  }
+
+  .utility-dock-close {
+    width: 34px;
+    height: 34px;
+    top: calc(max(6px, env(safe-area-inset-top)) + 6px);
+    right: calc(max(6px, env(safe-area-inset-right)) + 6px);
+  }
+
+  .utility-card {
+    gap: 8px;
+  }
+
+  .panel-head h3 {
+    font-size: 0.94rem;
+  }
+
+  .status-line {
+    font-size: 0.74rem;
+  }
+
+  .chat-meta {
+    gap: 5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0ms !important;
+    scroll-behavior: auto !important;
   }
 }
