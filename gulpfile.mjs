@@ -14,10 +14,13 @@ import fs from 'fs';
 import { createServer as createHttpServer } from 'http';
 import { join, dirname, extname, resolve as resolvePath, relative as relativePath } from 'path';
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
 import { createServer as createNetServer } from 'net';
+import { spawn } from 'child_process';
 import livereload from 'gulp-livereload';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const requireFromHere = createRequire(import.meta.url);
 const AGENCY_CONFIG_FILE = join(__dirname, 'agency.config.json');
 const DASHBOARD_FILE = join(__dirname, 'dist', 'index.html');
 const MIME_TYPES = {
@@ -144,6 +147,11 @@ const LEGACY_DIR_MIGRATION = {
 let warnedUnsupportedImageFormat = false;
 let liveReloadStarted = false;
 let esbuildModulePromise = null;
+let esbuildCliPath = null;
+let esbuildApiBlockedByPolicy = false;
+let esbuildCliFallbackNotified = false;
+const preferEsbuildCliShim =
+  process.platform === 'win32' && String(process.env.AGENCY_ESBUILD_PREFER_API || '').toLowerCase() !== '1';
 const activeHttpServers = [];
 
 function toPosixPath(value) {
@@ -687,6 +695,86 @@ async function getEsbuildModule() {
   return esbuildModulePromise;
 }
 
+function isSpawnEpermError(error) {
+  if (String(error?.code || '').toUpperCase() === 'EPERM') return true;
+  return /spawn\s+eperm/i.test(String(error?.message || error || ''));
+}
+
+function getEsbuildCliPath() {
+  if (esbuildCliPath !== null) return esbuildCliPath;
+  try {
+    esbuildCliPath = requireFromHere.resolve('esbuild/bin/esbuild');
+  } catch {
+    esbuildCliPath = '';
+  }
+  return esbuildCliPath;
+}
+
+async function runCommandWithInheritedStdio(command, args, cwd) {
+  await new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      cwd,
+      windowsHide: true,
+      stdio: 'inherit'
+    });
+    child.on('error', reject);
+    child.on('exit', (code, signal) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      reject(new Error(`Command failed (${code ?? 'null'}${signal ? `, signal ${signal}` : ''})`));
+    });
+  });
+}
+
+async function buildEsbuildScriptsViaCli(project, entries) {
+  const cliPath = getEsbuildCliPath();
+  if (!cliPath) return false;
+
+  const args = [
+    cliPath,
+    ...entries,
+    '--bundle',
+    `--outdir=${join(project.distDir, 'js')}`,
+    `--target=${project.config.scripts.target || 'es2018'}`,
+    `--format=${project.config.scripts.format || 'iife'}`,
+    `--platform=${project.config.scripts.platform || 'browser'}`,
+    '--entry-names=[name].min',
+    '--log-level=warning'
+  ];
+
+  if (Boolean(project.agency.build.minify)) args.push('--minify');
+  if (Boolean(project.agency.build.sourcemaps)) args.push('--sourcemap');
+
+  await runCommandWithInheritedStdio(process.execPath, args, process.cwd());
+  livereload.reload();
+  return true;
+}
+
+async function tryEsbuildCliShimWithFallback(project, entries, apiErrorMessage = '') {
+  try {
+    const usedCliShim = await buildEsbuildScriptsViaCli(project, entries);
+    if (usedCliShim && apiErrorMessage && !esbuildCliFallbackNotified) {
+      console.log(
+        `[agency:${project.slug}] esbuild API is blocked (${apiErrorMessage}); using CLI path for this session.`
+      );
+      esbuildCliFallbackNotified = true;
+    }
+    return usedCliShim;
+  } catch (cliError) {
+    if (String(project.agency.scripts.mode || '').toLowerCase() === 'dual') {
+      const reason = apiErrorMessage
+        ? `esbuild API failed (${apiErrorMessage}) and CLI shim failed (${cliError.message}); falling back to legacy scripts.`
+        : `esbuild CLI shim failed (${cliError.message}); falling back to legacy scripts.`;
+      console.warn(`[agency:${project.slug}] ${reason}`);
+      await buildLegacyScriptsForProject(project);
+      return true;
+    }
+    throw cliError;
+  }
+}
+
 async function buildLegacyScriptsForProject(project) {
   const patterns = resolvePatterns(project, project.config.scripts.legacyEntries);
   if (!patterns.length) return;
@@ -720,6 +808,11 @@ async function buildEsbuildScriptsForProject(project) {
 
   await ensureDir(join(project.distDir, 'js'));
 
+  if (preferEsbuildCliShim || esbuildApiBlockedByPolicy) {
+    const usedCliShim = await tryEsbuildCliShimWithFallback(project, entries);
+    if (usedCliShim) return;
+  }
+
   try {
     await esbuildModule.build({
       entryPoints: entries,
@@ -735,6 +828,12 @@ async function buildEsbuildScriptsForProject(project) {
     });
     livereload.reload();
   } catch (error) {
+    if (isSpawnEpermError(error)) {
+      esbuildApiBlockedByPolicy = true;
+      const usedCliShim = await tryEsbuildCliShimWithFallback(project, entries, error.message);
+      if (usedCliShim) return;
+    }
+
     if (String(project.agency.scripts.mode || '').toLowerCase() === 'dual') {
       console.warn(
         `[agency:${project.slug}] esbuild failed (${error.message}); falling back to legacy scripts.`

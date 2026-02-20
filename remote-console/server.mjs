@@ -49,6 +49,7 @@ const CHAT_MAX_MESSAGES = 120;
 const WS_PATH = "/ws";
 const TUNNEL_DISCOVERY_TIMEOUT_MS = 45_000;
 const URL_IN_TEXT_REGEX = /https:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?::\d+)?(?:\/[^\s]*)?/g;
+const TUNNEL_MODES = new Set(["quick", "token", "named"]);
 const WINDOWS_CLOUDFLARED_CANDIDATES = [
   "C:\\Program Files\\cloudflared\\cloudflared.exe",
   "C:\\Program Files (x86)\\cloudflared\\cloudflared.exe",
@@ -123,6 +124,16 @@ function parseBool(value, fallback = false) {
 function parseInteger(value, fallback) {
   const parsed = Number.parseInt(String(value ?? ""), 10);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function parseTunnelMode(value, fallback = "quick") {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (TUNNEL_MODES.has(normalized)) {
+    return normalized;
+  }
+  return fallback;
 }
 
 function normalizeIp(rawIp) {
@@ -241,6 +252,7 @@ const legacyRequireHttps = parseBool(process.env.REMOTE_PANEL_REQUIRE_HTTPS, fal
 const defaultSecurityMode = legacyRequireHttps ? "on" : "off";
 const runtimeConfig = loadRuntimeConfigSync(PANEL_RUNTIME_CONFIG_FILE);
 const securityModeInput = parseArgValue("security") || runtimeConfig.securityMode || process.env.REMOTE_PANEL_SECURITY_MODE;
+const tunnelModeInput = parseArgValue("tunnel-mode") || runtimeConfig.tunnelMode || process.env.REMOTE_PANEL_TUNNEL_MODE;
 const settings = {
   host: parseArgValue("host") || process.env.REMOTE_PANEL_HOST || "127.0.0.1",
   port: parseInteger(parseArgValue("port") || process.env.REMOTE_PANEL_PORT, 8787),
@@ -261,7 +273,15 @@ const settings = {
   tunnelProvider: String(parseArgValue("tunnel-provider") || process.env.REMOTE_PANEL_TUNNEL_PROVIDER || "cloudflared")
     .trim()
     .toLowerCase(),
+  tunnelMode: parseTunnelMode(tunnelModeInput, "quick"),
   cloudflaredBin: String(parseArgValue("cloudflared-bin") || process.env.REMOTE_PANEL_CLOUDFLARED_BIN || "").trim(),
+  cloudflaredTunnelToken: String(
+    parseArgValue("cloudflared-token") || process.env.REMOTE_PANEL_CLOUDFLARED_TUNNEL_TOKEN || ""
+  ).trim(),
+  cloudflaredTunnelName: String(
+    parseArgValue("cloudflared-name") || process.env.REMOTE_PANEL_CLOUDFLARED_TUNNEL_NAME || ""
+  ).trim(),
+  cloudflaredConfig: String(parseArgValue("cloudflared-config") || process.env.REMOTE_PANEL_CLOUDFLARED_CONFIG || "").trim(),
 };
 
 function isPrivateIpv4(ip) {
@@ -307,6 +327,7 @@ function buildRuntimeConfigPayload() {
     updatedAt: timestamp(),
     securityMode: settings.securityMode,
     publicHost: settings.publicHost || "",
+    tunnelMode: parseTunnelMode(settings.tunnelMode, "quick"),
   };
 }
 
@@ -347,6 +368,7 @@ function buildConnectionHelpPayload() {
   const directLanUrls = canDirectLan ? lanIps.map((ip) => `${lanProtocol}://${ip}:${settings.port}`) : [];
   const publicUrl = buildPublicUrl(settings.publicHost, securityMode === "on" ? "https" : "http");
   const tunnel = publicTunnelState();
+  const configuredTunnelMode = parseTunnelMode(settings.tunnelMode, "quick");
   const tunnelUrl = String(tunnel?.url || "").trim();
   const localUrl = `http://127.0.0.1:${settings.port}`;
   const bindUrl = `http://${settings.host}:${settings.port}`;
@@ -354,6 +376,9 @@ function buildConnectionHelpPayload() {
   let action = "";
   if (tunnelUrl) {
     action = `External tunnel is live at ${tunnelUrl}. Use this URL outside your home network.`;
+  } else if (tunnel?.mode && tunnel.mode !== "quick") {
+    action =
+      "Account tunnel is running but no public URL was detected. Set REMOTE_PANEL_PUBLIC_HOST to your tunnel hostname for a clickable link.";
   } else if (securityMode === "on") {
     action = "Use an HTTPS tunnel URL for phone access. Direct LAN HTTP requests are blocked.";
   } else if (settings.host !== "0.0.0.0") {
@@ -378,6 +403,8 @@ function buildConnectionHelpPayload() {
       requireHttps: securityMode === "on",
       securityMode,
       publicHost: settings.publicHost,
+      tunnelMode: configuredTunnelMode,
+      tunnelProvider: settings.tunnelProvider,
       bindSessionIp: settings.bindSessionIp,
       allowlist: settings.allowlist,
       persistSessions: settings.persistSessions,
@@ -396,6 +423,11 @@ function buildConnectionHelpPayload() {
     tunnel: {
       active: Boolean(tunnelUrl),
       provider: tunnel?.provider || settings.tunnelProvider,
+      mode: tunnel?.mode || configuredTunnelMode,
+      configuredMode: configuredTunnelMode,
+      hasTokenConfig: Boolean(settings.cloudflaredTunnelToken),
+      hasNamedConfig: Boolean(settings.cloudflaredTunnelName),
+      hasConfigFile: Boolean(settings.cloudflaredConfig),
       url: tunnelUrl,
       pid: tunnel?.pid || 0,
       startedAt: tunnel?.startedAt || "",
@@ -468,6 +500,7 @@ function publicTunnelState() {
   }
   return {
     provider: state.activeTunnel.provider,
+    mode: state.activeTunnel.mode,
     url: state.activeTunnel.url,
     targetUrl: state.activeTunnel.targetUrl,
     pid: state.activeTunnel.pid,
@@ -1319,9 +1352,79 @@ function extractHttpsUrlFromLine(line) {
   return preferred[0] || fallback[0] || "";
 }
 
+function resolveTunnelPublicHintUrl() {
+  const hintFromHost = buildPublicUrl(settings.publicHost, "https");
+  return String(hintFromHost || "").trim();
+}
+
+function redactCloudflaredArgs(args) {
+  const redacted = [];
+  let redactNext = false;
+  for (const arg of args || []) {
+    const value = String(arg ?? "");
+    if (redactNext) {
+      redacted.push("<redacted>");
+      redactNext = false;
+      continue;
+    }
+    if (value === "--token") {
+      redacted.push(value);
+      redactNext = true;
+      continue;
+    }
+    redacted.push(value);
+  }
+  return redacted;
+}
+
+function buildCloudflaredTunnelArgs({
+  mode = "quick",
+  targetUrl = `http://127.0.0.1:${settings.port}`,
+  tunnelToken = "",
+  tunnelName = "",
+  configFile = "",
+} = {}) {
+  const normalizedMode = parseTunnelMode(mode, "");
+  if (!normalizedMode) {
+    throw new Error("Tunnel mode must be one of: quick, token, named.");
+  }
+
+  const args = [];
+  if (configFile) {
+    args.push("--config", configFile);
+  }
+  args.push("tunnel");
+
+  if (normalizedMode === "quick") {
+    args.push("--url", targetUrl);
+  } else if (normalizedMode === "token") {
+    const token = String(tunnelToken || "").trim();
+    if (!token) {
+      throw new Error("Token tunnel mode requires REMOTE_PANEL_CLOUDFLARED_TUNNEL_TOKEN.");
+    }
+    args.push("run", "--token", token);
+  } else if (normalizedMode === "named") {
+    const name = String(tunnelName || "").trim();
+    if (!name) {
+      throw new Error("Named tunnel mode requires REMOTE_PANEL_CLOUDFLARED_TUNNEL_NAME.");
+    }
+    args.push("run", name);
+  }
+
+  args.push("--no-autoupdate");
+  return {
+    mode: normalizedMode,
+    args,
+  };
+}
+
 async function startTunnelProcess({
   provider = "cloudflared",
+  mode = "quick",
   targetUrl = `http://127.0.0.1:${settings.port}`,
+  tunnelToken = "",
+  tunnelName = "",
+  configFile = "",
   timeoutMs = TUNNEL_DISCOVERY_TIMEOUT_MS,
 } = {}) {
   if (state.activeTunnel) {
@@ -1334,31 +1437,49 @@ async function startTunnelProcess({
   }
 
   const tunnelBin = resolveCloudflaredBin();
-  const args = ["tunnel", "--url", targetUrl, "--no-autoupdate"];
+  const tunnelSpec = buildCloudflaredTunnelArgs({
+    mode,
+    targetUrl,
+    tunnelToken,
+    tunnelName,
+    configFile,
+  });
+  const args = tunnelSpec.args;
+  const normalizedMode = tunnelSpec.mode;
+  const discoveredUrlHint = resolveTunnelPublicHintUrl();
   const child = spawn(tunnelBin, args, {
     cwd: ROOT,
     env: process.env,
     windowsHide: true,
   });
 
-  pushLog("system", `Starting external tunnel: ${tunnelBin} ${args.join(" ")}`);
+  const loggedArgs = redactCloudflaredArgs(args);
+  pushLog("system", `Starting external tunnel (${normalizedMode}): ${tunnelBin} ${loggedArgs.join(" ")}`);
 
   const discoveredUrl = await new Promise((resolve, reject) => {
     let settled = false;
     let discovered = "";
+    const quickMode = normalizedMode === "quick";
+    const startupDelayMs = quickMode ? timeoutMs : Math.max(1500, Math.min(10000, Math.floor(timeoutMs / 3)));
     const stdoutRl = child.stdout ? readline.createInterface({ input: child.stdout }) : null;
     const stderrRl = child.stderr ? readline.createInterface({ input: child.stderr }) : null;
+
+    const cleanup = () => {
+      clearTimeout(timer);
+      stdoutRl?.close();
+      stderrRl?.close();
+    };
 
     const finalizeResolve = () => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
-      resolve(discovered);
+      cleanup();
+      resolve(discovered || discoveredUrlHint || "");
     };
     const finalizeReject = (error) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
+      cleanup();
       reject(error);
     };
 
@@ -1369,7 +1490,9 @@ async function startTunnelProcess({
         return;
       }
       discovered = url;
-      finalizeResolve();
+      if (quickMode || normalizedMode !== "quick") {
+        finalizeResolve();
+      }
     };
 
     stdoutRl?.on("line", (line) => inspect(line, "stdout"));
@@ -1387,13 +1510,25 @@ async function startTunnelProcess({
       if (settled) {
         return;
       }
-      const reason = code === 0 ? "Tunnel exited before URL discovery." : `Tunnel exited (exit ${code ?? -1}) before URL discovery.`;
+      if (!quickMode && code === 0 && (discovered || discoveredUrlHint)) {
+        finalizeResolve();
+        return;
+      }
+      const reason = quickMode
+        ? code === 0
+          ? "Tunnel exited before URL discovery."
+          : `Tunnel exited (exit ${code ?? -1}) before URL discovery.`
+        : `Tunnel exited (exit ${code ?? -1}) before startup completed.`;
       finalizeReject(new Error(reason));
     });
 
     const timer = setTimeout(() => {
-      finalizeReject(new Error(`Tunnel URL discovery timed out after ${timeoutMs}ms.`));
-    }, timeoutMs);
+      if (quickMode) {
+        finalizeReject(new Error(`Tunnel URL discovery timed out after ${timeoutMs}ms.`));
+        return;
+      }
+      finalizeResolve();
+    }, startupDelayMs);
   }).catch(async (error) => {
     await terminateProcessTree(child.pid).catch(() => null);
     throw error;
@@ -1401,6 +1536,7 @@ async function startTunnelProcess({
 
   const tunnelState = {
     provider: normalizedProvider,
+    mode: normalizedMode,
     url: discoveredUrl,
     targetUrl,
     pid: child.pid,
@@ -1410,7 +1546,10 @@ async function startTunnelProcess({
 
   state.activeTunnel = tunnelState;
   settings.securityMode = "on";
-  settings.publicHost = discoveredUrl;
+  settings.tunnelMode = normalizedMode;
+  if (discoveredUrl) {
+    settings.publicHost = discoveredUrl;
+  }
   await persistRuntimeConfig().catch(() => null);
   broadcastState();
 
@@ -1418,7 +1557,7 @@ async function startTunnelProcess({
     pushLog("system", `Tunnel exited (pid=${child.pid}, exit=${code ?? -1})`);
     if (state.activeTunnel && state.activeTunnel.pid === child.pid) {
       state.activeTunnel = null;
-      if (settings.publicHost === discoveredUrl) {
+      if (normalizedMode === "quick" && settings.publicHost === discoveredUrl) {
         settings.publicHost = "";
       }
       await persistRuntimeConfig().catch(() => null);
@@ -1430,7 +1569,7 @@ async function startTunnelProcess({
     pushLog("system", `Tunnel error: ${error.message}`);
     if (state.activeTunnel && state.activeTunnel.pid === child.pid) {
       state.activeTunnel = null;
-      if (settings.publicHost === discoveredUrl) {
+      if (normalizedMode === "quick" && settings.publicHost === discoveredUrl) {
         settings.publicHost = "";
       }
       await persistRuntimeConfig().catch(() => null);
@@ -1438,7 +1577,14 @@ async function startTunnelProcess({
     broadcastState();
   });
 
-  pushLog("system", `External tunnel live: ${discoveredUrl}`);
+  if (discoveredUrl) {
+    pushLog("system", `External tunnel live (${normalizedMode}): ${discoveredUrl}`);
+  } else {
+    pushLog(
+      "system",
+      `External tunnel running (${normalizedMode}) without detected URL. Set REMOTE_PANEL_PUBLIC_HOST for a clickable mobile URL.`
+    );
+  }
   return publicTunnelState();
 }
 
@@ -2241,6 +2387,7 @@ async function handleApi(req, res, pathname, ip) {
       previewRefreshMs: settings.previewRefreshMs,
       bindSessionIp: settings.bindSessionIp,
       securityMode: settings.securityMode,
+      tunnelMode: parseTunnelMode(settings.tunnelMode, "quick"),
       effectiveSecurityMode: effectiveSecurityModeForIp(ip),
       persistSessions: settings.persistSessions,
     });
@@ -2587,6 +2734,7 @@ async function handleApi(req, res, pathname, ip) {
     json(res, 200, {
       ok: true,
       provider: settings.tunnelProvider,
+      mode: parseTunnelMode(settings.tunnelMode, "quick"),
       activeTunnel: publicTunnelState(),
       help: buildConnectionHelpPayload(),
     });
@@ -2605,6 +2753,18 @@ async function handleApi(req, res, pathname, ip) {
     const provider = String(body.provider || settings.tunnelProvider || "cloudflared")
       .trim()
       .toLowerCase();
+    const modeInput =
+      body.mode !== undefined && body.mode !== null && String(body.mode).trim() !== ""
+        ? body.mode
+        : settings.tunnelMode || "quick";
+    const mode = parseTunnelMode(modeInput, "");
+    if (!mode) {
+      badRequest(res, "Tunnel mode must be one of: quick, token, named.");
+      return;
+    }
+    const tunnelToken = String(body.token || "").trim() || settings.cloudflaredTunnelToken;
+    const tunnelName = String(body.tunnelName || body.name || "").trim() || settings.cloudflaredTunnelName;
+    const configFile = String(body.configFile || "").trim() || settings.cloudflaredConfig;
     const timeoutMsRaw = Number.parseInt(String(body.timeoutMs ?? ""), 10);
     const timeoutMs = Number.isFinite(timeoutMsRaw) ? Math.max(5000, Math.min(180000, timeoutMsRaw)) : TUNNEL_DISCOVERY_TIMEOUT_MS;
 
@@ -2619,18 +2779,24 @@ async function handleApi(req, res, pathname, ip) {
     try {
       const activeTunnel = await startTunnelProcess({
         provider,
+        mode,
         targetUrl,
+        tunnelToken,
+        tunnelName,
+        configFile,
         timeoutMs,
       });
       await appendActivityEvent({
         type: "tunnel_start",
         state: "working",
-        message: `External tunnel started (${provider})`,
+        message: `External tunnel started (${provider}, ${mode})`,
         source: "panel-tunnel",
         meta: {
           provider,
+          mode,
           targetUrl,
           timeoutMs,
+          configFile: configFile ? "provided" : "",
           pid: activeTunnel?.pid || 0,
           url: activeTunnel?.url || "",
           byIp: ip,
@@ -2640,6 +2806,7 @@ async function handleApi(req, res, pathname, ip) {
       json(res, 200, {
         ok: true,
         provider,
+        mode,
         activeTunnel,
         help: buildConnectionHelpPayload(),
       });
@@ -3443,6 +3610,7 @@ function logStartupBanner() {
   console.log("[remote-panel] -------------------------------------------------");
   console.log(`[remote-panel] Listening on http://${settings.host}:${settings.port} (${externalHint})`);
   console.log(`[remote-panel] Security mode: ${settings.securityMode} (${securityModeLabel(settings.securityMode)})`);
+  console.log(`[remote-panel] Tunnel mode default: ${parseTunnelMode(settings.tunnelMode, "quick")}`);
   if (settings.publicHost) {
     console.log(`[remote-panel] Public/mobile host hint: ${settings.publicHost}`);
   }

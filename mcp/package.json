@@ -7,9 +7,9 @@
   "scripts": {
     "start:filesystem": "node node_modules/@modelcontextprotocol/server-filesystem/dist/index.js \"../\"",
     "start:memory": "node node_modules/@modelcontextprotocol/server-memory/dist/index.js",
-    "start:github": "node node_modules/@modelcontextprotocol/server-github/dist/index.js",
-    "start:github:legacy": "node node_modules/@modelcontextprotocol/server-github/dist/index.js",
-    "start:github:modern:docker": "docker run -i --rm -e GITHUB_PERSONAL_ACCESS_TOKEN ghcr.io/github/github-mcp-server",
+    "start:github": "node ../scripts/mcp/run-github-mcp.mjs",
+    "start:github:legacy": "node ../scripts/mcp/run-github-mcp.mjs",
+    "start:github:modern:docker": "node ../scripts/mcp/run-github-mcp.mjs --docker=true",
     "list": "npm ls --depth=0"
   },
   "dependencies": {

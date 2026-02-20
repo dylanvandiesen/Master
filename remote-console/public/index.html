@@ -81,7 +81,7 @@
                   >
                     <i class="icon-menu" aria-hidden="true"></i>
                   </button>
-                  <span class="chat-head-label">Realtime Relay</span>
+                  <span class="chat-head-label">Codex Remote Chat</span>
                 </div>
                 <div class="chat-meta">
                   <button id="chatPreviewBtn" type="button" class="chip-btn">
@@ -110,6 +110,22 @@
 
               <div class="composer">
                 <label for="noteMessage" class="sr-only">Message</label>
+                <div class="prompt-mode-bar" aria-label="Prompt mode controls">
+                  <button id="promptModeLiveBtn" type="button" class="mode-chip active">
+                    <i class="icon-play" aria-hidden="true"></i>
+                    <span>Live</span>
+                  </button>
+                  <button id="promptModeQueueBtn" type="button" class="mode-chip">
+                    <i class="icon-arrows-cw" aria-hidden="true"></i>
+                    <span>Queue</span>
+                  </button>
+                  <button id="promptModeStopBtn" type="button" class="mode-chip danger-lite">
+                    <i class="icon-stop" aria-hidden="true"></i>
+                    <span>Stop</span>
+                  </button>
+                  <span id="promptQueueCount" class="chip muted">Queue 0</span>
+                </div>
+                <div id="chatQuickReplies" class="chat-quick-replies" hidden aria-label="Quick replies"></div>
                 <div class="composer-shell">
                   <textarea id="noteMessage" rows="3" placeholder="Type a message for Codex..."></textarea>
                   <div class="composer-actions">
@@ -264,6 +280,22 @@
               </div>
               <label for="tunnelUrlText">External Tunnel</label>
               <input id="tunnelUrlText" type="text" readonly placeholder="tunnel stopped" />
+              <label>Tunnel Mode</label>
+              <div class="button-row tunnel-mode-row">
+                <button id="tunnelModeQuickBtn" type="button" class="mode-btn active">
+                  <i class="icon-flash" aria-hidden="true"></i>
+                  <span>Quick</span>
+                </button>
+                <button id="tunnelModeTokenBtn" type="button" class="mode-btn">
+                  <i class="icon-lock" aria-hidden="true"></i>
+                  <span>Token</span>
+                </button>
+                <button id="tunnelModeNamedBtn" type="button" class="mode-btn">
+                  <i class="icon-link-ext" aria-hidden="true"></i>
+                  <span>Named</span>
+                </button>
+              </div>
+              <p id="tunnelModeHint" class="muted"></p>
               <div class="button-row">
                 <button id="tunnelStartBtn" type="button" class="accent">
                   <i class="icon-play-circled2" aria-hidden="true"></i>

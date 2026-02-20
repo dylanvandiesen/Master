@@ -69,6 +69,44 @@ function Test-TokenSet {
     return $true
 }
 
+function Resolve-GithubMcpToken {
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot
+    )
+
+    $resolverScript = Join-Path $RepoRoot "scripts/mcp/github-token-resolver.mjs"
+    if (-not (Test-Path -LiteralPath $resolverScript)) {
+        return [pscustomobject]@{
+            ok = $false
+            source = "none"
+            token = ""
+            expiresAt = ""
+            reason = "Resolver script not found."
+        }
+    }
+
+    Write-Host ">> node $resolverScript --format=json --allow-missing=true"
+    $raw = & node $resolverScript --format=json --allow-missing=true
+    if ($LASTEXITCODE -ne 0) {
+        throw "GitHub token resolver failed with exit code ${LASTEXITCODE}."
+    }
+    $payload = ($raw -join [Environment]::NewLine).Trim()
+    if ([string]::IsNullOrWhiteSpace($payload)) {
+        return [pscustomobject]@{
+            ok = $false
+            source = "none"
+            token = ""
+            expiresAt = ""
+            reason = "Resolver returned empty output."
+        }
+    }
+    try {
+        return ($payload | ConvertFrom-Json)
+    } catch {
+        throw "GitHub token resolver returned invalid JSON."
+    }
+}
+
 if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
     $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
     $RepoRoot = Join-Path $scriptDir "..\.."
@@ -86,6 +124,29 @@ if (-not $SkipEnvLoad) {
 
 if ([string]::IsNullOrWhiteSpace($env:MEMORY_FILE_PATH)) {
     $env:MEMORY_FILE_PATH = "mcp/data/memory.jsonl"
+}
+
+$githubTokenResolution = $null
+$githubTokenSource = "none"
+$githubTokenExpiresAt = ""
+$githubTokenResolutionError = ""
+try {
+    $githubTokenResolution = Resolve-GithubMcpToken -RepoRoot $RepoRoot
+} catch {
+    $githubTokenResolutionError = $_.Exception.Message
+}
+
+if (-not [string]::IsNullOrWhiteSpace($githubTokenResolutionError)) {
+    Write-Warning "GitHub token resolver failed: $githubTokenResolutionError"
+} elseif ($null -ne $githubTokenResolution -and [bool]$githubTokenResolution.ok -and (Test-TokenSet $githubTokenResolution.token)) {
+    Set-Item -Path "Env:GITHUB_PERSONAL_ACCESS_TOKEN" -Value ([string]$githubTokenResolution.token)
+    if (-not (Test-TokenSet $env:GITHUB_MCP_PAT)) {
+        Set-Item -Path "Env:GITHUB_MCP_PAT" -Value ([string]$githubTokenResolution.token)
+    }
+    $githubTokenSource = [string]$githubTokenResolution.source
+    $githubTokenExpiresAt = [string]$githubTokenResolution.expiresAt
+} elseif ($null -ne $githubTokenResolution -and -not [string]::IsNullOrWhiteSpace([string]$githubTokenResolution.reason)) {
+    Write-Warning "GitHub token unavailable: $([string]$githubTokenResolution.reason)"
 }
 
 $memoryPath = $env:MEMORY_FILE_PATH
@@ -142,6 +203,10 @@ $status = [ordered]@{
     memoryFile = $memoryPath
     githubTokenLoaded = [bool](Test-TokenSet $env:GITHUB_PERSONAL_ACCESS_TOKEN)
     githubPatLoaded = [bool](Test-TokenSet $env:GITHUB_MCP_PAT)
+    githubTokenSource = $githubTokenSource
+    githubTokenExpiresAt = $githubTokenExpiresAt
+    githubAppFallbackUsed = [bool]($githubTokenSource -eq "github_app")
+    githubTokenResolverError = $githubTokenResolutionError
     missingTomlEntries = $missingTomlEntries
     missingVscodeServers = $missingVscodeServers
 }
@@ -156,6 +221,13 @@ Write-Host "  MCP root: $mcpRoot"
 Write-Host "  Memory file: $memoryPath"
 Write-Host "  GITHUB_PERSONAL_ACCESS_TOKEN loaded: $(Test-TokenSet $env:GITHUB_PERSONAL_ACCESS_TOKEN)"
 Write-Host "  GITHUB_MCP_PAT loaded: $(Test-TokenSet $env:GITHUB_MCP_PAT)"
+Write-Host "  GitHub token source: $githubTokenSource"
+if (-not [string]::IsNullOrWhiteSpace($githubTokenExpiresAt)) {
+    Write-Host "  GitHub token expires at: $githubTokenExpiresAt"
+}
+if (-not [string]::IsNullOrWhiteSpace($githubTokenResolutionError)) {
+    Write-Host "  GitHub token resolver error: $githubTokenResolutionError"
+}
 Write-Host "  Status JSON: $statusPath"
 
 if ($missingTomlEntries.Count -gt 0) {

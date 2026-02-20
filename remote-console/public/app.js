@@ -25,6 +25,12 @@ const state = {
   activeUtilityPanel: "preview",
   utilityCollapsed: false,
   mobileNavOpen: false,
+  preferredTunnelMode: "quick",
+  promptMode: "live",
+  promptQueue: [],
+  composerBusy: false,
+  composerBusyTimer: null,
+  quickReplyDismissedKey: "",
 };
 
 const els = {
@@ -59,12 +65,17 @@ const els = {
   chatRuntimeSummary: document.getElementById("chatRuntimeSummary"),
   chatRuntimeValues: document.getElementById("chatRuntimeValues"),
   chatStream: document.getElementById("chatStream"),
+  chatQuickReplies: document.getElementById("chatQuickReplies"),
   chatTokenUsage: document.getElementById("chatTokenUsage"),
   chatMessageCount: document.getElementById("chatMessageCount"),
   noteMessage: document.getElementById("noteMessage"),
   sendNoteBtn: document.getElementById("sendNoteBtn"),
   chatRefreshBtn: document.getElementById("chatRefreshBtn"),
   noteStatus: document.getElementById("noteStatus"),
+  promptModeLiveBtn: document.getElementById("promptModeLiveBtn"),
+  promptModeQueueBtn: document.getElementById("promptModeQueueBtn"),
+  promptModeStopBtn: document.getElementById("promptModeStopBtn"),
+  promptQueueCount: document.getElementById("promptQueueCount"),
 
   manifestSelect: document.getElementById("manifestSelect"),
   refreshMsInput: document.getElementById("refreshMsInput"),
@@ -103,6 +114,10 @@ const els = {
   connectionMode: document.getElementById("connectionMode"),
   mobileUrlText: document.getElementById("mobileUrlText"),
   tunnelUrlText: document.getElementById("tunnelUrlText"),
+  tunnelModeQuickBtn: document.getElementById("tunnelModeQuickBtn"),
+  tunnelModeTokenBtn: document.getElementById("tunnelModeTokenBtn"),
+  tunnelModeNamedBtn: document.getElementById("tunnelModeNamedBtn"),
+  tunnelModeHint: document.getElementById("tunnelModeHint"),
   refreshConnectionHelpBtn: document.getElementById("refreshConnectionHelpBtn"),
   copyMobileUrlBtn: document.getElementById("copyMobileUrlBtn"),
   tunnelStartBtn: document.getElementById("tunnelStartBtn"),
@@ -136,12 +151,17 @@ const TOOLTIP_TEXTS = {
   chatRuntimeDetails: "Expanded runtime checks for chat, relay, preview, and network.",
   chatRuntimeSummary: "Compact runtime checks summary.",
   chatStream: "Conversation timeline between you and Codex.",
+  chatQuickReplies: "Tap a suggested numbered reply from Codex prompts.",
   chatTokenUsage: "Estimated token usage from current chat history.",
   chatMessageCount: "Message count in the visible chat timeline.",
   noteMessage: "Message sent to Codex through the remote inbox bridge.",
   sendNoteBtn: "Send message to Codex.",
   chatRefreshBtn: "Refresh chat history manually.",
   noteStatus: "Message delivery and sync status.",
+  promptModeLiveBtn: "Live mode sends prompts immediately.",
+  promptModeQueueBtn: "Queue mode stores prompts and sends them later in order.",
+  promptModeStopBtn: "Stop mode pauses prompt sending.",
+  promptQueueCount: "Number of queued prompts waiting to send.",
   manifestSelect: "Select which dev server manifest to preview.",
   refreshMsInput: "Preview auto-refresh interval in milliseconds.",
   autoRefreshToggle: "Enable or disable preview auto-refresh.",
@@ -175,6 +195,10 @@ const TOOLTIP_TEXTS = {
   codexSessionPreview: "Registry summary for sessions and defaults.",
   connectionMode: "Network bind mode and security mode summary.",
   mobileUrlText: "Best URL to open this panel from mobile.",
+  tunnelModeQuickBtn: "Use quick tunnel mode (ephemeral public URL).",
+  tunnelModeTokenBtn: "Use Cloudflare account token tunnel from REMOTE_PANEL_CLOUDFLARED_TUNNEL_TOKEN.",
+  tunnelModeNamedBtn: "Use named Cloudflare tunnel from REMOTE_PANEL_CLOUDFLARED_TUNNEL_NAME.",
+  tunnelModeHint: "Tunnel mode requirements and configuration hints.",
   refreshConnectionHelpBtn: "Refresh connection and network guidance.",
   copyMobileUrlBtn: "Copy the recommended mobile URL.",
   tunnelUrlText: "External tunnel status and public URL.",
@@ -200,6 +224,8 @@ function runtimeCheckHelp(label) {
     refresh: "Preview auto-refresh setting.",
     session: "Selected Codex session alias.",
     mobile: "Recommended URL for phone or remote access.",
+    prompt: "Current prompt dispatch mode: live, queue, or stop.",
+    queue: "Queued prompt count waiting to be sent.",
     tokens: "Estimated chat token usage based on message text length.",
     messages: "Total number of chat messages currently loaded.",
   };
@@ -354,11 +380,29 @@ function formatRelayStatus() {
   return `Relay running${session}${project}${dryRun} pid=${state.activeRelay.pid}`;
 }
 
+function normalizeTunnelMode(value, fallback = "quick") {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (["quick", "token", "named"].includes(normalized)) {
+    return normalized;
+  }
+  return fallback;
+}
+
+function currentTunnelMode() {
+  return normalizeTunnelMode(
+    state.activeTunnel?.mode || state.connectionHelp?.tunnel?.mode || state.connectionHelp?.tunnel?.configuredMode || state.preferredTunnelMode,
+    "quick"
+  );
+}
+
 function formatTunnelStatus() {
   if (!state.activeTunnel) {
-    return "Tunnel stopped";
+    return `Tunnel stopped (${currentTunnelMode()})`;
   }
-  const provider = state.activeTunnel.provider ? ` (${state.activeTunnel.provider})` : "";
+  const mode = normalizeTunnelMode(state.activeTunnel.mode || state.preferredTunnelMode, "quick");
+  const provider = state.activeTunnel.provider ? ` (${state.activeTunnel.provider}, ${mode})` : ` (${mode})`;
   const url = state.activeTunnel.url ? ` ${state.activeTunnel.url}` : "";
   return `Tunnel live${provider}${url} pid=${state.activeTunnel.pid}`;
 }
@@ -384,20 +428,69 @@ function renderRelayStatus() {
 
 function renderTunnelStatus() {
   const helpTunnel = state.connectionHelp?.tunnel && typeof state.connectionHelp.tunnel === "object" ? state.connectionHelp.tunnel : null;
+  state.preferredTunnelMode = normalizeTunnelMode(
+    state.activeTunnel?.mode || helpTunnel?.mode || helpTunnel?.configuredMode || state.preferredTunnelMode,
+    "quick"
+  );
   const activeUrl = String(state.activeTunnel?.url || helpTunnel?.url || "").trim();
   const hasActiveTunnel = Boolean(state.activeTunnel || (helpTunnel?.active && activeUrl));
   if (state.activeTunnel) {
     els.tunnelUrlText.value = formatTunnelStatus();
   } else if (activeUrl) {
-    els.tunnelUrlText.value = `Tunnel live ${activeUrl}`;
+    const mode = normalizeTunnelMode(helpTunnel?.mode || state.preferredTunnelMode, "quick");
+    els.tunnelUrlText.value = `Tunnel live (${mode}) ${activeUrl}`;
   } else {
-    els.tunnelUrlText.value = "Tunnel stopped";
+    els.tunnelUrlText.value = `Tunnel stopped (${state.preferredTunnelMode})`;
   }
   els.tunnelUrlText.title = `Tunnel state: ${els.tunnelUrlText.value}`;
+  renderTunnelModeControls();
   els.tunnelStartBtn.disabled = hasActiveTunnel;
   els.tunnelStopBtn.disabled = !hasActiveTunnel;
   els.openTunnelUrlBtn.disabled = !activeUrl;
   renderChatRuntimeStrip();
+}
+
+function renderTunnelModeControls() {
+  const mode = currentTunnelMode();
+  const helpTunnel = state.connectionHelp?.tunnel && typeof state.connectionHelp.tunnel === "object" ? state.connectionHelp.tunnel : null;
+  const hasTokenConfig = Boolean(helpTunnel?.hasTokenConfig);
+  const hasNamedConfig = Boolean(helpTunnel?.hasNamedConfig);
+  const hasConfigFile = Boolean(helpTunnel?.hasConfigFile);
+
+  const buttons = [
+    [els.tunnelModeQuickBtn, "quick"],
+    [els.tunnelModeTokenBtn, "token"],
+    [els.tunnelModeNamedBtn, "named"],
+  ];
+  for (const [button, key] of buttons) {
+    if (!button) {
+      continue;
+    }
+    button.classList.toggle("active", key === mode);
+  }
+
+  if (!els.tunnelModeHint) {
+    return;
+  }
+  let hint = "";
+  if (mode === "token") {
+    hint = hasTokenConfig
+      ? "Token mode uses REMOTE_PANEL_CLOUDFLARED_TUNNEL_TOKEN from environment."
+      : "Token mode requires REMOTE_PANEL_CLOUDFLARED_TUNNEL_TOKEN.";
+  } else if (mode === "named") {
+    hint = hasNamedConfig
+      ? `Named mode uses REMOTE_PANEL_CLOUDFLARED_TUNNEL_NAME${hasConfigFile ? " and REMOTE_PANEL_CLOUDFLARED_CONFIG." : "."}`
+      : "Named mode requires REMOTE_PANEL_CLOUDFLARED_TUNNEL_NAME.";
+  } else {
+    hint = "Quick mode starts an ephemeral Cloudflare URL.";
+  }
+  els.tunnelModeHint.textContent = hint;
+  els.tunnelModeHint.title = `Tunnel mode hint: ${hint}`;
+}
+
+function setPreferredTunnelMode(mode) {
+  state.preferredTunnelMode = normalizeTunnelMode(mode, state.preferredTunnelMode || "quick");
+  renderTunnelModeControls();
 }
 
 function formatClock(raw) {
@@ -527,6 +620,8 @@ function renderChatRuntimeStrip() {
   const socketState = state.wsConnected ? "live" : "offline";
   const relayState = state.activeRelay ? "running" : "stopped";
   const tunnelState = tunnelUrl ? "live" : "stopped";
+  const promptMode = normalizePromptMode(state.promptMode, "live");
+  const queueCount = state.promptQueue.length;
 
   const checks = [
     { label: "auth", value: state.csrfToken ? "ok" : "missing" },
@@ -541,6 +636,8 @@ function renderChatRuntimeStrip() {
     { label: "refresh", value: refreshLabel },
     { label: "session", value: preferredSessionLabel() },
     { label: "mobile", value: mobile },
+    { label: "prompt", value: promptMode },
+    { label: "queue", value: String(queueCount) },
   ];
 
   const summary = `socket ${socketState} | agent ${agentState || "idle"} | relay ${relayState} | tokens ${usage.totalTokens ? `${usage.estimated ? "~" : ""}${formatNumber(usage.totalTokens)}` : "n/a"}`;
@@ -645,6 +742,267 @@ function renderAgentStatus() {
   syncThinkingCloudIndicator();
 }
 
+function extractChoiceRepliesFromText(rawText) {
+  const text = String(rawText || "");
+  if (!text.trim()) {
+    return [];
+  }
+  const choices = [];
+  const seen = new Set();
+  const pushChoice = (replyRaw, labelRaw) => {
+    const reply = String(replyRaw || "").trim();
+    const label = String(labelRaw || "").trim().replace(/\s+/g, " ");
+    if (!reply || !label || seen.has(reply)) {
+      return;
+    }
+    seen.add(reply);
+    choices.push({
+      reply,
+      label: label.length > 100 ? `${label.slice(0, 100)}...` : label,
+    });
+  };
+
+  const lines = text.split(/\r?\n/);
+  for (const line of lines) {
+    const match = line.match(/^\s*(?:[-*]\s+)?(\d{1,2})\s*[.)-]\s+(.+)$/);
+    if (!match) {
+      continue;
+    }
+    pushChoice(match[1], match[2]);
+    if (choices.length >= 8) {
+      break;
+    }
+  }
+
+  if (choices.length < 2) {
+    const compact = text.replace(/\r/g, "");
+    const inlinePattern = /(?:^|\s)(\d{1,2})\s*[.)-]\s+([^]+?)(?=(?:\s+\d{1,2}\s*[.)-]\s+)|$)/g;
+    for (const match of compact.matchAll(inlinePattern)) {
+      pushChoice(match[1], match[2]);
+      if (choices.length >= 8) {
+        break;
+      }
+    }
+  }
+
+  return choices.length >= 2 ? choices : [];
+}
+
+function isLikelyNumericChoiceSet(choices) {
+  if (!Array.isArray(choices) || choices.length < 2 || choices.length > 6) {
+    return false;
+  }
+  const numbers = [];
+  for (const choice of choices) {
+    const reply = String(choice?.reply || "").trim();
+    const label = String(choice?.label || "").trim();
+    if (!/^\d{1,2}$/.test(reply)) {
+      return false;
+    }
+    if (!label || label.length > 180) {
+      return false;
+    }
+    const value = Number.parseInt(reply, 10);
+    if (!Number.isFinite(value)) {
+      return false;
+    }
+    numbers.push(value);
+  }
+  if (numbers[0] !== 1) {
+    return false;
+  }
+  for (let index = 1; index < numbers.length; index += 1) {
+    if (numbers[index] !== numbers[index - 1] + 1) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function hasChoicePromptCue(rawText) {
+  const text = String(rawText || "").trim();
+  if (!text) {
+    return false;
+  }
+  const cuePatterns = [
+    /\bchoose\b.*\b(option|number|reply|answer|1|2|3)\b/i,
+    /\bselect\b.*\b(option|number|reply|answer|1|2|3)\b/i,
+    /\bpick\b.*\b(option|number|reply|answer|1|2|3)\b/i,
+    /\breply\b.*\b(with|using)\b.*\b(1|2|3|number)\b/i,
+    /\brespond\b.*\b(with|using)\b.*\b(1|2|3|number)\b/i,
+    /\bwhich\s+(option|one)\b/i,
+    /\boptions?\b.*\?/i,
+  ];
+  return cuePatterns.some((pattern) => pattern.test(text));
+}
+
+function buildAssistantChoiceSourceKey(message) {
+  if (!message || message.role !== "assistant") {
+    return "";
+  }
+  return `${String(message.noteTimestamp || "")}|${String(message.text || "")}`;
+}
+
+function latestAssistantChoiceReplyBundle() {
+  const last = state.chatMessages[state.chatMessages.length - 1];
+  if (!last || last.role !== "assistant") {
+    return { key: "", choices: [] };
+  }
+  const text = String(last.text || "");
+  const key = buildAssistantChoiceSourceKey(last);
+  if (!hasChoicePromptCue(text)) {
+    return { key, choices: [] };
+  }
+  const choices = extractChoiceRepliesFromText(text);
+  if (!isLikelyNumericChoiceSet(choices)) {
+    return { key, choices: [] };
+  }
+  return { key, choices };
+}
+
+function normalizePromptMode(value, fallback = "live") {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (["live", "queue", "stop"].includes(normalized)) {
+    return normalized;
+  }
+  return fallback;
+}
+
+function clearComposerBusyTimer() {
+  if (!state.composerBusyTimer) {
+    return;
+  }
+  clearTimeout(state.composerBusyTimer);
+  state.composerBusyTimer = null;
+}
+
+function updateComposerInteractivity() {
+  const blockedByStop = state.promptMode === "stop";
+  const busy = state.composerBusy;
+  const disableInput = busy || blockedByStop;
+  els.noteMessage.disabled = disableInput;
+  els.sendNoteBtn.disabled = disableInput;
+  els.chatRefreshBtn.disabled = busy;
+  if (blockedByStop) {
+    els.noteMessage.placeholder = "Prompting stopped. Switch to Live or Queue mode.";
+  } else {
+    els.noteMessage.placeholder = "Type a message for Codex...";
+  }
+  const quickReplyButtons = els.chatQuickReplies?.querySelectorAll("button") || [];
+  for (const button of quickReplyButtons) {
+    button.disabled = disableInput;
+  }
+}
+
+function renderPromptModeControls() {
+  const mode = normalizePromptMode(state.promptMode, "live");
+  const map = [
+    [els.promptModeLiveBtn, "live"],
+    [els.promptModeQueueBtn, "queue"],
+    [els.promptModeStopBtn, "stop"],
+  ];
+  for (const [button, key] of map) {
+    if (!button) {
+      continue;
+    }
+    button.classList.toggle("active", key === mode);
+  }
+  if (els.promptQueueCount) {
+    const count = state.promptQueue.length;
+    els.promptQueueCount.textContent = `Queue ${count}`;
+    els.promptQueueCount.title = `Queued prompts waiting to send: ${count}`;
+  }
+  updateComposerInteractivity();
+}
+
+async function flushPromptQueue() {
+  if (state.promptMode !== "live" || state.composerBusy || state.promptQueue.length === 0) {
+    return;
+  }
+  const queued = state.promptQueue.shift();
+  renderPromptModeControls();
+  await sendChatMessage(queued, { fromQueue: true }).catch((error) => {
+    els.noteStatus.textContent = `Queue error: ${error.message}`;
+  });
+}
+
+function setComposerBusy(nextBusy, statusText = "") {
+  state.composerBusy = Boolean(nextBusy);
+  clearComposerBusyTimer();
+  if (state.composerBusy) {
+    if (statusText) {
+      els.noteStatus.textContent = statusText;
+    }
+    state.composerBusyTimer = window.setTimeout(() => {
+      state.composerBusy = false;
+      renderPromptModeControls();
+      els.noteStatus.textContent = "Send wait timed out. You can send again.";
+      flushPromptQueue().catch(() => null);
+    }, 30000);
+  } else {
+    if (statusText) {
+      els.noteStatus.textContent = statusText;
+    }
+    window.setTimeout(() => {
+      flushPromptQueue().catch(() => null);
+    }, 0);
+  }
+  renderPromptModeControls();
+}
+
+function setPromptMode(mode, announce = true) {
+  const next = normalizePromptMode(mode, state.promptMode || "live");
+  if (state.promptMode === next) {
+    return;
+  }
+  state.promptMode = next;
+  renderPromptModeControls();
+  if (announce) {
+    if (next === "live") {
+      els.noteStatus.textContent = state.promptQueue.length ? "Live mode enabled. Sending queued prompts..." : "Live mode enabled.";
+    } else if (next === "queue") {
+      els.noteStatus.textContent = "Queue mode enabled. Send adds prompts to queue.";
+    } else {
+      els.noteStatus.textContent = "Prompting stopped.";
+    }
+  }
+  if (next === "live") {
+    flushPromptQueue().catch(() => null);
+  }
+}
+
+function renderQuickReplies() {
+  const container = els.chatQuickReplies;
+  if (!container) {
+    return;
+  }
+  const bundle = latestAssistantChoiceReplyBundle();
+  const choices = bundle.choices;
+  container.innerHTML = "";
+  if (!choices.length || !bundle.key || state.quickReplyDismissedKey === bundle.key) {
+    container.hidden = true;
+    updateComposerInteractivity();
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  for (const choice of choices) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "quick-reply-chip";
+    button.dataset.choiceReply = choice.reply;
+    button.dataset.choiceSourceKey = bundle.key;
+    button.title = `Send "${choice.reply}"`;
+    button.innerHTML = `<strong>${choice.reply}</strong><span>${choice.label}</span>`;
+    fragment.appendChild(button);
+  }
+  container.appendChild(fragment);
+  container.hidden = false;
+  updateComposerInteractivity();
+}
+
 function renderChatMessages() {
   els.chatStream.innerHTML = "";
   if (!state.chatMessages.length && !shouldShowThinkingCloud()) {
@@ -652,6 +1010,7 @@ function renderChatMessages() {
     empty.className = "muted";
     empty.textContent = "No messages yet.";
     els.chatStream.appendChild(empty);
+    renderQuickReplies();
     renderChatUsage();
     return;
   }
@@ -676,6 +1035,7 @@ function renderChatMessages() {
   }
   syncThinkingCloudIndicator();
   els.chatStream.scrollTop = els.chatStream.scrollHeight;
+  renderQuickReplies();
   renderChatUsage();
 }
 
@@ -752,6 +1112,8 @@ function clearChatReconnectTimer() {
 
 function closeChatSocket() {
   clearChatReconnectTimer();
+  clearComposerBusyTimer();
+  state.composerBusy = false;
   if (state.ws) {
     try {
       state.ws.close();
@@ -761,6 +1123,7 @@ function closeChatSocket() {
   }
   state.ws = null;
   state.wsConnected = false;
+  renderPromptModeControls();
 }
 
 function scheduleChatReconnect() {
@@ -824,22 +1187,28 @@ function connectChatSocket() {
       return;
     }
     if (payload.type === "chat:ack") {
-      els.noteStatus.textContent = `Queued: ${payload?.note?.filePath || "ok"}`;
+      setComposerBusy(false, `Queued: ${payload?.note?.filePath || "ok"}`);
       return;
     }
     if (payload.type === "chat:error") {
-      els.noteStatus.textContent = `Chat error: ${payload.error || "Unknown error"}`;
+      setComposerBusy(false, `Chat error: ${payload.error || "Unknown error"}`);
     }
   });
 
   ws.addEventListener("close", () => {
     state.wsConnected = false;
+    if (state.composerBusy) {
+      setComposerBusy(false);
+    }
     setChatConnectionState("Disconnected. Reconnecting...");
     scheduleChatReconnect();
   });
 
   ws.addEventListener("error", () => {
     state.wsConnected = false;
+    if (state.composerBusy) {
+      setComposerBusy(false);
+    }
     setChatConnectionState("Socket error.");
     scheduleChatReconnect();
   });
@@ -850,27 +1219,73 @@ async function refreshChatHistory() {
   applyChatSnapshot(snapshot);
 }
 
-async function sendChatMessage() {
-  const message = els.noteMessage.value.trim();
+async function sendChatMessage(messageOverride = null, options = {}) {
+  const fromQueue = Boolean(options?.fromQueue);
+  const useOverride = messageOverride !== null && messageOverride !== undefined;
+  const message = useOverride ? String(messageOverride).trim() : els.noteMessage.value.trim();
   if (!message) {
     els.noteStatus.textContent = "Message is required.";
     return;
   }
 
-  if (state.wsConnected && state.ws && state.ws.readyState === WebSocket.OPEN) {
-    state.ws.send(JSON.stringify({ type: "chat:send", message }));
-    els.noteMessage.value = "";
-    els.noteStatus.textContent = "Sending...";
+  const quickReplyBundle = latestAssistantChoiceReplyBundle();
+  if (quickReplyBundle.key) {
+    state.quickReplyDismissedKey = quickReplyBundle.key;
+    renderQuickReplies();
+  }
+
+  if (!fromQueue && state.promptMode === "stop") {
+    els.noteStatus.textContent = "Prompting is stopped. Switch to Live or Queue mode.";
     return;
   }
 
-  const result = await api("/api/note", {
-    method: "POST",
-    body: { message },
-  });
-  els.noteMessage.value = "";
-  els.noteStatus.textContent = `Queued: ${result?.note?.filePath || "ok"}`;
-  await refreshChatHistory().catch(() => null);
+  if (!fromQueue && state.promptMode === "queue") {
+    state.promptQueue.push(message);
+    if (!useOverride) {
+      els.noteMessage.value = "";
+    }
+    renderPromptModeControls();
+    els.noteStatus.textContent = `Queued prompt (${state.promptQueue.length}).`;
+    return;
+  }
+
+  if (state.composerBusy) {
+    if (!fromQueue && state.promptMode === "queue") {
+      state.promptQueue.push(message);
+      if (!useOverride) {
+        els.noteMessage.value = "";
+      }
+      renderPromptModeControls();
+      els.noteStatus.textContent = `Queued prompt (${state.promptQueue.length}).`;
+      return;
+    }
+    els.noteStatus.textContent = "A send is already in progress.";
+    return;
+  }
+
+  setComposerBusy(true, fromQueue ? "Sending queued prompt..." : useOverride ? `Sending choice ${message}...` : "Sending...");
+  if (state.wsConnected && state.ws && state.ws.readyState === WebSocket.OPEN) {
+    state.ws.send(JSON.stringify({ type: "chat:send", message }));
+    if (!useOverride) {
+      els.noteMessage.value = "";
+    }
+    return;
+  }
+
+  try {
+    const result = await api("/api/note", {
+      method: "POST",
+      body: { message },
+    });
+    if (!useOverride) {
+      els.noteMessage.value = "";
+    }
+    setComposerBusy(false, `Queued: ${result?.note?.filePath || "ok"}`);
+    await refreshChatHistory().catch(() => null);
+  } catch (error) {
+    setComposerBusy(false);
+    throw error;
+  }
 }
 
 function previewUrlFor(manifestId) {
@@ -1189,6 +1604,7 @@ function renderConnectionHelp() {
   if (helpTunnel?.active && helpTunnel?.url) {
     state.activeTunnel = {
       provider: String(helpTunnel.provider || state.activeTunnel?.provider || ""),
+      mode: normalizeTunnelMode(helpTunnel.mode || state.activeTunnel?.mode || state.preferredTunnelMode, "quick"),
       url: String(helpTunnel.url || ""),
       pid: Number.parseInt(String(helpTunnel.pid || state.activeTunnel?.pid || 0), 10) || 0,
       startedAt: String(helpTunnel.startedAt || state.activeTunnel?.startedAt || ""),
@@ -1196,6 +1612,10 @@ function renderConnectionHelp() {
   } else if (!state.activeTunnel?.url) {
     state.activeTunnel = null;
   }
+  state.preferredTunnelMode = normalizeTunnelMode(
+    helpTunnel?.configuredMode || helpTunnel?.mode || state.activeTunnel?.mode || state.preferredTunnelMode,
+    "quick"
+  );
   const isHttpsRequired = Boolean(help?.panel?.requireHttps);
   const securityMode = String(help?.panel?.securityMode || "");
   const host = String(help?.panel?.host || "");
@@ -1229,6 +1649,7 @@ async function refreshConnectionHelp() {
 async function refreshTunnelStatus() {
   const payload = await api("/api/tunnel/status");
   state.activeTunnel = payload.activeTunnel || null;
+  state.preferredTunnelMode = normalizeTunnelMode(payload.mode || state.activeTunnel?.mode || state.preferredTunnelMode, "quick");
   if (payload?.help) {
     state.connectionHelp = payload.help;
   }
@@ -1236,20 +1657,24 @@ async function refreshTunnelStatus() {
 }
 
 async function startTunnel() {
-  els.connectionAdvice.textContent = "Starting external tunnel...";
+  const mode = currentTunnelMode();
+  els.connectionAdvice.textContent = `Starting external tunnel (${mode})...`;
   const payload = await api("/api/tunnel/start", {
     method: "POST",
-    body: {},
+    body: {
+      mode,
+    },
   });
   state.activeTunnel = payload.activeTunnel || null;
+  state.preferredTunnelMode = normalizeTunnelMode(payload.mode || state.activeTunnel?.mode || state.preferredTunnelMode, "quick");
   if (payload?.help) {
     state.connectionHelp = payload.help;
   }
   renderConnectionHelp();
   if (state.activeTunnel?.url) {
-    els.connectionAdvice.textContent = `Tunnel live: ${state.activeTunnel.url}`;
+    els.connectionAdvice.textContent = `Tunnel live (${state.preferredTunnelMode}): ${state.activeTunnel.url}`;
   } else {
-    els.connectionAdvice.textContent = "Tunnel started.";
+    els.connectionAdvice.textContent = `Tunnel started (${state.preferredTunnelMode}).`;
   }
   setCommandResult(JSON.stringify(payload, null, 2));
 }
@@ -1347,13 +1772,22 @@ function setControlsDisabled(disabled) {
     els.openTunnelUrlBtn,
     els.enableHttpsBtn,
     els.useAdaptiveSecurityBtn,
+    els.promptModeLiveBtn,
+    els.promptModeQueueBtn,
+    els.promptModeStopBtn,
   ];
   for (const button of buttons) {
+    button.disabled = disabled;
+  }
+  const quickReplyButtons = els.chatQuickReplies?.querySelectorAll("button") || [];
+  for (const button of quickReplyButtons) {
     button.disabled = disabled;
   }
   if (!disabled) {
     renderRelayStatus();
     renderConnectionHelp();
+    renderPromptModeControls();
+    renderQuickReplies();
   }
 }
 
@@ -1453,6 +1887,10 @@ async function onLogout() {
     // ignore
   }
   setMobileNavOpen(false);
+  clearComposerBusyTimer();
+  state.composerBusy = false;
+  state.promptQueue = [];
+  state.promptMode = "live";
   closeChatSocket();
   stopPolling();
   if (state.autoRefreshTimer) {
@@ -1460,6 +1898,7 @@ async function onLogout() {
     state.autoRefreshTimer = null;
   }
   setLoggedIn(false);
+  renderPromptModeControls();
 }
 
 async function onBootstrap() {
@@ -1528,6 +1967,37 @@ function bindEvents() {
       els.noteStatus.textContent = `Error: ${error.message}`;
     }
   });
+
+  if (els.promptModeLiveBtn) {
+    els.promptModeLiveBtn.addEventListener("click", () => setPromptMode("live"));
+  }
+  if (els.promptModeQueueBtn) {
+    els.promptModeQueueBtn.addEventListener("click", () => setPromptMode("queue"));
+  }
+  if (els.promptModeStopBtn) {
+    els.promptModeStopBtn.addEventListener("click", () => setPromptMode("stop"));
+  }
+
+  if (els.chatQuickReplies) {
+    els.chatQuickReplies.addEventListener("click", (event) => {
+      const target = event.target instanceof HTMLElement ? event.target.closest("button[data-choice-reply]") : null;
+      if (!target) {
+        return;
+      }
+      const reply = String(target.dataset.choiceReply || "").trim();
+      if (!reply) {
+        return;
+      }
+      const sourceKey = String(target.dataset.choiceSourceKey || "").trim();
+      if (sourceKey) {
+        state.quickReplyDismissedKey = sourceKey;
+        renderQuickReplies();
+      }
+      sendChatMessage(reply).catch((error) => {
+        els.noteStatus.textContent = `Error: ${error.message}`;
+      });
+    });
+  }
 
   els.noteMessage.addEventListener("keydown", (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -1630,6 +2100,18 @@ function bindEvents() {
       els.connectionAdvice.textContent = `Copy failed: ${error.message}`;
     }
   });
+  els.tunnelModeQuickBtn.addEventListener("click", () => {
+    setPreferredTunnelMode("quick");
+    els.connectionAdvice.textContent = "Tunnel mode set to quick.";
+  });
+  els.tunnelModeTokenBtn.addEventListener("click", () => {
+    setPreferredTunnelMode("token");
+    els.connectionAdvice.textContent = "Tunnel mode set to token.";
+  });
+  els.tunnelModeNamedBtn.addEventListener("click", () => {
+    setPreferredTunnelMode("named");
+    els.connectionAdvice.textContent = "Tunnel mode set to named.";
+  });
   els.tunnelStartBtn.addEventListener("click", () => {
     startTunnel().catch((error) => {
       els.connectionAdvice.textContent = `Error: ${error.message}`;
@@ -1692,4 +2174,6 @@ initializeRuntimeStrip();
 setActiveUtilityPanel("preview", { expand: false });
 applyResponsiveUtilityDefaults(true);
 renderRelayStatus();
+renderTunnelModeControls();
+renderPromptModeControls();
 onBootstrap();

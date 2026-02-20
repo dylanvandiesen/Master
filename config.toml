@@ -14,8 +14,8 @@ MEMORY_FILE_PATH = "mcp/data/memory.jsonl"
 
 [mcp_servers.github_local]
 command = "node"
-args = ["mcp/node_modules/@modelcontextprotocol/server-github/dist/index.js"]
+args = ["scripts/mcp/run-github-mcp.mjs"]
 
 [mcp_servers.github_modern_docker]
-command = "docker"
-args = ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"]
+command = "node"
+args = ["scripts/mcp/run-github-mcp.mjs", "--docker=true"]

@@ -393,6 +393,93 @@ async function runCodexResume(prompt, options, onEvent) {
     let buffer = "";
     const messages = [];
     let thinkingNoticeSent = false;
+    let lastProgressMessage = "";
+
+    const toolLikeTypes = new Set([
+      "tool_call",
+      "function_call",
+      "shell_command",
+      "command",
+      "exec",
+      "open",
+      "read",
+      "read_file",
+      "web_search",
+      "search_query",
+      "apply_patch",
+      "click",
+      "find",
+    ]);
+
+    const summarizeText = (value, fallback = "") => {
+      const text = String(value || "").replace(/\s+/g, " ").trim();
+      if (!text) {
+        return fallback;
+      }
+      return text.length > 120 ? `${text.slice(0, 120)}...` : text;
+    };
+
+    const detailFromItem = (item = {}) =>
+      summarizeText(
+        item.query ||
+          item.search_query ||
+          item.path ||
+          item.file ||
+          item.pattern ||
+          item.message ||
+          item.description ||
+          item.command ||
+          "",
+        ""
+      );
+
+    const buildToolProgressLabel = (item = {}) => {
+      const toolName = summarizeText(
+        item.tool_name || item.toolName || item.name || item.command || item.action || item.type,
+        "tool"
+      );
+      const detail = detailFromItem(item);
+      if (detail) {
+        return `${toolName}: ${detail}`;
+      }
+      return toolName;
+    };
+
+    const friendlyToolProgressMessage = (item = {}, phase = "running") => {
+      const completed = phase === "completed";
+      const commandText = summarizeText(item.command || "", "").toLowerCase();
+      const pathText = summarizeText(item.path || item.file || item.uri || "", "");
+      const queryText = summarizeText(item.query || item.search_query || "", "");
+      const itemType = String(item.type || "").toLowerCase();
+
+      if (commandText && /\bgit\b/.test(commandText)) {
+        const prefix = completed ? "Fetched git context" : "Fetching git context";
+        return `${prefix}: ${summarizeText(item.command || "", "git")}`;
+      }
+
+      if (pathText && ["read", "read_file", "open", "find"].includes(itemType)) {
+        const lowerPath = pathText.toLowerCase();
+        const isDocPath =
+          lowerPath.includes("readme") ||
+          lowerPath.includes("docs/") ||
+          lowerPath.includes("\\docs\\") ||
+          lowerPath.includes("wiki/");
+        const prefix = isDocPath
+          ? completed
+            ? "Read docs"
+            : "Reading docs"
+          : completed
+            ? "Read file"
+            : "Reading file";
+        return `${prefix}: ${pathText}`;
+      }
+
+      if (queryText && ["search_query", "web_search"].includes(itemType)) {
+        return `${completed ? "Completed search" : "Searching"}: ${queryText}`;
+      }
+
+      return "";
+    };
 
     const handleJsonEvent = (event) => {
       if (!event || typeof event !== "object") {
@@ -428,6 +515,29 @@ async function runCodexResume(prompt, options, onEvent) {
               message: "Codex is reasoning through the request.",
             });
           }
+          const reasoningSummary = summarizeText(event.item.summary || event.item.text || "", "");
+          if (reasoningSummary && reasoningSummary !== lastProgressMessage) {
+            lastProgressMessage = reasoningSummary;
+            emitEvent({
+              type: "thinking",
+              state: "thinking",
+              message: reasoningSummary,
+            });
+          }
+          return;
+        }
+        if (toolLikeTypes.has(itemType)) {
+          const label = buildToolProgressLabel(event.item);
+          const friendly = friendlyToolProgressMessage(event.item, "completed");
+          const progress = friendly || `Completed ${label}`;
+          if (progress !== lastProgressMessage) {
+            lastProgressMessage = progress;
+            emitEvent({
+              type: "tool_completed",
+              state: "working",
+              message: progress,
+            });
+          }
           return;
         }
         if (itemType === "agent_message") {
@@ -441,6 +551,23 @@ async function runCodexResume(prompt, options, onEvent) {
             message: "Codex produced a response draft.",
           });
           return;
+        }
+      }
+
+      if (event.type === "item.started" && event.item && typeof event.item === "object") {
+        const itemType = String(event.item.type || "");
+        if (toolLikeTypes.has(itemType)) {
+          const label = buildToolProgressLabel(event.item);
+          const friendly = friendlyToolProgressMessage(event.item, "running");
+          const progress = friendly || `Running ${label}`;
+          if (progress !== lastProgressMessage) {
+            lastProgressMessage = progress;
+            emitEvent({
+              type: "tool_started",
+              state: "working",
+              message: progress,
+            });
+          }
         }
       }
     };

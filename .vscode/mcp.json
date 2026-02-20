@@ -30,11 +30,8 @@
     "github_legacy_local": {
       "command": "node",
       "args": [
-        "${workspaceFolder}/mcp/node_modules/@modelcontextprotocol/server-github/dist/index.js"
-      ],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${env:GITHUB_PERSONAL_ACCESS_TOKEN}"
-      }
+        "${workspaceFolder}/scripts/mcp/run-github-mcp.mjs"
+      ]
     }
   },
   "inputs": [
