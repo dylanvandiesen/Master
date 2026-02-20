@@ -43,6 +43,14 @@ Folder: `mcp/`
 - Scripts in `mcp/package.json`.
 - Memory file path default: `mcp/data/memory.jsonl`.
 
+### Remote Relay Integration
+
+The remote panel relay (`scripts/remote/codex-interactive-relay.mjs`) can use the same memory dataset for long-term project context:
+
+- default memory file: `mcp/data/memory.jsonl`
+- relay writes/reads memory observations per session name
+- session registry for relay targets: `.agency/remote/codex-sessions.json`
+
 ## 3) Modern vs Legacy GitHub MCP Strategy
 
 Recommended order:
@@ -62,11 +70,14 @@ Why:
 
 - `GITHUB_PERSONAL_ACCESS_TOKEN`
 - `GITHUB_MCP_PAT`
+- `GITHUB_APP_ID` (optional fallback)
+- `GITHUB_APP_INSTALLATION_ID` (optional fallback)
+- `GITHUB_APP_PRIVATE_KEY_PATH` or `GITHUB_APP_PRIVATE_KEY` (optional fallback)
 - `MEMORY_FILE_PATH`
 
 `.gitignore` includes `.env`.
 
-Session setup:
+Session setup (PAT path):
 
 ```powershell
 $env:GITHUB_PERSONAL_ACCESS_TOKEN = "ghp_xxx"
@@ -79,6 +90,16 @@ If needed, persist for user profile:
 [Environment]::SetEnvironmentVariable("GITHUB_PERSONAL_ACCESS_TOKEN","ghp_xxx","User")
 [Environment]::SetEnvironmentVariable("GITHUB_MCP_PAT","ghp_xxx","User")
 ```
+
+GitHub App fallback path (no PAT required):
+
+```powershell
+$env:GITHUB_APP_ID = "<app-id>"
+$env:GITHUB_APP_INSTALLATION_ID = "<installation-id>"
+$env:GITHUB_APP_PRIVATE_KEY_PATH = "C:\secure\github-app-private-key.pem"
+```
+
+When PAT variables are missing, MCP launch and `prepare-mcp.ps1` mint a short-lived installation token in-memory. The token is not written to repo files.
 
 ## 5) MCP Command Reference
 
@@ -104,7 +125,7 @@ Validation helpers:
 Key points:
 
 - `github_modern_remote` uses prompt input `github_mcp_pat`.
-- `github_legacy_local` uses env variable `GITHUB_PERSONAL_ACCESS_TOKEN`.
+- `github_legacy_local` runs `scripts/mcp/run-github-mcp.mjs`, which resolves PAT first, then GitHub App credentials.
 - `memory_local` stores data in `${workspaceFolder}/mcp/data/memory.jsonl`.
 
 When editing this file:
@@ -118,8 +139,8 @@ Key points:
 
 - `filesystem_local` runs local filesystem MCP server.
 - `memory_local` runs memory server with explicit `MEMORY_FILE_PATH`.
-- `github_local` is legacy local GitHub MCP server.
-- `github_modern_docker` runs official modern GitHub MCP server via Docker.
+- `github_local` runs `scripts/mcp/run-github-mcp.mjs` with automatic credential resolution.
+- `github_modern_docker` runs `scripts/mcp/run-github-mcp.mjs --docker=true` with the same token resolver.
 
 ## 8) MCP Usage Cookbook (45 Commands)
 
@@ -193,12 +214,14 @@ Use `cmd /c npm ...`:
 cmd /c npm run list
 ```
 
-### `GITHUB_PERSONAL_ACCESS_TOKEN` auth errors
+### GitHub auth errors (PAT or App)
 
-Check env value in current shell:
+Check available credentials in current shell:
 
 ```powershell
 Get-ChildItem Env:GITHUB_PERSONAL_ACCESS_TOKEN
+Get-ChildItem Env:GITHUB_APP_ID
+Get-ChildItem Env:GITHUB_APP_INSTALLATION_ID
 ```
 
 Re-test GitHub API:

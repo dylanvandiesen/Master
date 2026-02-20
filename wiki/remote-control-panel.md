@@ -1,81 +1,132 @@
-﻿# Remote Control Panel
+# Remote Control Panel
 
-## 1) What This Is
+## 1) What It Is
 
-`remote-console/server.mjs` provides a secure web UI to control this local workspace remotely.
+The remote control panel is a secure web app for operating this repository from desktop or phone.
 
-Core capabilities:
-- authenticated command control (no arbitrary shell input)
-- start/stop dev watchers
-- build/scaffold/chat bootstrap actions
-- live logs over SSE
-- realtime chat over WebSocket (`/ws`)
-- mobile-first chat shell (dark theme, pinned composer, hamburger panel nav)
-- one-click external tunnel control (Cloudflared) from panel
-- preview proxy from `.agency/dev-servers/*.json`
-- remote note dropbox to `.agency/remote/inbox/`
-- Codex relay status in `.agency/remote/agent-status.json`
-- Codex response outbox in `.agency/remote/outbox/`
-- Codex session registry in `.agency/remote/codex-sessions.json`
+It combines four things in one interface:
 
-## 2) Commands
+- realtime Codex chat (inbox/outbox relay)
+- dev preview controls
+- Codex session + prep controls
+- remote/tunnel + security controls
 
-From `C:\Users\SKIKK\Documents\websites\Playground`:
+Primary implementation files:
 
-```powershell
-cmd /c npm run remote:panel
-cmd /c npm run remote:panel:lan
-cmd /c npm run remote:panel:mobile
-cmd /c npm run remote:panel -- --port=4380
-cmd /c npm run remote:panel:lan -- --port=4380
-cmd /c npm run remote:agent:status -- --state=working --message="Investigating panel issue"
-cmd /c npm run remote:agent:reply -- --message="Implemented fix. Restart panel."
-cmd /c npm run remote:relay:codex:watch
-cmd /c npm run remote:relay:codex:once -- --dry-run=true
-```
+- `remote-console/server.mjs`
+- `remote-console/public/index.html`
+- `remote-console/public/app.js`
+- `remote-console/public/styles.css`
+- `scripts/remote/codex-interactive-relay.mjs`
+- `scripts/remote/start-panel-stack.mjs`
 
-Interactive relay notes:
-- Starts as an additive module; does not replace panel behavior.
-- Default behavior is safe: starts from latest inbox/outbox markers to avoid replaying old backlog.
-- Default Codex target is registry alias `codex-chat` from `.agency/remote/codex-sessions.json`.
-- Current explicit session id for that thread: `019c7841-51ba-7470-877f-7d429a491392`.
-- For project-scoped memory/docs, run relay with `--project=<slug>`.
-- To process backlog intentionally: add `--start-from-latest=false`.
-- To bind to a different Codex session: add `--codex-use-last=false --codex-session-id=<thread-id-or-name>`.
-- Persistent session registry file: `.agency/remote/codex-sessions.json`.
+## 2) Core Architecture
 
-## 3) Security Model
+### Server
+
+`remote-console/server.mjs` is a Node HTTP server that provides:
+
+- authenticated JSON API
+- CSRF-protected mutations
+- SSE logs (`/api/events`)
+- WebSocket chat + activity stream (`/ws`)
+- preview reverse proxy (`/preview/<manifest-id>/...`)
+
+### UI
+
+`remote-console/public/*` is a single-page control UI with:
+
+- chat composer with `Live`, `Queue`, `Stop` prompt modes
+- quick numeric reply chips for Codex "1/2/3" prompts
+- live activity feed (`thinking`, `working`, tool progress)
+- collapsible utility panels (preview/activity/sessions/remote/output)
+
+### Relay
+
+`scripts/remote/codex-interactive-relay.mjs` watches inbox notes, resumes Codex, and writes:
+
+- assistant replies to outbox
+- status to `.agency/remote/agent-status.json`
+- activity events to `.agency/remote/activity.jsonl`
+
+### Dev Preview
+
+Panel reads manifests from `.agency/dev-servers/*.json` and safely proxies only local dev hosts.
+
+### Tunnel
+
+Cloudflared tunnel management is integrated in panel:
+
+- `Quick` mode (ephemeral URL)
+- `Token` mode (account token)
+- `Named` mode (named tunnel)
+
+## 3) Storage and Runtime Files
+
+Chat and relay state:
+
+- `.agency/remote/inbox/*.md` (user prompts)
+- `.agency/remote/outbox/*.md` (assistant replies)
+- `.agency/remote/agent-status.json`
+- `.agency/remote/activity.jsonl`
+- `.agency/remote/codex-sessions.json`
+
+Panel runtime/auth state:
+
+- `.agency/remote/panel-runtime.json` (security/tunnel mode + host hint)
+- `.agency/remote/panel-sessions.json` (persisted auth sessions when enabled)
+
+Dev manifests:
+
+- `.agency/dev-servers/*.json`
+
+## 4) End-to-End Message Flow
+
+1. User sends a message in chat composer.
+2. UI sends message through WebSocket (`chat:send`) or fallback HTTP (`POST /api/note`).
+3. Server stores prompt in `.agency/remote/inbox/<timestamp>.md`.
+4. Relay watcher detects new inbox note.
+5. Relay runs `codex exec resume ... --json`.
+6. Relay writes response to `.agency/remote/outbox/<timestamp>.md`.
+7. Server broadcasts updated chat snapshot over WebSocket.
+8. UI updates chat stream, token estimate, activity feed, and runtime strip.
+
+## 5) Security Model
 
 Implemented controls:
-- Password login (`REMOTE_PANEL_PASSWORD`).
-- Signed HttpOnly session cookie (`REMOTE_PANEL_SESSION_SECRET`).
-- CSRF token required for every non-GET API call.
-- Login rate limiting per IP.
-- Optional session-IP binding (`REMOTE_PANEL_BIND_SESSION_IP=true`).
-- Security mode:
-  - `REMOTE_PANEL_SECURITY_MODE=off` (HTTP allowed local/LAN)
-  - `REMOTE_PANEL_SECURITY_MODE=on` (HTTPS required)
-  - `REMOTE_PANEL_SECURITY_MODE=auto` (HTTP for private/local IPs, HTTPS for public IPs)
-- Legacy toggle still supported: `REMOTE_PANEL_REQUIRE_HTTPS=true` maps to security mode `on`.
-- Optional source allowlist (`REMOTE_PANEL_ALLOWLIST`).
-- Persistent panel auth sessions by default (`REMOTE_PANEL_PERSIST_SESSIONS=true`).
-- Preview proxy restricted to manifest IDs in `.agency/dev-servers/`.
-- Preview upstream restricted to local hosts only (`127.0.0.1`, `localhost`, `::1`, `0.0.0.0`).
-- No endpoint accepts raw shell commands.
 
-Command actions are fixed allowlist routes:
-- `POST /api/command/scaffold`
-- `POST /api/command/build`
-- `POST /api/command/build-all`
-- `POST /api/dev/start`
-- `POST /api/dev/stop`
-- `POST /api/chat/quick`
-- `POST /api/chat/briefing`
-- `POST /api/note`
+- password login (`REMOTE_PANEL_PASSWORD`)
+- signed HttpOnly session cookie (`REMOTE_PANEL_SESSION_SECRET`)
+- CSRF token required for all non-GET API routes
+- login rate limiting by source IP
+- optional session-IP binding (`REMOTE_PANEL_BIND_SESSION_IP=true`)
+- optional IP allowlist (`REMOTE_PANEL_ALLOWLIST`)
+- strict preview proxy host restrictions (loopback/local only)
+- command execution via allowlisted actions only (no raw shell endpoint)
 
-## 4) Environment Variables
+Security mode values:
 
-Add to `.env`:
+- `off`: HTTP allowed
+- `on`: HTTPS required for remote clients
+- `auto`: private/local IPs allowed over HTTP, public IPs require HTTPS
+
+Legacy compatibility:
+
+- `REMOTE_PANEL_REQUIRE_HTTPS=true` maps to security mode `on`
+
+## 6) Remote Settings and Precedence
+
+Resolution order for runtime-configurable network settings:
+
+1. CLI args (`--security=...`, `--tunnel-mode=...`, etc.)
+2. runtime config file (`REMOTE_PANEL_RUNTIME_CONFIG`)
+3. environment variables (`.env` / shell)
+
+Default runtime config path:
+
+- `.agency/remote/panel-runtime.json`
+
+### Key Environment Variables
 
 ```dotenv
 REMOTE_PANEL_PASSWORD=replace_with_long_unique_password
@@ -85,211 +136,221 @@ REMOTE_PANEL_PORT=8787
 REMOTE_PANEL_SECURITY_MODE=off
 REMOTE_PANEL_PUBLIC_HOST=
 REMOTE_PANEL_RUNTIME_CONFIG=.agency/remote/panel-runtime.json
-REMOTE_PANEL_CLOUDFLARED_BIN=
 REMOTE_PANEL_ALLOWLIST=
 REMOTE_PANEL_BIND_SESSION_IP=true
 REMOTE_PANEL_PERSIST_SESSIONS=true
 REMOTE_PANEL_SESSION_STORE=.agency/remote/panel-sessions.json
-REMOTE_PREVIEW_REFRESH_MS=3000
+REMOTE_PANEL_TUNNEL_MODE=quick
+REMOTE_PANEL_CLOUDFLARED_TUNNEL_TOKEN=
+REMOTE_PANEL_CLOUDFLARED_TUNNEL_NAME=
+REMOTE_PANEL_CLOUDFLARED_CONFIG=
+REMOTE_PANEL_CLOUDFLARED_BIN=
 ```
 
-Notes:
-- If password/secret are missing, the server generates one-time values at startup.
-- For outside-network access, set `REMOTE_PANEL_SECURITY_MODE=on` and run behind a TLS tunnel/proxy.
-- For phone use, set `REMOTE_PANEL_PUBLIC_HOST=<lan-ip-or-host[:port]>` so the panel shows a concrete mobile URL.
-- Runtime security changes from the panel are persisted in `REMOTE_PANEL_RUNTIME_CONFIG` (default `.agency/remote/panel-runtime.json`).
-- Tunnel actions from the panel use `cloudflared` on `PATH` and target `http://127.0.0.1:<panel-port>` by default.
-- On Windows, panel auto-detects `C:\Program Files\cloudflared\cloudflared.exe` and `C:\Program Files (x86)\cloudflared\cloudflared.exe`; override with `REMOTE_PANEL_CLOUDFLARED_BIN`.
+`REMOTE_PANEL_PUBLIC_HOST` is the host hint shown as mobile/public URL when tunnel auto-discovery is unavailable.
 
-## 5) Local-Only Start (Recommended Default)
+If `REMOTE_PANEL_PASSWORD` or `REMOTE_PANEL_SESSION_SECRET` is missing, the server generates one-time values at startup and logs them.
+
+## 7) Commands
+
+From repo root:
 
 ```powershell
-$env:REMOTE_PANEL_HOST='127.0.0.1'
-$env:REMOTE_PANEL_PORT='4380'
-$env:REMOTE_PANEL_PASSWORD='set-a-strong-password'
-$env:REMOTE_PANEL_SESSION_SECRET='set-a-long-random-secret'
 cmd /c npm run remote:panel
+cmd /c npm run remote:panel:local
+cmd /c npm run remote:panel:remote
+cmd /c npm run remote:stack
+cmd /c npm run remote:stack:remote
+cmd /c npm run remote:stack -- --project=csscroll
+cmd /c npm run remote:stack:remote -- --project=csscroll --panel-port=8787
+cmd /c npm run remote:relay:codex:watch
+cmd /c npm run remote:relay:codex:once -- --dry-run=true
+cmd /c npm run remote:agent:status -- --state=working --message="Investigating issue"
+cmd /c npm run remote:agent:reply -- --message="Implemented fix"
 ```
 
-Open:
-- `http://127.0.0.1:4380`
+Stack presets:
 
-## 6) LAN Access (Phone On Same Wi-Fi)
+- `remote:stack`: panel (local profile) + dev + relay watcher
+- `remote:stack:remote`: panel (LAN/adaptive profile) + dev + relay watcher
+- optional: `--no-dev=true` or `--no-relay=true`
 
-```powershell
-$env:REMOTE_PANEL_HOST='0.0.0.0'
-$env:REMOTE_PANEL_PORT='4380'
-$env:REMOTE_PANEL_PASSWORD='set-a-strong-password'
-$env:REMOTE_PANEL_SESSION_SECRET='set-a-long-random-secret'
-$env:REMOTE_PANEL_ALLOWLIST='192.168.1.*,10.0.0.*'
-cmd /c npm run remote:panel:lan
-```
+## 8) Panel Controls (What They Do)
 
-Mobile-friendly adaptive mode:
+### Chat
 
-```powershell
-$env:REMOTE_PANEL_HOST='0.0.0.0'
-$env:REMOTE_PANEL_PORT='8787'
-$env:REMOTE_PANEL_SECURITY_MODE='auto'
-$env:REMOTE_PANEL_PUBLIC_HOST='172.23.176.1:8787'
-cmd /c npm run remote:panel:mobile
-```
+- `Send`: send prompt now (unless in queue/stop mode)
+- `Sync`: manual chat refresh
+- `Live`: send prompts immediately
+- `Queue`: store prompts, flush in order when switched back to `Live`
+- `Stop`: pause sending
 
-Then browse to:
-- `http://<your-computer-lan-ip>:4380`
-- On phones, use the top-right hamburger button to open panel navigation.
-- Chat composer stays pinned at the bottom so send controls remain visible.
+Composer lock behavior:
 
-Find LAN IP:
+- while send is in progress, textarea/send/sync are disabled to prevent duplicate submit
 
-```powershell
-ipconfig | Select-String 'IPv4 Address'
-```
+Quick replies:
 
-If you see multiple IPs, prefer your active Wi-Fi/Ethernet adapter address (often `192.168.x.x` or `10.x.x.x`) instead of virtual adapters (for example WSL/Hyper-V `172.x.x.x` addresses).
+- numeric chips appear for explicit assistant choice prompts (for example `1. 2. 3.`)
+- selecting a chip sends that value directly
 
-## 7) Outside Network Access (Preferred: Tunnel)
+### Sessions & Prep
 
-Do not open router port forwarding directly to the panel.
-Use an HTTPS tunnel with identity controls.
+- manage registered Codex session aliases
+- set defaults by project/global
+- run quick/full prep from panel
+- start/stop relay watcher
 
-Minimal secure pattern:
-1. Run panel bound to localhost.
-2. Enable HTTPS requirement.
-3. Publish through Cloudflared/Ngrok/Tailscale Funnel.
-4. Or use panel buttons in `Remote Access` (`Start Tunnel`, `Stop Tunnel`, `Tunnel Status`).
+### Remote Access
 
-Example:
+- refresh computed connection guidance
+- copy mobile URL
+- select tunnel mode (`Quick` / `Token` / `Named`)
+- start/stop tunnel
+- set security mode (`Enable HTTPS` or `Use Adaptive`)
 
-```powershell
-$env:REMOTE_PANEL_HOST='127.0.0.1'
-$env:REMOTE_PANEL_PORT='4380'
-$env:REMOTE_PANEL_SECURITY_MODE='on'
-cmd /c npm run remote:panel
-```
+### Preview
 
-In another terminal, tunnel localhost 4380 via your provider.
+- choose manifest
+- open preview in-panel/fullscreen/new tab
+- auto-refresh interval control
 
-## 8) Live Preview Path
-
-The panel reads `.agency/dev-servers/*.json` and exposes each manifest through:
-- `/preview/<manifest-id>/...`
-
-That means phone/tunnel clients can load previews from the panel host even when manifests contain `127.0.0.1` URLs.
-
-Recommended flow:
-1. Start `dev` or `dev:all`.
-2. Open panel.
-3. Select manifest in the preview section.
-4. Keep auto-refresh enabled for quick visual updates.
-
-## 9) API Reference
+## 9) API and WS Contract
 
 Auth/session:
+
 - `GET /api/health`
 - `POST /api/auth/login`
 - `POST /api/auth/logout`
 - `GET /api/session`
 - `GET /api/connection/help`
 - `POST /api/security/mode`
+
+Chat/relay:
+
+- `GET /api/chat/history`
+- `POST /api/note`
+- `GET /api/agent/status`
+- `GET /api/agent/activity`
+- `GET /api/relay/status`
+- `POST /api/relay/start`
+- `POST /api/relay/stop`
+
+Tunnel:
+
 - `GET /api/tunnel/status`
 - `POST /api/tunnel/start`
 - `POST /api/tunnel/stop`
 
-Workspace/control:
+Workspace:
+
 - `GET /api/projects`
 - `GET /api/manifests`
 - `GET /api/logs`
-- `GET /api/codex/sessions`
-- `GET /api/inbox/latest`
-- `GET /api/chat/history`
-- `GET /api/agent/status`
-- `GET /api/agent/reply/latest`
-- `GET /api/agent/poller`
-- `GET /api/relay/status`
-- `GET /api/events`
-- `WS /ws`
+- `POST /api/dev/start`
+- `POST /api/dev/stop`
 - `POST /api/command/scaffold`
 - `POST /api/command/build`
 - `POST /api/command/build-all`
-- `POST /api/dev/start`
-- `POST /api/dev/stop`
 - `POST /api/chat/quick`
 - `POST /api/chat/briefing`
-- `POST /api/relay/start`
-- `POST /api/relay/stop`
+- `GET /api/codex/sessions`
 - `POST /api/codex/sessions/create`
 - `POST /api/codex/sessions/upsert`
 - `POST /api/codex/sessions/default`
 - `POST /api/codex/sessions/retire`
 - `POST /api/codex/sessions/prep`
-- `POST /api/note`
+- `GET /api/inbox/latest`
+- `GET /api/agent/reply/latest`
+- `GET /api/agent/poller`
 - `POST /api/agent/status`
 - `POST /api/agent/reply`
+- `GET /api/events` (SSE logs/state)
 
-WebSocket message types:
+WebSocket:
+
 - `chat:init`
 - `chat:update`
 - `chat:ack`
 - `chat:error`
 - `activity:event`
 
-## 10) Quick Verification Commands
+## 10) Recommended Profiles
 
-Health:
-
-```powershell
-Invoke-RestMethod http://127.0.0.1:4380/api/health
-```
-
-Login + session:
+### Local only (default)
 
 ```powershell
-$login = Invoke-RestMethod -Uri 'http://127.0.0.1:4380/api/auth/login' -Method Post -ContentType 'application/json' -Body '{"password":"<your-password>"}' -SessionVariable ws
-$csrf = $login.csrfToken
-Invoke-RestMethod -Uri 'http://127.0.0.1:4380/api/session' -WebSession $ws
+cmd /c npm run remote:panel
 ```
 
-Start single-project dev via API:
+Open:
+
+- `http://127.0.0.1:8787`
+
+### Phone on same network
 
 ```powershell
-Invoke-RestMethod -Uri 'http://127.0.0.1:4380/api/dev/start' -Method Post -ContentType 'application/json' -WebSession $ws -Headers @{ 'x-csrf-token' = $csrf } -Body '{"mode":"single","project":"csscroll","port":"5173"}'
+cmd /c npm run remote:stack:remote -- --project=csscroll
 ```
+
+Then use panel-provided Mobile URL.
+
+### Outside home network (preferred)
+
+1. Run panel local or remote profile.
+2. Set security mode to `on` (or use tunnel start which enforces it).
+3. Start tunnel from Remote Access panel.
+4. Use tunnel URL + identity controls.
+
+Do not expose raw router port forwarding directly to panel.
 
 ## 11) Troubleshooting
 
-Panel cannot run commands in restricted environments:
-- Error like `spawn EPERM` means process-spawn is blocked by host policy/sandbox.
-- Run panel in your normal local shell session (outside restricted runner).
+### `Missing --message for reply command`
 
-Port conflicts:
+`remote:agent:reply` needs a message:
 
 ```powershell
-netstat -ano | Select-String ':4380|:5173'
+cmd /c npm run remote:agent:reply -- --message="Your reply text"
 ```
 
-No preview manifests:
-- Start `cmd /c npm run dev -- --project=csscroll` or `cmd /c npm run dev:all` first.
-- Then refresh panel manifest list.
+### `chat:new:quick` project arg fails
 
-CSRF failures:
-- Ensure non-GET calls include `x-csrf-token` from `GET /api/session` or login response.
+`chat:new:*` now routes through `scripts/chat/run-prepare-chat-instance.mjs`, which accepts:
 
-Mobile UI:
-- If panel navigation is open, tap outside the menu or press `Esc` (desktop) to close it.
-- Utility dock opens as a slide-over panel on narrow viewports and can be hidden with `HIDE`.
+```powershell
+cmd /c npm run chat:new:quick -- --project=csscroll
+```
 
-## 12) Operational Notes
+### Phone says `connection refused`
 
-- Remote notes are stored at `.agency/remote/inbox/`.
-- Codex responses can be published to `.agency/remote/outbox/`.
-- Codex status is tracked in `.agency/remote/agent-status.json`.
-- Optional interactive relay module: `scripts/remote/codex-interactive-relay.mjs`.
-- Relay memory persistence uses `mcp/data/memory.jsonl` with entity `remote-chat-project:<project>` (or `remote-chat-session:<session-name>` when no project is set).
-- Relay can auto-append project docs at `.agency/remote/project-memory/<project>.md` when `--project` is provided.
-- Relay watcher can be started/stopped directly from panel UI (Sessions & Prep section) without terminal commands.
-- Connection panel includes one-click security mode toggles (Enable HTTPS / Use Adaptive) via `POST /api/security/mode`.
-- Connection panel includes one-click tunnel controls (Start/Stop/Status/Open) backed by `/api/tunnel/*`.
-- Starting a tunnel from panel automatically switches runtime security mode to `on` and updates public host hint to the tunnel URL.
-- Dev process lifecycle is managed by panel start/stop actions.
-- Panel auth sessions persist across restarts in `.agency/remote/panel-sessions.json` by default.
+- ensure panel host is `0.0.0.0` (`remote:panel:remote` or `remote:stack:remote`)
+- verify firewall allows chosen port
+- verify correct LAN IP (not stale virtual adapter IP)
+- if outside LAN, use tunnel URL
+
+### No tunnel URL shown for account tunnel
+
+Set `REMOTE_PANEL_PUBLIC_HOST` to your real tunnel hostname so panel can show a clickable URL.
+
+### Icons/fonts not rendering
+
+Font assets are local under:
+
+- `remote-console/public/vendor/fontello/`
+
+If browser cache is stale, hard refresh.
+
+## 12) Maintenance and Cleanup
+
+Suggested periodic cleanup:
+
+- rotate `REMOTE_PANEL_SESSION_SECRET`
+- rotate Cloudflare token/credentials
+- prune stale inbox/outbox notes if they grow too large
+- review `.agency/remote/activity.jsonl` size
+- validate `REMOTE_PANEL_ALLOWLIST` after network changes
+
+***
+
+If you change panel behavior, update this file first so operational docs stay source-of-truth aligned with code.

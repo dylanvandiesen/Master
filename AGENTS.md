@@ -54,7 +54,10 @@ This repository uses a root-controlled agency build system for all playground pr
 
 ## Remote Control Panel Commands
 - `npm run remote:panel`: start secure remote control web panel on localhost.
-- `npm run remote:panel:lan`: start panel in LAN mode (`--host=0.0.0.0`).
+- `npm run remote:panel:remote`: start panel in LAN/adaptive mode (`--host=0.0.0.0`, `--security=auto`).
+- `npm run remote:panel:lan`: alias for LAN/adaptive panel mode.
+- `npm run remote:stack`: start panel (local profile) + dev + relay watcher.
+- `npm run remote:stack:remote`: start panel (remote profile) + dev + relay watcher.
 - `npm run remote:panel -- --port=<port>`: override panel port at runtime.
 - Canonical runbook: `wiki/remote-control-panel.md`.
 

@@ -123,7 +123,12 @@ Project overrides live in `projects/<name>/project.config.json`.
 - `cmd /c npm run skills:list`
 - `cmd /c npm run skills:validate`
 - `cmd /c npm run remote:panel`
-- `cmd /c npm run remote:panel:lan`
+- `cmd /c npm run remote:panel:local`
+- `cmd /c npm run remote:panel:remote`
+- `cmd /c npm run remote:stack`
+- `cmd /c npm run remote:stack:remote`
+- `cmd /c npm run remote:relay:codex:watch`
+- `cmd /c npm run remote:relay:codex:once`
 
 ### Gulp Task Surface
 

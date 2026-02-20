@@ -1,42 +1,25 @@
-# Playground Wiki
+# Wiki Index
 
-This wiki documents the full agency setup, dev/build automation, and MCP wiring for this repository.
+## Start Here
 
-## Documents
-- `wiki/agency-setup.md`: architecture, build/dev system, config model, command reference, and usage cookbook.
-- `wiki/mcp-setup.md`: MCP server setup, modern + legacy GitHub strategy, `.vscode/mcp.json`, `config.toml`, and command-heavy examples.
-- `wiki/chat-session-bootstrap.md`: one-command new-chat preparation flow and generated artifacts.
-- `wiki/remote-control-panel.md`: secure remote panel architecture and operations runbook (auth, CSRF, command allowlist, preview proxy, HTTPS tunnel access, troubleshooting).
-- `wiki/skills-catalog.md`: local skill pack overview and skill command surface.
-- `TASKLIST.md`: shared Active/Backlog/Archived task board.
+- `wiki/agency-setup.md`: root build/dev architecture, project contracts, command surface
+- `wiki/remote-control-panel.md`: complete remote panel architecture, security, runtime settings, tunnel flow
+- `wiki/mcp-setup.md`: MCP server wiring, credential strategy, memory integration
+- `wiki/chat-session-bootstrap.md`: session prep workflow and chat bootstrap commands
+- `wiki/skills-catalog.md`: available repository skill packs
 
-## Quick Start
-From `C:\Users\SKIKK\Documents\websites\Playground`:
+## Recommended Reading Order
 
-```powershell
-cmd /c npm run scaffold
-cmd /c npm run list:projects
-cmd /c npm run dev -- --project csscroll
-```
+1. `wiki/agency-setup.md`
+2. `wiki/mcp-setup.md`
+3. `wiki/chat-session-bootstrap.md`
+4. `wiki/remote-control-panel.md`
 
-For MCP:
+## Operational Shortcuts
 
 ```powershell
-Set-Location .\mcp
-cmd /c npm run list
-```
-
-For new chat bootstrap:
-
-```powershell
-cmd /c npm run chat:new:quick
-cmd /c npm run chat:briefing
-```
-
-For remote control panel:
-
-```powershell
-$env:REMOTE_PANEL_PORT='4380'
-$env:REMOTE_PANEL_HOST='127.0.0.1'
-cmd /c npm run remote:panel
+cmd /c npm run remote:stack
+cmd /c npm run remote:stack:remote -- --project=csscroll
+cmd /c npm run chat:new:quick -- --project=csscroll
+cmd /c npm run mcp:prep
 ```

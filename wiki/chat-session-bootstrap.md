@@ -11,7 +11,13 @@ Use this workflow to fully prepare a fresh chat instance for agency + MCP work.
 - Fast prep (skip build):
   - `cmd /c npm run chat:new:quick`
 
+`chat:new:*` commands now run through `scripts/chat/run-prepare-chat-instance.mjs`, which normalizes forwarded args so this works reliably:
+
+- `cmd /c npm run chat:new:quick -- --project=csscroll`
+
 ## What `chat:new` Does
+
+`scripts/chat/run-prepare-chat-instance.mjs` normalizes CLI args and dispatches into:
 
 `scripts/chat/prepare-chat-instance.ps1` performs:
 
@@ -53,9 +59,9 @@ Status output:
 ## Usage Examples
 
 1. `cmd /c npm run chat:new`
-2. `cmd /c npm run chat:new -- --project csscroll`
+2. `cmd /c npm run chat:new -- --project=csscroll`
 3. `cmd /c npm run chat:new:full`
-4. `cmd /c npm run chat:new:quick`
+4. `cmd /c npm run chat:new:quick -- --project=csscroll`
 5. `cmd /c npm run chat:briefing`
 6. `cmd /c npm run mcp:prep`
 7. `powershell -ExecutionPolicy Bypass -File scripts/chat/prepare-chat-instance.ps1 -Project csscroll -PrepareMcp`
