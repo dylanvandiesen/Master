@@ -6,6 +6,7 @@ Shared, persistent task board for this repository.
 
 
 ## Backlog
+- [ ] Add an MCP install workflow plan (commands, prerequisites, security checks) for panel/session tooling; document only, do not auto-execute installers.
 - [ ] Add Pester tests for `scripts/chat/*.ps1` bootstrap tooling.
 - [ ] Add `-Json` mode to `scripts/chat/new-chat-briefing.ps1` for machine-readable startup context.
 - [ ] Add stale-manifest cleanup policy for `.agency/dev-servers/*.json`.

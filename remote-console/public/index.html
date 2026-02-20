@@ -25,7 +25,7 @@
           <nav id="panelNav" class="icon-nav panel" aria-label="Panel Navigation">
             <div class="icon-nav-head">
               <strong>Panels</strong>
-              <button id="mobileNavCloseBtn" class="icon-nav-close icon-circle" type="button" aria-label="Close panel menu">
+              <button id="mobileNavCloseBtn" class="icon-nav-close circle-btn" type="button" aria-label="Close panel menu">
                 <i class="icon-cancel" aria-hidden="true"></i>
               </button>
             </div>
@@ -73,7 +73,7 @@
                 <div class="chat-head-start">
                   <button
                     id="mobileMenuBtn"
-                    class="menu-btn icon-circle"
+                    class="menu-btn circle-btn"
                     type="button"
                     aria-label="Open panel menu"
                     aria-controls="panelNav"
@@ -81,7 +81,7 @@
                   >
                     <i class="icon-menu" aria-hidden="true"></i>
                   </button>
-                  <span class="chat-head-label">Codex Remote Chat</span>
+                  <span class="chat-head-label">RoboAI Commando</span>
                 </div>
                 <div class="chat-meta">
                   <button id="chatPreviewBtn" type="button" class="chip-btn">
@@ -123,19 +123,18 @@
                     <i class="icon-stop" aria-hidden="true"></i>
                     <span>Stop</span>
                   </button>
+                  <button id="chatRefreshBtn" type="button" class="mode-chip mode-chip-sync" aria-label="Sync chat">
+                    <i class="icon-arrows-cw" aria-hidden="true"></i>
+                    <span>Sync</span>
+                  </button>
                   <span id="promptQueueCount" class="chip muted">Queue 0</span>
                 </div>
                 <div id="chatQuickReplies" class="chat-quick-replies" hidden aria-label="Quick replies"></div>
                 <div class="composer-shell">
                   <textarea id="noteMessage" rows="3" placeholder="Type a message for Codex..."></textarea>
-                  <div class="composer-actions">
-                    <button id="chatRefreshBtn" type="button" class="icon-circle composer-btn" aria-label="Sync chat">
-                      <i class="icon-arrows-cw" aria-hidden="true"></i>
-                    </button>
-                    <button id="sendNoteBtn" type="button" class="icon-circle composer-btn accent" aria-label="Send message">
-                      <i class="icon-right-circled2" aria-hidden="true"></i>
-                    </button>
-                  </div>
+                  <button id="sendNoteBtn" type="button" class="composer-send-btn" aria-label="Send message">
+                    <i class="icon-right-circled2" aria-hidden="true"></i>
+                  </button>
                 </div>
                 <p id="noteStatus" class="muted"></p>
               </div>
@@ -143,7 +142,7 @@
           </section>
 
           <aside id="utilityDock" class="utility-dock">
-            <button id="utilityDockCloseBtn" class="utility-dock-close icon-circle" type="button" aria-label="Close utility panel" hidden>
+            <button id="utilityDockCloseBtn" class="utility-dock-close circle-btn" type="button" aria-label="Close utility panel" hidden>
               <i class="icon-cancel" aria-hidden="true"></i>
             </button>
             <article class="panel preview-panel utility-card" data-panel-id="preview">
