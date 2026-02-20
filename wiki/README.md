@@ -15,6 +15,10 @@
 3. `wiki/chat-session-bootstrap.md`
 4. `wiki/remote-control-panel.md`
 
+## Workspace Note
+
+- This workspace supports concurrent operator instances. Follow `AGENTS.md` and `wiki/remote-control-panel.md` concurrency guardrails when multiple Codex sessions are active.
+
 ## Operational Shortcuts
 
 ```powershell

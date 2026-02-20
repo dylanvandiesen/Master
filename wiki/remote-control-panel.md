@@ -351,6 +351,21 @@ Suggested periodic cleanup:
 - review `.agency/remote/activity.jsonl` size
 - validate `REMOTE_PANEL_ALLOWLIST` after network changes
 
+## 13) Concurrent Operator Mode
+
+This repository can be operated by multiple Codex instances in parallel.
+
+Operational guardrails:
+
+- Parallel edits are expected; do not use destructive git commands to "clean" unknown changes.
+- Use scoped file ownership per task and keep commits small.
+- Avoid duplicate process collisions:
+  - run only one relay watcher per `session-name` unless you intentionally shard sessions
+  - use unique panel ports when starting multiple panel processes
+  - avoid starting two dev watchers on the same explicit port
+- If both operators need the same file, coordinate first in `TASKLIST.md` (`Active`) before broad refactors.
+- For remote panel testing in parallel, prefer one shared panel instance and separate feature branches for code changes.
+
 ***
 
 If you change panel behavior, update this file first so operational docs stay source-of-truth aligned with code.

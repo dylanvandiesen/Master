@@ -9,6 +9,14 @@ This repository uses a root-controlled agency build system for all playground pr
 - Use `worker` agents for scoped implementation tasks.
 - Assign each worker explicit file ownership before execution.
 
+## Concurrent Instance Policy
+- Another user-controlled Codex instance may be working in this workspace at the same time. Treat concurrent changes as expected.
+- Never revert unknown changes automatically. Re-read files and continue with minimal, scoped edits.
+- Prefer file ownership boundaries per task to reduce overlap.
+- Before editing, check `git status --short` and verify target files.
+- Make small, atomic commits so parallel work can merge cleanly.
+- If both instances must touch the same file, coordinate through `TASKLIST.md` (`Active`) before large edits.
+
 ## Shared Tasklist
 - Shared board lives at `TASKLIST.md`.
 - Keep all task movement inside these sections only:
