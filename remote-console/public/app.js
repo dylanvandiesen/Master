@@ -48,6 +48,8 @@ const els = {
   mobileMenuBtn: document.getElementById("mobileMenuBtn"),
   mobileNavBackdrop: document.getElementById("mobileNavBackdrop"),
   mobileNavCloseBtn: document.getElementById("mobileNavCloseBtn"),
+  utilityDockBackdrop: document.getElementById("utilityDockBackdrop"),
+  utilityDockCloseBtn: document.getElementById("utilityDockCloseBtn"),
 
   chatPreviewBtn: document.getElementById("chatPreviewBtn"),
   chatConnection: document.getElementById("chatConnection"),
@@ -119,6 +121,8 @@ const TOOLTIP_TEXTS = {
   logoutBtn: "Sign out from this remote panel session.",
   mobileMenuBtn: "Open panel navigation on mobile.",
   mobileNavCloseBtn: "Close panel navigation.",
+  utilityDockBackdrop: "Tap to close the currently open utility panel.",
+  utilityDockCloseBtn: "Close the currently open utility panel.",
   navPreviewBtn: "Open preview tools.",
   navActivityBtn: "Open Codex activity feed.",
   navSessionsBtn: "Open sessions and preparation tools.",
@@ -272,6 +276,17 @@ function setMobileNavOpen(open) {
   }
 }
 
+function updateUtilityOverlayState() {
+  const open = isMobileViewport() && !state.utilityCollapsed;
+  document.body.classList.toggle("utility-dock-open", open);
+  if (els.utilityDockBackdrop) {
+    els.utilityDockBackdrop.hidden = !open;
+  }
+  if (els.utilityDockCloseBtn) {
+    els.utilityDockCloseBtn.hidden = !open;
+  }
+}
+
 function setUtilityCollapsed(collapsed) {
   state.utilityCollapsed = Boolean(collapsed);
   els.utilityDock.classList.toggle("collapsed", state.utilityCollapsed);
@@ -280,6 +295,7 @@ function setUtilityCollapsed(collapsed) {
     toggleLabel.textContent = state.utilityCollapsed ? "Show" : "Hide";
   }
   els.navTogglePanelsBtn.title = state.utilityCollapsed ? "Show utility panels" : "Hide utility panels";
+  updateUtilityOverlayState();
 }
 
 function setActiveUtilityPanel(panelId, options = {}) {
@@ -314,6 +330,7 @@ function applyResponsiveUtilityDefaults(force = false) {
   if (!isMobileViewport() && state.mobileNavOpen) {
     setMobileNavOpen(false);
   }
+  updateUtilityOverlayState();
 }
 
 function setCommandResult(text, isError = false) {
@@ -1307,6 +1324,7 @@ function setControlsDisabled(disabled) {
     els.navOutputBtn,
     els.navTogglePanelsBtn,
     els.mobileNavCloseBtn,
+    els.utilityDockCloseBtn,
     els.chatPreviewBtn,
     els.sendNoteBtn,
     els.chatRefreshBtn,
@@ -1485,6 +1503,12 @@ function bindEvents() {
   els.mobileNavBackdrop.addEventListener("click", () => {
     setMobileNavOpen(false);
   });
+  els.utilityDockCloseBtn.addEventListener("click", () => {
+    setUtilityCollapsed(true);
+  });
+  els.utilityDockBackdrop.addEventListener("click", () => {
+    setUtilityCollapsed(true);
+  });
   els.chatPreviewBtn.addEventListener("click", () => {
     setActiveUtilityPanel("preview");
   });
@@ -1652,8 +1676,15 @@ function bindEvents() {
     applyResponsiveUtilityDefaults();
   });
   window.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && state.mobileNavOpen) {
+    if (event.key !== "Escape") {
+      return;
+    }
+    if (state.mobileNavOpen) {
       setMobileNavOpen(false);
+      return;
+    }
+    if (isMobileViewport() && !state.utilityCollapsed) {
+      setUtilityCollapsed(true);
     }
   });
 }
