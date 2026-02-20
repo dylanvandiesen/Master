@@ -1,5 +1,5 @@
 {
-  "name": "Houdini worklet lab",
+  "name": "RoboTheme",
   "version": "1.0.0",
   "description": "Houdini playground",
   "private": true,
@@ -26,11 +26,17 @@
     "skills:list": "powershell -ExecutionPolicy Bypass -Command \"Get-ChildItem skills -Directory | Select-Object -ExpandProperty Name\"",
     "skills:validate": "powershell -ExecutionPolicy Bypass -File scripts/chat/validate-skills.ps1",
     "remote:panel": "node remote-console/server.mjs",
-    "remote:panel:lan": "node remote-console/server.mjs --host=0.0.0.0"
+    "remote:panel:lan": "node remote-console/server.mjs --host=0.0.0.0 --security=auto",
+    "remote:panel:mobile": "node remote-console/server.mjs --host=0.0.0.0 --security=auto",
+    "remote:agent:status": "node scripts/remote/publish-agent-update.mjs status",
+    "remote:agent:reply": "node scripts/remote/publish-agent-update.mjs reply",
+    "remote:relay:codex:watch": "node scripts/remote/codex-interactive-relay.mjs watch --session-name=codex-chat --codex-use-last=false",
+    "remote:relay:codex:once": "node scripts/remote/codex-interactive-relay.mjs once --session-name=codex-chat --codex-use-last=false"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.14",
     "del": "^7.0.0",
+    "esbuild": "^0.27.3",
     "gulp": "^5.0.1",
     "gulp-clean-css": "^4.3.0",
     "gulp-cli": "^3.1.0",
@@ -47,6 +53,7 @@
     "through2": "^4.0.2"
   },
   "dependencies": {
-    "gsap": "^3.14.2"
+    "gsap": "^3.14.2",
+    "ws": "^8.19.0"
   }
 }

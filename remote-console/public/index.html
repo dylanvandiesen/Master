@@ -1,16 +1,22 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Playground Remote Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <main class="layout">
       <section id="loginView" class="panel login-panel">
         <h1>Remote Console</h1>
-        <p class="muted">Secure control panel for agency builds, dev server, and live previews.</p>
+        <p class="muted">Session-based Codex relay with preview and activity tracking.</p>
         <form id="loginForm" autocomplete="off">
           <label for="password">Password</label>
           <input id="password" name="password" type="password" required />
@@ -22,77 +28,185 @@
       <section id="appView" class="app" hidden>
         <header class="topbar panel">
           <div>
-            <h1>Playground Remote Console</h1>
+            <h1>Codex Remote Workspace</h1>
             <p id="statusLine" class="muted">Loading session...</p>
           </div>
           <div class="topbar-actions">
+            <button
+              id="mobileMenuBtn"
+              class="menu-btn"
+              type="button"
+              aria-label="Open panel menu"
+              aria-controls="panelNav"
+              aria-expanded="false"
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
             <button id="refreshBtn" type="button">Refresh</button>
             <button id="logoutBtn" type="button" class="danger-lite">Sign Out</button>
           </div>
         </header>
 
-        <section class="grid">
-          <article class="panel controls">
-            <h2>Command Controls</h2>
-            <div class="field-grid">
-              <label for="projectSelect">Project</label>
-              <select id="projectSelect"></select>
-
-              <label for="portInput">Dev Port</label>
-              <input id="portInput" type="number" min="1024" max="65535" placeholder="5173" />
+        <section class="workspace-shell">
+          <nav id="panelNav" class="icon-nav panel" aria-label="Panel Navigation">
+            <div class="icon-nav-head">
+              <strong>Panels</strong>
+              <button id="mobileNavCloseBtn" class="icon-nav-close" type="button" aria-label="Close panel menu">X</button>
             </div>
-            <div class="button-row">
-              <button id="scaffoldBtn" type="button">Scaffold</button>
-              <button id="buildBtn" type="button">Build Project</button>
-              <button id="buildAllBtn" type="button">Build All</button>
-              <button id="chatQuickBtn" type="button">Chat Prep Quick</button>
-              <button id="chatBriefingBtn" type="button">Generate Briefing</button>
-            </div>
-            <div class="button-row">
-              <button id="startDevSingleBtn" type="button" class="accent">Start Dev (Single)</button>
-              <button id="startDevAllBtn" type="button" class="accent">Start Dev (All)</button>
-              <button id="stopDevBtn" type="button" class="danger">Stop Dev</button>
-            </div>
-            <pre id="commandResult" class="command-result">No command executed yet.</pre>
-          </article>
+            <button id="navPreviewBtn" class="nav-btn" type="button" title="Preview" data-panel-target="preview">PV</button>
+            <button id="navActivityBtn" class="nav-btn" type="button" title="Activity" data-panel-target="activity">ACT</button>
+            <button id="navSessionsBtn" class="nav-btn" type="button" title="Sessions" data-panel-target="sessions">SES</button>
+            <button id="navConnectionBtn" class="nav-btn" type="button" title="Remote" data-panel-target="connection">NET</button>
+            <button id="navOutputBtn" class="nav-btn" type="button" title="Output" data-panel-target="output">LOG</button>
+            <button id="navTogglePanelsBtn" class="nav-btn toggle" type="button" title="Hide or show utility panels">HIDE</button>
+          </nav>
+          <button id="mobileNavBackdrop" class="mobile-nav-backdrop" type="button" aria-hidden="true" hidden></button>
 
-          <article class="panel note-panel">
-            <h2>Remote Notes For Codex</h2>
-            <p class="muted">Stores note files under <code>.agency/remote/inbox/</code>.</p>
-            <label for="noteTitle">Title</label>
-            <input id="noteTitle" type="text" placeholder="Fix nav animation regression" />
-            <label for="noteMessage">Message</label>
-            <textarea id="noteMessage" rows="6" placeholder="Describe what you want the active session to do next."></textarea>
-            <button id="sendNoteBtn" type="button">Send Note</button>
-            <p id="noteStatus" class="muted"></p>
-          </article>
-        </section>
+          <section class="main-stage">
+            <article class="panel chat-panel">
+              <div class="chat-head">
+                <div>
+                  <h2>Codex Chat</h2>
+                  <p class="muted">Realtime chat over inbox/outbox with persistent session context.</p>
+                </div>
+                <div class="chat-meta">
+                  <button id="chatPreviewBtn" type="button">Preview</button>
+                  <span id="chatConnection" class="chip muted">Connecting...</span>
+                  <span id="agentStateBadge" class="chip">idle</span>
+                </div>
+              </div>
+              <p id="chatLiveStatus" class="chat-live muted">Waiting for Codex activity...</p>
+              <details id="chatRuntimeDetails" class="chat-runtime" open>
+                <summary>
+                  <span>Runtime Checks</span>
+                  <span id="chatRuntimeSummary" class="muted">loading...</span>
+                </summary>
+                <div id="chatRuntimeValues" class="chat-runtime-values"></div>
+              </details>
 
-        <section class="grid">
-          <article class="panel preview-panel">
-            <h2>Live Preview</h2>
-            <div class="field-grid">
-              <label for="manifestSelect">Preview Source</label>
-              <select id="manifestSelect"></select>
+              <div id="chatStream" class="chat-stream" aria-live="polite"></div>
 
-              <label for="refreshMsInput">Auto Refresh (ms)</label>
-              <input id="refreshMsInput" type="number" min="1000" max="20000" step="500" />
-            </div>
-            <div class="button-row">
-              <button id="loadPreviewBtn" type="button" class="accent">Load Preview</button>
-              <button id="openPreviewTabBtn" type="button">Open In Tab</button>
-              <label class="checkbox-wrap">
-                <input id="autoRefreshToggle" type="checkbox" checked />
-                <span>Auto refresh</span>
-              </label>
-            </div>
-            <iframe id="previewFrame" title="Live Preview" sandbox="allow-same-origin allow-scripts allow-forms"></iframe>
-          </article>
+              <div class="composer">
+                <label for="noteTitle">Context (optional)</label>
+                <input id="noteTitle" type="text" placeholder="short context label" />
+                <label for="noteMessage">Message</label>
+                <textarea id="noteMessage" rows="4" placeholder="Type a message for Codex..."></textarea>
+                <div class="button-row">
+                  <button id="sendNoteBtn" type="button" class="accent">Send</button>
+                  <button id="chatRefreshBtn" type="button">Sync</button>
+                </div>
+                <p id="noteStatus" class="muted"></p>
+              </div>
+            </article>
+          </section>
 
-          <article class="panel log-panel">
-            <h2>Live Logs</h2>
-            <pre id="logsOutput" class="logs-output"></pre>
-          </article>
+          <aside id="utilityDock" class="utility-dock">
+            <article class="panel preview-panel utility-card" data-panel-id="preview">
+              <div class="panel-head">
+                <h3>Preview</h3>
+                <p id="previewStatus" class="muted">No preview selected.</p>
+              </div>
+              <div class="field-grid">
+                <label for="manifestSelect">Preview Source</label>
+                <select id="manifestSelect"></select>
+
+                <label for="refreshMsInput">Auto Refresh (ms)</label>
+                <input id="refreshMsInput" type="number" min="1000" max="20000" step="500" />
+              </div>
+              <div class="button-row">
+                <button id="loadPreviewBtn" type="button" class="accent">Load</button>
+                <button id="previewFullscreenBtn" type="button">Fullscreen</button>
+                <button id="openPreviewTabBtn" type="button">Open Tab</button>
+                <label class="checkbox-wrap">
+                  <input id="autoRefreshToggle" type="checkbox" checked />
+                  <span>Auto refresh</span>
+                </label>
+              </div>
+              <div id="previewViewport" class="preview-viewport">
+                <iframe id="previewFrame" title="Live Preview" sandbox="allow-same-origin allow-scripts allow-forms"></iframe>
+              </div>
+            </article>
+
+            <article class="panel activity-panel utility-card" data-panel-id="activity" hidden>
+              <div class="panel-head">
+                <h3>Codex Activity</h3>
+                <button id="activityRefreshBtn" type="button">Refresh</button>
+              </div>
+              <label for="agentStatusText">Current Status</label>
+              <input id="agentStatusText" type="text" readonly placeholder="idle | waiting for work" />
+              <p id="activityStatus" class="muted"></p>
+              <div id="activityFeed" class="activity-feed"></div>
+            </article>
+
+            <article class="panel codex-panel utility-card" data-panel-id="sessions" hidden>
+              <h3>Sessions & Prep</h3>
+              <div class="field-grid">
+                <label for="codexSessionSelect">Registered Session</label>
+                <select id="codexSessionSelect"></select>
+
+                <label for="codexSessionName">Session Name</label>
+                <input id="codexSessionName" type="text" placeholder="codex-chat" />
+
+                <label for="codexSessionTarget">Session Target</label>
+                <input id="codexSessionTarget" type="text" placeholder="thread id or alias" />
+
+                <label for="codexSessionProject">Project</label>
+                <input id="codexSessionProject" type="text" placeholder="csscroll (optional)" />
+
+                <label for="codexSessionNotes">Notes</label>
+                <textarea id="codexSessionNotes" rows="2" placeholder="optional notes"></textarea>
+              </div>
+              <div class="button-row">
+                <button id="codexRefreshBtn" type="button">Refresh</button>
+                <button id="codexUpsertBtn" type="button">Save</button>
+                <button id="codexCreateBtn" type="button">Create</button>
+                <button id="codexSetDefaultBtn" type="button">Set Default</button>
+                <button id="codexRetireBtn" type="button" class="danger-lite">Retire</button>
+                <button id="codexPrepQuickBtn" type="button" class="accent">Prep Quick</button>
+                <button id="codexPrepFullBtn" type="button" class="accent">Prep Full</button>
+              </div>
+              <div class="button-row">
+                <button id="relayStartBtn" type="button" class="accent">Start Relay</button>
+                <button id="relayStopBtn" type="button" class="danger-lite">Stop Relay</button>
+                <button id="relayRefreshBtn" type="button">Relay Status</button>
+              </div>
+              <label for="relayStatusText">Relay Watcher</label>
+              <input id="relayStatusText" type="text" readonly placeholder="not running" />
+              <p id="codexSessionStatus" class="muted"></p>
+              <textarea id="codexSessionPreview" rows="6" readonly placeholder="Session registry summary."></textarea>
+            </article>
+
+            <article class="panel connection-panel utility-card" data-panel-id="connection" hidden>
+              <h3>Remote Access</h3>
+              <p id="connectionMode" class="muted">Loading connection details...</p>
+              <label for="mobileUrlText">Mobile URL</label>
+              <input id="mobileUrlText" type="text" readonly />
+              <div class="button-row">
+                <button id="refreshConnectionHelpBtn" type="button">Refresh Connection</button>
+                <button id="copyMobileUrlBtn" type="button">Copy URL</button>
+              </div>
+              <label for="tunnelUrlText">External Tunnel</label>
+              <input id="tunnelUrlText" type="text" readonly placeholder="tunnel stopped" />
+              <div class="button-row">
+                <button id="tunnelStartBtn" type="button" class="accent">Start Tunnel</button>
+                <button id="tunnelStopBtn" type="button" class="danger-lite">Stop Tunnel</button>
+                <button id="tunnelRefreshBtn" type="button">Tunnel Status</button>
+                <button id="openTunnelUrlBtn" type="button">Open Tunnel</button>
+              </div>
+              <div class="button-row">
+                <button id="enableHttpsBtn" type="button" class="accent">Enable HTTPS</button>
+                <button id="useAdaptiveSecurityBtn" type="button">Use Adaptive</button>
+              </div>
+              <p id="connectionAdvice" class="muted"></p>
+            </article>
+
+            <article class="panel output-panel utility-card" data-panel-id="output" hidden>
+              <h3>Operation Output</h3>
+              <pre id="commandResult" class="command-result">No operations yet.</pre>
+            </article>
+          </aside>
         </section>
       </section>
     </main>
