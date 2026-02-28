@@ -27,6 +27,16 @@
         "MEMORY_FILE_PATH": "${workspaceFolder}/mcp/data/memory.jsonl"
       }
     },
+    "browser_eyes_local": {
+      "command": "node",
+      "args": [
+        "${workspaceFolder}/mcp/node_modules/@playwright/mcp/cli.js",
+        "--headless",
+        "--caps=vision",
+        "--isolated",
+        "--output-mode=stdout"
+      ]
+    },
     "github_legacy_local": {
       "command": "node",
       "args": [

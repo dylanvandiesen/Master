@@ -10,6 +10,7 @@ import { WebSocketServer } from "ws";
 import {
   DEFAULT_CODEX_SESSION_REGISTRY_FILE,
   listCodexSessions,
+  normalizeSessionName,
   readCodexSessionRegistry,
   resolveCodexSessionTarget,
   retireCodexSession,
@@ -23,6 +24,17 @@ import {
 
 const ROOT = process.cwd();
 const PUBLIC_DIR = path.join(ROOT, "remote-console", "public");
+const DOMTERM_ASSET_ROOT = path.join(ROOT, "node_modules", "DomTerm");
+const XTERM_ASSET_CANDIDATES = {
+  "/vendor/xterm/xterm.js": [
+    path.join(ROOT, "node_modules", "xterm", "lib", "xterm.js"),
+    path.join(ROOT, "node_modules", "@xterm", "xterm", "lib", "xterm.js"),
+  ],
+  "/vendor/xterm/xterm.css": [
+    path.join(ROOT, "node_modules", "xterm", "css", "xterm.css"),
+    path.join(ROOT, "node_modules", "@xterm", "xterm", "css", "xterm.css"),
+  ],
+};
 const MANIFEST_DIR = path.join(ROOT, ".agency", "dev-servers");
 const INBOX_DIR = path.join(ROOT, ".agency", "remote", "inbox");
 const OUTBOX_DIR = path.join(ROOT, ".agency", "remote", "outbox");
@@ -32,11 +44,16 @@ const PANEL_RUNTIME_CONFIG_FILE = path.resolve(
   ROOT,
   process.env.REMOTE_PANEL_RUNTIME_CONFIG || ".agency/remote/panel-runtime.json"
 );
+const PANEL_CREDENTIALS_FILE = path.resolve(
+  ROOT,
+  process.env.REMOTE_PANEL_CREDENTIALS_FILE || ".agency/remote/panel-credentials.json"
+);
 
 const SESSION_COOKIE_NAME = "rc_session";
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const SESSION_TOUCH_PERSIST_THRESHOLD_MS = 5 * 60 * 1000;
 const SESSION_SWEEP_INTERVAL_MS = 60 * 1000;
+const WS_HEARTBEAT_INTERVAL_MS = 30 * 1000;
 const MAX_LOGIN_ATTEMPTS = 8;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const MAX_BODY_BYTES = 1_000_000;
@@ -47,9 +64,23 @@ const LOCAL_PREVIEW_HOSTS = new Set(["127.0.0.1", "localhost", "::1", "0.0.0.0"]
 const AGENT_STATES = new Set(["idle", "pending", "thinking", "working", "blocked"]);
 const CHAT_MAX_MESSAGES = 120;
 const WS_PATH = "/ws";
+const TERMINAL_WS_PATH = "/terminal-ws";
+const TERMINAL_OUTPUT_MAX_BYTES = 4 * 1024 * 1024;
+const TERMINAL_OUTPUT_MAX_CHUNKS = 8000;
+const TERMINAL_INITIAL_HISTORY_MAX_BYTES = 512 * 1024;
+const TERMINAL_INITIAL_HISTORY_MAX_CHUNKS = 320;
+const TERMINAL_DEFAULT_COLS = 120;
+const TERMINAL_DEFAULT_ROWS = 32;
+const TERMINAL_MIN_COLS = 20;
+const TERMINAL_MAX_COLS = 320;
+const TERMINAL_MIN_ROWS = 8;
+const TERMINAL_MAX_ROWS = 200;
+const TERMINAL_MAX_INPUT_BYTES = 64 * 1024;
+const TERMINAL_SHARED_SESSION_ID = "__shared__";
 const TUNNEL_DISCOVERY_TIMEOUT_MS = 45_000;
 const URL_IN_TEXT_REGEX = /https:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?::\d+)?(?:\/[^\s]*)?/g;
 const TUNNEL_MODES = new Set(["quick", "token", "named"]);
+const TERMINAL_USE_CONPTY = parseBool(process.env.REMOTE_PANEL_TERMINAL_USE_CONPTY, false);
 const WINDOWS_CLOUDFLARED_CANDIDATES = [
   "C:\\Program Files\\cloudflared\\cloudflared.exe",
   "C:\\Program Files (x86)\\cloudflared\\cloudflared.exe",
@@ -61,12 +92,19 @@ const state = {
   loginAttempts: new Map(),
   sseClients: new Set(),
   wsClients: new Set(),
+  wsSessionBySocket: new Map(),
+  terminalWsClients: new Set(),
+  terminalWsSessionBySocket: new Map(),
+  terminalSessions: new Map(),
   commandRunning: false,
   activeDev: null,
   activeRelay: null,
+  activeRelays: new Map(),
   activeTunnel: null,
   lastChatSignature: "",
 };
+
+let nodePtyModulePromise = null;
 
 function loadDotEnvFile(filePath) {
   try {
@@ -134,6 +172,46 @@ function parseTunnelMode(value, fallback = "quick") {
     return normalized;
   }
   return fallback;
+}
+
+function resolveFirstExistingFile(candidates = []) {
+  for (const candidate of candidates) {
+    try {
+      if (candidate && fs.existsSync(candidate)) {
+        return candidate;
+      }
+    } catch {
+      // ignore candidate lookup errors and continue
+    }
+  }
+  return "";
+}
+
+function resolveDomTermAsset(resolvedPath) {
+  const prefix = "/vendor/domterm/";
+  if (!resolvedPath.startsWith(prefix)) {
+    return "";
+  }
+  const relativePath = resolvedPath.slice(prefix.length);
+  if (!relativePath || relativePath.includes("\0")) {
+    return "";
+  }
+  const normalized = path.normalize(relativePath).replace(/\\/g, "/");
+  if (normalized === ".." || normalized.startsWith("../")) {
+    return "";
+  }
+  const fsPath = path.join(DOMTERM_ASSET_ROOT, normalized);
+  if (!fsPath.startsWith(DOMTERM_ASSET_ROOT)) {
+    return "";
+  }
+  try {
+    if (!fs.existsSync(fsPath)) {
+      return "";
+    }
+  } catch {
+    return "";
+  }
+  return fsPath;
 }
 
 function normalizeIp(rawIp) {
@@ -208,6 +286,30 @@ function loadRuntimeConfigSync(filePath) {
   }
 }
 
+function loadPanelCredentialsSync(filePath) {
+  try {
+    const raw = fs.readFileSync(filePath, "utf8");
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") {
+      return {};
+    }
+    return parsed;
+  } catch {
+    return {};
+  }
+}
+
+function persistPanelCredentialsSync(filePath, credentials) {
+  try {
+    const payload = credentials && typeof credentials === "object" ? credentials : {};
+    const parentDir = path.dirname(filePath);
+    fs.mkdirSync(parentDir, { recursive: true });
+    fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+  } catch {
+    // ignore credential persistence failures
+  }
+}
+
 function parseSecurityMode(value, fallback = "off") {
   const normalized = String(value || "").trim().toLowerCase();
   if (!normalized) {
@@ -273,6 +375,7 @@ const settings = {
   tunnelProvider: String(parseArgValue("tunnel-provider") || process.env.REMOTE_PANEL_TUNNEL_PROVIDER || "cloudflared")
     .trim()
     .toLowerCase(),
+  sharedTerminal: parseBool(process.env.REMOTE_PANEL_SHARED_TERMINAL, true),
   tunnelMode: parseTunnelMode(tunnelModeInput, "quick"),
   cloudflaredBin: String(parseArgValue("cloudflared-bin") || process.env.REMOTE_PANEL_CLOUDFLARED_BIN || "").trim(),
   cloudflaredTunnelToken: String(
@@ -282,7 +385,14 @@ const settings = {
     parseArgValue("cloudflared-name") || process.env.REMOTE_PANEL_CLOUDFLARED_TUNNEL_NAME || ""
   ).trim(),
   cloudflaredConfig: String(parseArgValue("cloudflared-config") || process.env.REMOTE_PANEL_CLOUDFLARED_CONFIG || "").trim(),
+  credentialsFile: PANEL_CREDENTIALS_FILE,
 };
+
+const PANEL_BOOT_AT = Date.now();
+const PANEL_BOOT_ISO = new Date(PANEL_BOOT_AT).toISOString();
+const PANEL_BOOT_TOKEN = String(process.env.REMOTE_PANEL_BOOT_TOKEN || "")
+  .trim()
+  || `${PANEL_BOOT_AT.toString(36)}-${crypto.randomBytes(6).toString("hex")}`;
 
 function isPrivateIpv4(ip) {
   if (!ip || typeof ip !== "string") {
@@ -338,14 +448,34 @@ async function persistRuntimeConfig() {
 }
 
 if (!settings.password || settings.password.startsWith("replace_with")) {
-  settings.password = crypto.randomBytes(18).toString("base64url");
-  console.warn("[remote-panel] REMOTE_PANEL_PASSWORD is not set. Generated one-time password.");
-  console.warn(`[remote-panel] One-time password: ${settings.password}`);
+  const persisted = loadPanelCredentialsSync(settings.credentialsFile);
+  if (typeof persisted.password === "string" && persisted.password.trim()) {
+    settings.password = persisted.password.trim();
+    console.warn("[remote-panel] REMOTE_PANEL_PASSWORD is not set. Using persisted panel password.");
+  } else {
+    settings.password = crypto.randomBytes(18).toString("base64url");
+    console.warn("[remote-panel] REMOTE_PANEL_PASSWORD is not set. Generated persistent password.");
+    console.warn(`[remote-panel] Persistent password: ${settings.password}`);
+    persistPanelCredentialsSync(settings.credentialsFile, {
+      ...persisted,
+      password: settings.password,
+    });
+  }
 }
 
 if (!settings.sessionSecret || settings.sessionSecret.startsWith("replace_with")) {
-  settings.sessionSecret = crypto.randomBytes(32).toString("base64url");
-  console.warn("[remote-panel] REMOTE_PANEL_SESSION_SECRET is not set. Generated one-time secret.");
+  const persisted = loadPanelCredentialsSync(settings.credentialsFile);
+  if (typeof persisted.sessionSecret === "string" && persisted.sessionSecret.trim()) {
+    settings.sessionSecret = persisted.sessionSecret.trim();
+    console.warn("[remote-panel] REMOTE_PANEL_SESSION_SECRET is not set. Using persisted panel session secret.");
+  } else {
+    settings.sessionSecret = crypto.randomBytes(32).toString("base64url");
+    console.warn("[remote-panel] REMOTE_PANEL_SESSION_SECRET is not set. Generated persistent secret.");
+    persistPanelCredentialsSync(settings.credentialsFile, {
+      ...persisted,
+      sessionSecret: settings.sessionSecret,
+    });
+  }
 }
 
 function timestamp() {
@@ -382,7 +512,7 @@ function buildConnectionHelpPayload() {
   } else if (securityMode === "on") {
     action = "Use an HTTPS tunnel URL for phone access. Direct LAN HTTP requests are blocked.";
   } else if (settings.host !== "0.0.0.0") {
-    action = "Restart in LAN mode with `npm run remote:panel:mobile` to allow phone access on your network.";
+    action = "Restart in LAN mode with `npm run commander:remote` to allow phone access on your network.";
   } else if (securityMode === "auto") {
     action =
       "Adaptive security is enabled: local/LAN clients can use HTTP, while public clients must use HTTPS via tunnel/proxy.";
@@ -476,22 +606,61 @@ function publicDevState() {
   };
 }
 
-function publicRelayState() {
-  if (!state.activeRelay) {
+function relaySessionKey(sessionName) {
+  return String(sessionName || "")
+    .trim()
+    .toLowerCase();
+}
+
+function relayPublicShape(relayState) {
+  if (!relayState) {
     return null;
   }
   return {
-    mode: state.activeRelay.mode,
-    sessionName: state.activeRelay.sessionName,
-    project: state.activeRelay.project,
-    useLast: state.activeRelay.useLast,
-    dryRun: state.activeRelay.dryRun,
-    startFromLatest: state.activeRelay.startFromLatest,
-    pollMs: state.activeRelay.pollMs,
-    history: state.activeRelay.history,
-    pid: state.activeRelay.pid,
-    startedAt: state.activeRelay.startedAt,
+    mode: relayState.mode,
+    sessionName: relayState.sessionName,
+    project: relayState.project,
+    useLast: relayState.useLast,
+    dryRun: relayState.dryRun,
+    startFromLatest: relayState.startFromLatest,
+    pollMs: relayState.pollMs,
+    history: relayState.history,
+    pid: relayState.pid,
+    startedAt: relayState.startedAt,
   };
+}
+
+function syncLegacyActiveRelay() {
+  const relays = [...state.activeRelays.values()];
+  if (!relays.length) {
+    state.activeRelay = null;
+    return;
+  }
+  if (state.activeRelay) {
+    const existing = relays.find((relay) => relay.pid === state.activeRelay.pid);
+    if (existing) {
+      state.activeRelay = existing;
+      return;
+    }
+  }
+  state.activeRelay = relays[0];
+}
+
+function publicRelayStates() {
+  if (!state.activeRelays.size) {
+    return state.activeRelay ? [relayPublicShape(state.activeRelay)] : [];
+  }
+  return [...state.activeRelays.values()]
+    .map((relay) => relayPublicShape(relay))
+    .filter(Boolean)
+    .sort((a, b) => String(a.sessionName || "").localeCompare(String(b.sessionName || "")));
+}
+
+function publicRelayState() {
+  if (state.activeRelays.size) {
+    syncLegacyActiveRelay();
+  }
+  return relayPublicShape(state.activeRelay);
 }
 
 function publicTunnelState() {
@@ -514,6 +683,7 @@ function broadcastState() {
     commandRunning: state.commandRunning,
     activeDev: publicDevState(),
     activeRelay: publicRelayState(),
+    activeRelays: publicRelayStates(),
     activeTunnel: publicTunnelState(),
   };
   const body = `event: state\ndata: ${JSON.stringify(payload)}\n\n`;
@@ -600,6 +770,7 @@ function setSecurityHeaders(res) {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "no-referrer");
   res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Permissions-Policy", "unload=(self)");
   res.setHeader(
     "Content-Security-Policy",
     [
@@ -858,6 +1029,7 @@ function pruneExpiredSessions() {
   for (const [sessionId, record] of state.sessions.entries()) {
     if (Number(record.expiresAt || 0) <= now) {
       state.sessions.delete(sessionId);
+      cleanupTerminalAfterSessionRemoval(sessionId, "Session expired.");
       changed = true;
     }
   }
@@ -872,9 +1044,48 @@ function deleteSessionById(sessionId) {
   }
   const deleted = state.sessions.delete(sessionId);
   if (deleted) {
+    cleanupTerminalAfterSessionRemoval(sessionId, "Session closed.");
     schedulePersistSessionStore();
   }
   return deleted;
+}
+
+function resolveTerminalSessionId(sessionId) {
+  if (settings.sharedTerminal) {
+    return TERMINAL_SHARED_SESSION_ID;
+  }
+  return String(sessionId || "").trim();
+}
+
+function cleanupTerminalAfterSessionRemoval(sessionId, reason = "session-ended") {
+  const terminalSessionId = resolveTerminalSessionId(sessionId);
+  if (!terminalSessionId) {
+    return false;
+  }
+  if (settings.sharedTerminal) {
+    if (state.sessions.size === 0) {
+      return destroyTerminalSession(terminalSessionId, reason);
+    }
+    return false;
+  }
+  return destroyTerminalSession(terminalSessionId, reason);
+}
+
+function touchSessionById(sessionId) {
+  const id = String(sessionId || "").trim();
+  if (!id) {
+    return null;
+  }
+  const session = state.sessions.get(id);
+  if (!session) {
+    return null;
+  }
+  const previousExpiresAt = Number(session.expiresAt || 0);
+  session.expiresAt = Date.now() + SESSION_TTL_MS;
+  if (session.expiresAt - previousExpiresAt > SESSION_TOUCH_PERSIST_THRESHOLD_MS) {
+    schedulePersistSessionStore();
+  }
+  return session;
 }
 
 function getSession(req, ip) {
@@ -895,14 +1106,11 @@ function getSession(req, ip) {
   if (settings.bindSessionIp && session.ip !== ip) {
     return null;
   }
-  const previousExpiresAt = Number(session.expiresAt || 0);
-  session.expiresAt = Date.now() + SESSION_TTL_MS;
-  if (session.expiresAt - previousExpiresAt > SESSION_TOUCH_PERSIST_THRESHOLD_MS) {
-    schedulePersistSessionStore();
-  }
+  const touched = touchSessionById(sessionId);
+  const activeSession = touched || session;
   return {
     id: sessionId,
-    ...session,
+    ...activeSession,
   };
 }
 
@@ -921,6 +1129,591 @@ function createSession(ip) {
     id: sessionId,
     ...record,
   };
+}
+
+function normalizeTerminalDimension(value, fallback, min, max) {
+  const parsed = Number.parseInt(String(value ?? ""), 10);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+  return Math.max(min, Math.min(max, parsed));
+}
+
+function resolveDefaultTerminalLaunch() {
+  if (process.platform === "win32") {
+    const pwsh7 = "C:\\Program Files\\PowerShell\\7\\pwsh.exe";
+    if (fs.existsSync(pwsh7)) {
+      return {
+        file: pwsh7,
+        args: ["-NoLogo"],
+      };
+    }
+    return {
+      file: "powershell.exe",
+      args: ["-NoLogo"],
+    };
+  }
+
+  const file = String(process.env.SHELL || "/bin/bash").trim() || "/bin/bash";
+  const basename = path.basename(file).toLowerCase();
+  const args = basename.includes("bash") ? ["--login"] : [];
+  return { file, args };
+}
+
+function ensureTerminalSessionState(sessionId) {
+  const id = String(sessionId || "").trim();
+  if (!id) {
+    throw new Error("Session is required.");
+  }
+  const existing = state.terminalSessions.get(id);
+  if (existing) {
+    return existing;
+  }
+  const created = {
+    sessionId: id,
+    generation: 0,
+    pty: null,
+    running: false,
+    pid: 0,
+    cols: TERMINAL_DEFAULT_COLS,
+    rows: TERMINAL_DEFAULT_ROWS,
+    startedAt: "",
+    stoppedAt: "",
+    exitCode: null,
+    exitSignal: null,
+    history: [],
+    historyBytes: 0,
+    nextSequence: 1,
+    sockets: new Set(),
+  };
+  state.terminalSessions.set(id, created);
+  return created;
+}
+
+function terminalStatusForResponse(terminal) {
+  if (!terminal) {
+    return {
+      exists: false,
+      running: false,
+      mode: settings.sharedTerminal ? "shared" : "session",
+      pid: 0,
+      cols: TERMINAL_DEFAULT_COLS,
+      rows: TERMINAL_DEFAULT_ROWS,
+      startedAt: "",
+      stoppedAt: "",
+      exitCode: null,
+      exitSignal: null,
+      attachedClients: 0,
+      historyBytes: 0,
+      historyChunks: 0,
+    };
+  }
+  return {
+    exists: true,
+    running: Boolean(terminal.running && terminal.pty),
+    mode: settings.sharedTerminal ? "shared" : "session",
+    pid: Number(terminal.pid || 0),
+    cols: Number(terminal.cols || TERMINAL_DEFAULT_COLS),
+    rows: Number(terminal.rows || TERMINAL_DEFAULT_ROWS),
+    startedAt: String(terminal.startedAt || ""),
+    stoppedAt: String(terminal.stoppedAt || ""),
+    exitCode: terminal.exitCode === null ? null : Number(terminal.exitCode),
+    exitSignal: terminal.exitSignal === null ? null : Number(terminal.exitSignal),
+    attachedClients: terminal.sockets.size,
+    historyBytes: Number(terminal.historyBytes || 0),
+    historyChunks: terminal.history.length,
+  };
+}
+
+function parseTerminalSequence(value, fallback = 0) {
+  const parsed = Number.parseInt(String(value ?? ""), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+  return parsed;
+}
+
+function terminalHistoryForResponse(terminal, options = {}) {
+  const requestedSince = parseTerminalSequence(options.since, 0);
+  if (!terminal) {
+    return {
+      chunks: [],
+      bytes: 0,
+      maxBytes: TERMINAL_OUTPUT_MAX_BYTES,
+      requestedSince,
+      latestSeq: 0,
+      availableFromSeq: 0,
+      gap: null,
+    };
+  }
+  const history = Array.isArray(terminal.history) ? terminal.history : [];
+  const latestSeq = Math.max(0, Number(terminal.nextSequence || 1) - 1);
+  const availableFromSeq = history.length ? parseTerminalSequence(history[0]?.seq, 0) : 0;
+  let chunks = requestedSince > 0
+    ? history.filter((chunk) => parseTerminalSequence(chunk?.seq, 0) > requestedSince)
+    : history;
+  if (requestedSince <= 0 && chunks.length > TERMINAL_INITIAL_HISTORY_MAX_CHUNKS) {
+    chunks = chunks.slice(-TERMINAL_INITIAL_HISTORY_MAX_CHUNKS);
+  }
+  if (requestedSince <= 0 && chunks.length > 1) {
+    let totalBytes = 0;
+    const sized = chunks.map((chunk) => {
+      const rawBytes = Number(chunk?.bytes || 0);
+      const bytes = Number.isFinite(rawBytes) && rawBytes > 0 ? rawBytes : Buffer.byteLength(String(chunk?.data || ""), "utf8");
+      totalBytes += bytes;
+      return { chunk, bytes };
+    });
+    while (sized.length > 1 && totalBytes > TERMINAL_INITIAL_HISTORY_MAX_BYTES) {
+      const removed = sized.shift();
+      totalBytes = Math.max(0, totalBytes - Number(removed?.bytes || 0));
+    }
+    chunks = sized.map((entry) => entry.chunk);
+  }
+  let bytes = 0;
+  for (const chunk of chunks) {
+    const rawBytes = Number(chunk?.bytes || 0);
+    if (Number.isFinite(rawBytes) && rawBytes > 0) {
+      bytes += rawBytes;
+      continue;
+    }
+    bytes += Buffer.byteLength(String(chunk?.data || ""), "utf8");
+  }
+  let gap = null;
+  if (requestedSince > 0 && availableFromSeq > requestedSince + 1) {
+    gap = {
+      from: requestedSince + 1,
+      to: availableFromSeq - 1,
+      reason: "history-trimmed",
+    };
+  }
+  return {
+    chunks: chunks.map((chunk) => ({
+      seq: chunk.seq,
+      at: chunk.at,
+      data: chunk.data,
+    })),
+    bytes,
+    maxBytes: TERMINAL_OUTPUT_MAX_BYTES,
+    requestedSince,
+    latestSeq,
+    availableFromSeq,
+    gap,
+  };
+}
+
+function trimTerminalHistory(terminal) {
+  while (
+    terminal.history.length > TERMINAL_OUTPUT_MAX_CHUNKS ||
+    terminal.historyBytes > TERMINAL_OUTPUT_MAX_BYTES
+  ) {
+    const removed = terminal.history.shift();
+    if (!removed) {
+      break;
+    }
+    terminal.historyBytes = Math.max(0, terminal.historyBytes - Number(removed.bytes || 0));
+  }
+}
+
+function clearTerminalHistory(terminal) {
+  terminal.history = [];
+  terminal.historyBytes = 0;
+}
+
+function broadcastTerminalPayload(terminal, payload) {
+  for (const socket of terminal.sockets) {
+    wsSend(socket, payload);
+  }
+}
+
+function appendTerminalOutput(terminal, data) {
+  const text = String(data ?? "");
+  if (!text) {
+    return;
+  }
+  const bytes = Buffer.byteLength(text, "utf8");
+  const chunk = {
+    seq: terminal.nextSequence,
+    at: timestamp(),
+    data: text,
+    bytes,
+  };
+  terminal.nextSequence += 1;
+  terminal.history.push(chunk);
+  terminal.historyBytes += bytes;
+  trimTerminalHistory(terminal);
+  broadcastTerminalPayload(terminal, {
+    type: "terminal:output",
+    chunk: {
+      seq: chunk.seq,
+      at: chunk.at,
+      data: chunk.data,
+    },
+  });
+}
+
+function attachTerminalSocket(sessionId, ws) {
+  const terminal = ensureTerminalSessionState(sessionId);
+  terminal.sockets.add(ws);
+  state.terminalWsClients.add(ws);
+  state.terminalWsSessionBySocket.set(ws, terminal.sessionId);
+  return terminal;
+}
+
+function detachTerminalSocket(ws) {
+  const sessionId = state.terminalWsSessionBySocket.get(ws);
+  if (sessionId) {
+    const terminal = state.terminalSessions.get(sessionId);
+    if (terminal) {
+      terminal.sockets.delete(ws);
+    }
+    state.terminalWsSessionBySocket.delete(ws);
+  }
+  state.terminalWsClients.delete(ws);
+}
+
+function closeTerminalSocket(ws, reason = "Session ended.") {
+  wsSend(ws, {
+    type: "terminal:closed",
+    reason,
+  });
+  try {
+    ws.close(1001, reason);
+  } catch {
+    // ignore close errors for socket cleanup paths
+  }
+}
+
+function prepareSocketHeartbeat(ws, sessionId = "") {
+  if (!ws) {
+    return;
+  }
+  ws.__rcAlive = true;
+  ws.on("pong", () => {
+    ws.__rcAlive = true;
+    if (sessionId) {
+      touchSessionById(sessionId);
+    }
+  });
+}
+
+function heartbeatWebSocketClients(clients) {
+  for (const ws of clients) {
+    if (!ws || ws.readyState !== 1) {
+      continue;
+    }
+    if (ws.__rcAlive === false) {
+      try {
+        ws.terminate();
+      } catch {
+        // ignore termination failures during heartbeat sweep
+      }
+      continue;
+    }
+    ws.__rcAlive = false;
+    try {
+      ws.ping();
+    } catch {
+      try {
+        ws.terminate();
+      } catch {
+        // ignore termination failures during heartbeat sweep
+      }
+    }
+  }
+}
+
+function stopTerminalSessionProcess(terminal, reason = "stop") {
+  if (!terminal || !terminal.running || !terminal.pty) {
+    return false;
+  }
+  try {
+    terminal.pty.kill();
+    pushLog("terminal", `Stop requested for session ${terminal.sessionId} (${reason}).`);
+  } catch (error) {
+    if (terminal.pid) {
+      try {
+        process.kill(terminal.pid, "SIGTERM");
+      } catch {
+        // ignore fallback kill errors
+      }
+    }
+    pushLog(
+      "terminal",
+      `Stop fallback used for session ${terminal.sessionId}: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+  return true;
+}
+
+function destroyTerminalSession(sessionId, reason = "session-ended") {
+  const terminal = state.terminalSessions.get(sessionId);
+  if (!terminal) {
+    return false;
+  }
+  const sockets = Array.from(terminal.sockets);
+  for (const socket of sockets) {
+    closeTerminalSocket(socket, reason);
+    detachTerminalSocket(socket);
+  }
+  stopTerminalSessionProcess(terminal, reason);
+  terminal.running = false;
+  terminal.pty = null;
+  terminal.pid = 0;
+  terminal.stoppedAt = timestamp();
+  state.terminalSessions.delete(sessionId);
+  return true;
+}
+
+function destroyAllTerminalSessions(reason = "shutdown") {
+  for (const sessionId of [...state.terminalSessions.keys()]) {
+    destroyTerminalSession(sessionId, reason);
+  }
+}
+
+async function loadNodePty() {
+  if (!nodePtyModulePromise) {
+    nodePtyModulePromise = import("node-pty")
+      .then((module) => {
+        const candidate = module?.default && typeof module.default.spawn === "function" ? module.default : module;
+        if (!candidate || typeof candidate.spawn !== "function") {
+          throw new Error("node-pty module does not expose spawn().");
+        }
+        return candidate;
+      })
+      .catch((error) => {
+        nodePtyModulePromise = null;
+        throw new Error(`node-pty is required for terminal support: ${error instanceof Error ? error.message : String(error)}`);
+      });
+  }
+  return nodePtyModulePromise;
+}
+
+function isNodePtyUnavailableError(error) {
+  const message = String(error instanceof Error ? error.message : error || "").toLowerCase();
+  return message.includes("node-pty");
+}
+
+async function startTerminalForSession(sessionId, options = {}) {
+  const terminal = ensureTerminalSessionState(sessionId);
+  const clearHistory = parseBool(options.clearHistory, false);
+  if (clearHistory) {
+    clearTerminalHistory(terminal);
+  }
+
+  const nextCols = normalizeTerminalDimension(
+    options.cols,
+    Number(terminal.cols || TERMINAL_DEFAULT_COLS),
+    TERMINAL_MIN_COLS,
+    TERMINAL_MAX_COLS
+  );
+  const nextRows = normalizeTerminalDimension(
+    options.rows,
+    Number(terminal.rows || TERMINAL_DEFAULT_ROWS),
+    TERMINAL_MIN_ROWS,
+    TERMINAL_MAX_ROWS
+  );
+
+  if (terminal.running && terminal.pty) {
+    if (nextCols !== terminal.cols || nextRows !== terminal.rows) {
+      try {
+        terminal.pty.resize(nextCols, nextRows);
+        terminal.cols = nextCols;
+        terminal.rows = nextRows;
+      } catch (error) {
+        throw new Error(
+          `Failed to resize active terminal: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+    return {
+      started: false,
+      terminal,
+    };
+  }
+
+  const ptyApi = await loadNodePty();
+  const launch = resolveDefaultTerminalLaunch();
+  const env = {
+    ...process.env,
+    TERM: process.env.TERM || "xterm-256color",
+  };
+  const spawnOptions = {
+    name: "xterm-256color",
+    cols: nextCols,
+    rows: nextRows,
+    cwd: ROOT,
+    env,
+  };
+
+  const generation = Number(terminal.generation || 0) + 1;
+  terminal.generation = generation;
+
+  let pty = null;
+  let launchMode = process.platform === "win32" ? TERMINAL_USE_CONPTY : null;
+  let lastSpawnError = null;
+  if (process.platform === "win32") {
+    const candidateModes = [TERMINAL_USE_CONPTY, !TERMINAL_USE_CONPTY].filter(
+      (value, index, list) => list.indexOf(value) === index
+    );
+    for (const useConpty of candidateModes) {
+      try {
+        pty = ptyApi.spawn(launch.file, launch.args, {
+          ...spawnOptions,
+          useConpty,
+        });
+        launchMode = useConpty;
+        break;
+      } catch (error) {
+        lastSpawnError = error;
+      }
+    }
+  } else {
+    try {
+      pty = ptyApi.spawn(launch.file, launch.args, spawnOptions);
+    } catch (error) {
+      lastSpawnError = error;
+    }
+  }
+  if (!pty) {
+    const rawMessage = lastSpawnError instanceof Error ? lastSpawnError.message : String(lastSpawnError || "spawn failed");
+    let hint = "";
+    if (process.platform === "win32") {
+      const lowered = rawMessage.toLowerCase();
+      if (lowered.includes("winpty")) {
+        hint = " Tried ConPTY fallback as well. Set REMOTE_PANEL_TERMINAL_USE_CONPTY=true to prefer ConPTY.";
+      } else if (lowered.includes("conpty") || lowered.includes("eperm")) {
+        hint = " Tried WinPTY fallback as well. Set REMOTE_PANEL_TERMINAL_USE_CONPTY=false to prefer WinPTY.";
+      }
+    }
+    throw new Error(`Failed to start terminal shell '${launch.file}': ${rawMessage}${hint}`);
+  }
+
+  terminal.pty = pty;
+  terminal.running = true;
+  terminal.pid = Number(pty.pid || 0);
+  terminal.cols = nextCols;
+  terminal.rows = nextRows;
+  terminal.exitCode = null;
+  terminal.exitSignal = null;
+  terminal.startedAt = timestamp();
+  terminal.stoppedAt = "";
+
+  if (process.platform === "win32" && launchMode !== null && launchMode !== TERMINAL_USE_CONPTY) {
+    pushLog(
+      "terminal",
+      `PTY fallback applied for session ${sessionId}: ${TERMINAL_USE_CONPTY ? "ConPTY" : "WinPTY"} failed, using ${
+        launchMode ? "ConPTY" : "WinPTY"
+      }.`
+    );
+  }
+  pushLog("terminal", `Started terminal for session ${sessionId} (pid=${terminal.pid || "n/a"}).`);
+
+  pty.onData((data) => {
+    if (terminal.generation !== generation) {
+      return;
+    }
+    appendTerminalOutput(terminal, data);
+  });
+
+  pty.onExit((event = {}) => {
+    if (terminal.generation !== generation) {
+      return;
+    }
+    terminal.running = false;
+    terminal.pty = null;
+    terminal.pid = 0;
+    terminal.exitCode = Number.isFinite(event.exitCode) ? event.exitCode : null;
+    terminal.exitSignal = Number.isFinite(event.signal) ? event.signal : null;
+    terminal.stoppedAt = timestamp();
+    pushLog("terminal", `Terminal exited for session ${sessionId} (exit=${terminal.exitCode ?? -1}).`);
+    broadcastTerminalPayload(terminal, {
+      type: "terminal:exit",
+      exitCode: terminal.exitCode,
+      signal: terminal.exitSignal,
+      terminal: terminalStatusForResponse(terminal),
+    });
+  });
+
+  broadcastTerminalPayload(terminal, {
+    type: "terminal:status",
+    terminal: terminalStatusForResponse(terminal),
+  });
+
+  return {
+    started: true,
+    terminal,
+  };
+}
+
+function writeTerminalInput(sessionId, input) {
+  const terminal = state.terminalSessions.get(sessionId);
+  if (!terminal || !terminal.running || !terminal.pty) {
+    throw new Error("No active terminal for this session.");
+  }
+  const text = String(input ?? "");
+  if (!text) {
+    return;
+  }
+  const bytes = Buffer.byteLength(text, "utf8");
+  if (bytes > TERMINAL_MAX_INPUT_BYTES) {
+    throw new Error(`Input chunk is too large (max ${TERMINAL_MAX_INPUT_BYTES} bytes).`);
+  }
+  terminal.pty.write(text);
+}
+
+function resizeTerminalForSession(sessionId, cols, rows) {
+  const terminal = ensureTerminalSessionState(sessionId);
+  const nextCols = normalizeTerminalDimension(
+    cols,
+    Number(terminal.cols || TERMINAL_DEFAULT_COLS),
+    TERMINAL_MIN_COLS,
+    TERMINAL_MAX_COLS
+  );
+  const nextRows = normalizeTerminalDimension(
+    rows,
+    Number(terminal.rows || TERMINAL_DEFAULT_ROWS),
+    TERMINAL_MIN_ROWS,
+    TERMINAL_MAX_ROWS
+  );
+  terminal.cols = nextCols;
+  terminal.rows = nextRows;
+  if (terminal.running && terminal.pty) {
+    terminal.pty.resize(nextCols, nextRows);
+  }
+  return terminal;
+}
+
+function interruptTerminalForSession(sessionId) {
+  const terminal = state.terminalSessions.get(sessionId);
+  if (!terminal || !terminal.running || !terminal.pty) {
+    return false;
+  }
+
+  try {
+    // Ctrl+C is the most reliable interrupt path for Windows PTYs.
+    terminal.pty.write("\u0003");
+    pushLog("terminal", `Interrupt requested for session ${sessionId}.`);
+    return true;
+  } catch (error) {
+    if (terminal.pid && process.platform !== "win32") {
+      try {
+        process.kill(terminal.pid, "SIGINT");
+        pushLog("terminal", `Interrupt fallback SIGINT requested for session ${sessionId}.`);
+        return true;
+      } catch {
+        // ignore fallback kill errors and surface the original failure
+      }
+    }
+    throw new Error(`Failed to interrupt terminal: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+function stopTerminalForSession(sessionId) {
+  const terminal = state.terminalSessions.get(sessionId);
+  if (!terminal) {
+    return false;
+  }
+  return stopTerminalSessionProcess(terminal, "manual-stop");
 }
 
 async function readJsonBody(req) {
@@ -1141,6 +1934,34 @@ function extractCodexThreadIdFromOutput(lines = []) {
   return "";
 }
 
+function superAgentSessionName(project = "", fallback = "super-agent") {
+  const scope = String(project || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  const base = normalizeSessionName(scope ? `super-${scope}` : "super-agent", fallback);
+  const stamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
+  return normalizeSessionName(`${base}-${stamp}`, base);
+}
+
+function buildSuperAgentInitPrompt({ project = "", mode = "quick" } = {}) {
+  const selectedProject = String(project || "").trim() || "workspace-default";
+  const selectedMode = String(mode || "quick").trim().toLowerCase() === "full" ? "full" : "quick";
+  return [
+    "Initialize a Playground super agent session.",
+    `Project focus: ${selectedProject}.`,
+    `Bootstrap mode completed: ${selectedMode}.`,
+    "Load these context artifacts first:",
+    "- .agency/chat/latest-super-context.json",
+    "- .agency/chat/latest-system-briefing.md",
+    "- .agency/chat/latest-briefing.md",
+    "Operate quickly and keep outputs deterministic.",
+    "Boundary rule: ask for explicit scope confirmation before crossing unrelated project/commander internals.",
+    "Reply exactly with READY when initialization is complete.",
+  ].join("\n");
+}
+
 async function readCodexRegistrySafe() {
   return readCodexSessionRegistry(DEFAULT_CODEX_SESSION_REGISTRY_FILE);
 }
@@ -1243,8 +2064,12 @@ async function startRelayWatcher({
   pollMs = 1200,
   history = 16,
 } = {}) {
-  if (state.activeRelay) {
-    throw new Error("Relay watcher is already running.");
+  const sessionKey = relaySessionKey(sessionName);
+  if (!sessionKey) {
+    throw new Error("Session name is required.");
+  }
+  if (state.activeRelays.has(sessionKey)) {
+    throw new Error(`Relay watcher is already running for session '${sessionName}'.`);
   }
 
   const args = [`--session-name=${sessionName}`];
@@ -1257,7 +2082,7 @@ async function startRelayWatcher({
   args.push(`--poll-ms=${pollMs}`);
   args.push(`--history=${history}`);
 
-  const child = spawnNpm("remote:relay:codex:watch", args);
+  const child = spawnNpm("commander:relay:codex:watch", args);
   const relayState = {
     mode: "watch",
     sessionName,
@@ -1272,7 +2097,8 @@ async function startRelayWatcher({
     child,
   };
 
-  state.activeRelay = relayState;
+  state.activeRelays.set(sessionKey, relayState);
+  syncLegacyActiveRelay();
   attachChildLogs(child, "relay:codex");
   pushLog(
     "system",
@@ -1284,31 +2110,81 @@ async function startRelayWatcher({
 
   child.on("exit", (code) => {
     pushLog("system", `Relay watcher exited (pid=${child.pid}, exit=${code ?? -1})`);
-    if (state.activeRelay && state.activeRelay.pid === child.pid) {
-      state.activeRelay = null;
+    const existing = state.activeRelays.get(sessionKey);
+    if (existing && existing.pid === child.pid) {
+      state.activeRelays.delete(sessionKey);
+      syncLegacyActiveRelay();
     }
     broadcastState();
   });
 
   child.on("error", (error) => {
     pushLog("system", `Relay watcher error: ${error.message}`);
-    if (state.activeRelay && state.activeRelay.pid === child.pid) {
-      state.activeRelay = null;
+    const existing = state.activeRelays.get(sessionKey);
+    if (existing && existing.pid === child.pid) {
+      state.activeRelays.delete(sessionKey);
+      syncLegacyActiveRelay();
     }
     broadcastState();
   });
 
-  return publicRelayState();
+  return relayPublicShape(relayState);
 }
 
-async function stopRelayWatcher() {
-  if (!state.activeRelay) {
-    return false;
+function resolveRelayStopTargets({ sessionName = "", all = false } = {}) {
+  if (all) {
+    if (state.activeRelays.size) {
+      return [...state.activeRelays.values()];
+    }
+    return state.activeRelay ? [state.activeRelay] : [];
   }
-  const { pid } = state.activeRelay;
-  pushLog("system", `Stopping relay watcher pid=${pid}`);
-  await terminateProcessTree(pid);
-  return true;
+  const name = String(sessionName || "").trim();
+  if (name) {
+    const byName = state.activeRelays.get(relaySessionKey(name));
+    if (byName) {
+      return [byName];
+    }
+    if (state.activeRelay && state.activeRelay.sessionName === name) {
+      return [state.activeRelay];
+    }
+    return [];
+  }
+  if (state.activeRelay) {
+    return [state.activeRelay];
+  }
+  if (state.activeRelays.size) {
+    return [[...state.activeRelays.values()][0]];
+  }
+  return [];
+}
+
+async function stopRelayWatcher(options = {}) {
+  const targets = resolveRelayStopTargets(options);
+  if (!targets.length) {
+    return {
+      stopped: false,
+      stoppedCount: 0,
+      requestedSessionName: String(options.sessionName || "").trim(),
+    };
+  }
+  const uniquePids = new Set();
+  for (const relay of targets) {
+    const pid = Number(relay?.pid || 0);
+    if (!pid || uniquePids.has(pid)) {
+      continue;
+    }
+    uniquePids.add(pid);
+    pushLog(
+      "system",
+      `Stopping relay watcher pid=${pid}${relay?.sessionName ? ` session=${relay.sessionName}` : ""}`
+    );
+    await terminateProcessTree(pid);
+  }
+  return {
+    stopped: uniquePids.size > 0,
+    stoppedCount: uniquePids.size,
+    requestedSessionName: String(options.sessionName || "").trim(),
+  };
 }
 
 function extractHttpsUrlFromLine(line) {
@@ -2211,8 +3087,23 @@ async function handlePreviewProxy(req, res, pathname, search) {
     }
   );
 
+  proxyReq.setTimeout(8000, () => {
+    proxyReq.destroy(new Error("Preview upstream timed out."));
+  });
+
   proxyReq.on("error", (error) => {
-    badRequest(res, `Preview connection failed: ${error.message}`);
+    if (res.headersSent) {
+      return;
+    }
+    const message = String(error?.message || "Preview connection failed.");
+    if (message.toLowerCase().includes("timed out")) {
+      json(res, 504, {
+        ok: false,
+        error: message,
+      });
+      return;
+    }
+    badRequest(res, `Preview connection failed: ${message}`);
   });
 
   if (["GET", "HEAD"].includes(req.method || "GET")) {
@@ -2231,6 +3122,56 @@ async function serveStatic(req, res, pathname) {
 
   if (resolvedPath.includes("..")) {
     badRequest(res, "Invalid path");
+    return;
+  }
+
+  const bundledAssetPath = resolveFirstExistingFile(XTERM_ASSET_CANDIDATES[resolvedPath] || []);
+  if (bundledAssetPath) {
+    const ext = path.extname(bundledAssetPath).toLowerCase();
+    const contentType = ext === ".css" ? "text/css; charset=utf-8" : "application/javascript; charset=utf-8";
+    setSecurityHeaders(res);
+    res.writeHead(200, {
+      "Content-Type": contentType,
+      "Cache-Control": "no-store",
+    });
+    fs.createReadStream(bundledAssetPath).pipe(res);
+    return;
+  }
+  if (Object.prototype.hasOwnProperty.call(XTERM_ASSET_CANDIDATES, resolvedPath)) {
+    notFound(res);
+    return;
+  }
+  const domTermAssetPath = resolveDomTermAsset(resolvedPath);
+  if (domTermAssetPath) {
+    const ext = path.extname(domTermAssetPath).toLowerCase();
+    const contentType = {
+      ".css": "text/css; charset=utf-8",
+      ".js": "application/javascript; charset=utf-8",
+      ".mjs": "application/javascript; charset=utf-8",
+      ".json": "application/json; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".ico": "image/x-icon",
+      ".woff": "font/woff",
+      ".woff2": "font/woff2",
+      ".ttf": "font/ttf",
+      ".eot": "application/vnd.ms-fontobject",
+      ".txt": "text/plain; charset=utf-8",
+      ".map": "application/json; charset=utf-8",
+      ".patch": "text/plain; charset=utf-8",
+    }[ext] || "application/octet-stream";
+    setSecurityHeaders(res);
+    res.writeHead(200, {
+      "Content-Type": contentType,
+      "Cache-Control": "no-store",
+    });
+    fs.createReadStream(domTermAssetPath).pipe(res);
+    return;
+  }
+  if (resolvedPath.startsWith("/vendor/domterm/")) {
+    notFound(res);
     return;
   }
 
@@ -2305,6 +3246,8 @@ async function handleApi(req, res, pathname, ip) {
     json(res, 200, {
       ok: true,
       now: timestamp(),
+      panelBootToken: PANEL_BOOT_TOKEN,
+      panelStartedAt: PANEL_BOOT_ISO,
       panel: {
         host: settings.host,
         port: settings.port,
@@ -2314,6 +3257,7 @@ async function handleApi(req, res, pathname, ip) {
       },
       activeDev: publicDevState(),
       activeRelay: publicRelayState(),
+      activeRelays: publicRelayStates(),
       activeTunnel: publicTunnelState(),
       commandRunning: state.commandRunning,
     });
@@ -2361,6 +3305,7 @@ async function handleApi(req, res, pathname, ip) {
     unauthorized(res);
     return;
   }
+  const terminalSessionId = resolveTerminalSessionId(session.id);
 
   if (!ensureMutationCsrf(req, session)) {
     forbidden(res, "Missing or invalid CSRF token.");
@@ -2378,11 +3323,14 @@ async function handleApi(req, res, pathname, ip) {
   if (pathname === "/api/session" && req.method === "GET") {
     json(res, 200, {
       ok: true,
+      panelBootToken: PANEL_BOOT_TOKEN,
+      panelStartedAt: PANEL_BOOT_ISO,
       csrfToken: session.csrfToken,
       expiresAt: new Date(session.expiresAt).toISOString(),
       commandRunning: state.commandRunning,
       activeDev: publicDevState(),
       activeRelay: publicRelayState(),
+      activeRelays: publicRelayStates(),
       activeTunnel: publicTunnelState(),
       previewRefreshMs: settings.previewRefreshMs,
       bindSessionIp: settings.bindSessionIp,
@@ -2390,6 +3338,96 @@ async function handleApi(req, res, pathname, ip) {
       tunnelMode: parseTunnelMode(settings.tunnelMode, "quick"),
       effectiveSecurityMode: effectiveSecurityModeForIp(ip),
       persistSessions: settings.persistSessions,
+      sharedTerminal: settings.sharedTerminal,
+    });
+    return;
+  }
+
+  if (pathname === "/api/terminal/start" && req.method === "POST") {
+    let body = {};
+    try {
+      body = await readJsonBody(req);
+    } catch (error) {
+      badRequest(res, error.message);
+      return;
+    }
+
+    try {
+      const result = await startTerminalForSession(terminalSessionId, {
+        cols: body.cols,
+        rows: body.rows,
+        clearHistory: body.clearHistory,
+      });
+      json(res, 200, {
+        ok: true,
+        started: result.started,
+        terminal: terminalStatusForResponse(result.terminal),
+      });
+    } catch (error) {
+      json(res, isNodePtyUnavailableError(error) ? 501 : 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to start terminal.",
+      });
+    }
+    return;
+  }
+
+  if (pathname === "/api/terminal/status" && req.method === "GET") {
+    const terminal = state.terminalSessions.get(terminalSessionId) || null;
+    json(res, 200, {
+      ok: true,
+      terminal: terminalStatusForResponse(terminal),
+    });
+    return;
+  }
+
+  if (pathname === "/api/terminal/history" && req.method === "GET") {
+    const terminal = state.terminalSessions.get(terminalSessionId) || null;
+    const requestUrl = new URL(req.url || "/api/terminal/history", "http://localhost");
+    const since = parseTerminalSequence(requestUrl.searchParams.get("since"), 0);
+    json(res, 200, {
+      ok: true,
+      terminal: terminalStatusForResponse(terminal),
+      history: terminalHistoryForResponse(terminal, { since }),
+    });
+    return;
+  }
+
+  if (pathname === "/api/terminal/interrupt" && req.method === "POST") {
+    try {
+      const interrupted = interruptTerminalForSession(terminalSessionId);
+      json(res, 200, {
+        ok: true,
+        interrupted,
+        terminal: terminalStatusForResponse(state.terminalSessions.get(terminalSessionId) || null),
+      });
+    } catch (error) {
+      json(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to interrupt terminal.",
+      });
+    }
+    return;
+  }
+
+  if (pathname === "/api/terminal/stop" && req.method === "POST") {
+    let body = {};
+    try {
+      body = await readJsonBody(req);
+    } catch (error) {
+      badRequest(res, error.message);
+      return;
+    }
+
+    const terminal = state.terminalSessions.get(terminalSessionId) || null;
+    const stopped = stopTerminalForSession(terminalSessionId);
+    if (terminal && parseBool(body.clearHistory, false)) {
+      clearTerminalHistory(terminal);
+    }
+    json(res, 200, {
+      ok: true,
+      stopped,
+      terminal: terminalStatusForResponse(state.terminalSessions.get(terminalSessionId) || terminal || null),
     });
     return;
   }
@@ -2609,6 +3647,7 @@ async function handleApi(req, res, pathname, ip) {
         commandRunning: state.commandRunning,
         activeDev: publicDevState(),
         activeRelay: publicRelayState(),
+        activeRelays: publicRelayStates(),
         activeTunnel: publicTunnelState(),
       })}\n\n`
     );
@@ -2725,6 +3764,7 @@ async function handleApi(req, res, pathname, ip) {
     json(res, 200, {
       ok: true,
       activeRelay: publicRelayState(),
+      activeRelays: publicRelayStates(),
       activeTunnel: publicTunnelState(),
     });
     return;
@@ -2879,7 +3919,7 @@ async function handleApi(req, res, pathname, ip) {
     }
 
     try {
-      const activeRelay = await startRelayWatcher({
+      const startedRelay = await startRelayWatcher({
         sessionName,
         project,
         useLast,
@@ -2901,10 +3941,15 @@ async function handleApi(req, res, pathname, ip) {
           startFromLatest,
           pollMs,
           history,
-          pid: activeRelay?.pid || 0,
+          pid: startedRelay?.pid || 0,
         },
       }).catch(() => null);
-      json(res, 200, { ok: true, activeRelay });
+      json(res, 200, {
+        ok: true,
+        startedRelay,
+        activeRelay: publicRelayState(),
+        activeRelays: publicRelayStates(),
+      });
     } catch (error) {
       json(res, 409, {
         ok: false,
@@ -2916,17 +3961,33 @@ async function handleApi(req, res, pathname, ip) {
 
   if (pathname === "/api/relay/stop" && req.method === "POST") {
     try {
-      const stopped = await stopRelayWatcher();
+      const body = await readJsonBody(req);
+      const requestedSessionName = String(body.sessionName || "").trim();
+      const stopAll = parseBool(body.all, false);
+      const result = await stopRelayWatcher({
+        sessionName: requestedSessionName,
+        all: stopAll,
+      });
       await appendActivityEvent({
         type: "relay_stop",
         state: "idle",
-        message: stopped ? "Relay watcher stop requested." : "Relay watcher is not running.",
+        message: result.stopped
+          ? `Relay watcher stop requested${result.requestedSessionName ? ` (${result.requestedSessionName})` : ""}.`
+          : "Relay watcher is not running.",
         source: "panel-relay",
+        meta: {
+          requestedSessionName: result.requestedSessionName || "",
+          stoppedCount: result.stoppedCount || 0,
+          all: stopAll,
+        },
       }).catch(() => null);
       json(res, 200, {
         ok: true,
-        stopped,
+        stopped: result.stopped,
+        stoppedCount: result.stoppedCount,
+        requestedSessionName: result.requestedSessionName,
         activeRelay: publicRelayState(),
+        activeRelays: publicRelayStates(),
       });
     } catch (error) {
       json(res, 500, {
@@ -3340,6 +4401,191 @@ async function handleApi(req, res, pathname, ip) {
     return;
   }
 
+  if (pathname === "/api/codex/sessions/super-agent/spawn" && req.method === "POST") {
+    let body = {};
+    try {
+      body = await readJsonBody(req);
+    } catch (error) {
+      badRequest(res, error.message);
+      return;
+    }
+
+    const project = String(body.project || "").trim();
+    const requestedName = String(body.name || "").trim();
+    const notes = String(body.notes || "").trim().slice(0, 5000);
+    const mode = String(body.mode || "quick").trim().toLowerCase();
+    const model = String(body.model || "").trim();
+    const makeDefault = body.makeDefault !== false;
+    const runPrep = body.runPrep !== false;
+    const startRelay = body.startRelay !== false;
+    const timeoutMs = Math.max(
+      20_000,
+      Math.min(15 * 60 * 1000, Number.parseInt(String(body.timeoutMs || ""), 10) || 8 * 60 * 1000)
+    );
+    const prompt =
+      String(body.prompt || "").trim() ||
+      buildSuperAgentInitPrompt({
+        project,
+        mode,
+      });
+
+    if (!validateCodexProjectRef(project)) {
+      badRequest(res, "Invalid project value.");
+      return;
+    }
+    if (requestedName && !validateSessionName(requestedName)) {
+      badRequest(res, "Invalid session name.");
+      return;
+    }
+    if (!["quick", "full"].includes(mode)) {
+      badRequest(res, "Mode must be 'quick' or 'full'.");
+      return;
+    }
+
+    const name = requestedName || superAgentSessionName(project);
+    const prepScript = mode === "full" ? "super:bootstrap:full" : "super:bootstrap";
+    const prepArgs = project ? [`--project=${project}`] : [];
+    const codexArgs = ["exec", "--json"];
+    if (model) {
+      codexArgs.push("--model", model);
+    }
+    codexArgs.push("-");
+
+    try {
+      let prep = null;
+      if (runPrep) {
+        prep = await runOneShot({
+          source: prepScript,
+          script: prepScript,
+          args: prepArgs,
+          timeoutMs: 35 * 60 * 1000,
+        });
+        if (!prep.ok) {
+          json(res, 500, {
+            ok: false,
+            step: "super-bootstrap",
+            prep,
+          });
+          return;
+        }
+      }
+
+      const codexResult = await runCodexOneShot({
+        source: "codex:super-agent:create",
+        args: codexArgs,
+        input: prompt,
+        timeoutMs,
+      });
+      if (!codexResult.ok) {
+        json(res, 500, {
+          ok: false,
+          step: "codex-create",
+          error: `Codex super-agent create failed (exit ${codexResult.exitCode}).`,
+          result: codexResult,
+          prep,
+        });
+        return;
+      }
+
+      const threadId = extractCodexThreadIdFromOutput(codexResult.outputLines);
+      if (!threadId) {
+        json(res, 500, {
+          ok: false,
+          step: "thread-id",
+          error: "Codex create completed but no thread_id was found in output.",
+          result: codexResult,
+          prep,
+        });
+        return;
+      }
+
+      const current = await readCodexRegistrySafe();
+      const updated = upsertCodexSession(current, {
+        name,
+        target: threadId,
+        threadId,
+        project,
+        notes: notes || `Super agent (${mode}) created via commander panel.`,
+        source: "panel-super-agent",
+        makeDefault,
+      });
+      const persisted = await writeCodexRegistrySafe(updated);
+
+      let relay = null;
+      let relayError = "";
+      if (startRelay) {
+        const existingRelay = publicRelayStates().find((entry) => String(entry?.sessionName || "") === name);
+        if (existingRelay) {
+          relay = existingRelay;
+        } else {
+          try {
+            relay = await startRelayWatcher({
+              sessionName: name,
+              project,
+              useLast: false,
+              dryRun: false,
+              startFromLatest: true,
+              pollMs: 1200,
+              history: 16,
+            });
+          } catch (error) {
+            relayError = error instanceof Error ? error.message : "Failed to start relay watcher.";
+          }
+        }
+      }
+
+      const latestSession = runPrep ? await readLatestPreparedChatSession() : null;
+      pushLog("codex-sessions", `Spawned super agent ${name} -> ${threadId}`);
+      await appendActivityEvent({
+        type: "super_agent_spawn",
+        state: "working",
+        message: `Super agent spawned: ${name}${project ? ` (${project})` : ""}`,
+        source: "panel-codex",
+        meta: {
+          name,
+          threadId,
+          project,
+          mode,
+          runPrep,
+          startRelay,
+          relayError,
+        },
+      }).catch(() => null);
+
+      json(res, 200, {
+        ok: true,
+        created: {
+          name,
+          target: threadId,
+          threadId,
+          project,
+          mode,
+        },
+        registry: persisted,
+        prep,
+        latestSession,
+        codex: {
+          exitCode: codexResult.exitCode,
+          durationMs: codexResult.durationMs,
+          outputTail: codexResult.outputLines.slice(-25),
+        },
+        relay: {
+          started: Boolean(relay),
+          relay,
+          error: relayError,
+          activeRelay: publicRelayState(),
+          activeRelays: publicRelayStates(),
+        },
+      });
+    } catch (error) {
+      json(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to spawn super agent.",
+      });
+    }
+    return;
+  }
+
   if (pathname === "/api/agent/status" && req.method === "POST") {
     let body;
     try {
@@ -3486,11 +4732,27 @@ async function handleApi(req, res, pathname, ip) {
 
 const wsServer = new WebSocketServer({ noServer: true });
 
-wsServer.on("connection", (ws, req) => {
+wsServer.on("connection", (ws, req, session) => {
+  const sessionId = String(session?.id || "").trim();
+  if (!sessionId) {
+    wsSend(ws, {
+      type: "chat:error",
+      error: "Missing session.",
+    });
+    try {
+      ws.close(1008, "Missing session");
+    } catch {
+      // ignore close failures when session is missing
+    }
+    return;
+  }
   state.wsClients.add(ws);
+  state.wsSessionBySocket.set(ws, sessionId);
+  prepareSocketHeartbeat(ws, sessionId);
   pushLog("chat", "WebSocket client connected.");
 
   ws.on("message", async (raw) => {
+    touchSessionById(sessionId);
     try {
       let payload = null;
       try {
@@ -3575,10 +4837,12 @@ wsServer.on("connection", (ws, req) => {
 
   ws.on("close", () => {
     state.wsClients.delete(ws);
+    state.wsSessionBySocket.delete(ws);
   });
 
   ws.on("error", () => {
     state.wsClients.delete(ws);
+    state.wsSessionBySocket.delete(ws);
   });
 
   buildChatSnapshot()
@@ -3595,6 +4859,116 @@ wsServer.on("connection", (ws, req) => {
         error: error instanceof Error ? error.message : "Failed to initialize chat.",
       });
     });
+});
+
+const terminalWsServer = new WebSocketServer({ noServer: true });
+
+terminalWsServer.on("connection", (ws, _req, session) => {
+  const sessionId = String(session?.id || "").trim();
+  if (!sessionId) {
+    wsSend(ws, {
+      type: "terminal:error",
+      error: "Missing session.",
+    });
+    closeTerminalSocket(ws, "Missing session.");
+    return;
+  }
+  const terminalSessionId = resolveTerminalSessionId(sessionId);
+  const terminal = attachTerminalSocket(terminalSessionId, ws);
+  prepareSocketHeartbeat(ws, sessionId);
+  pushLog("terminal", "Terminal WebSocket client connected.");
+  wsSend(ws, {
+    type: "terminal:init",
+    terminal: terminalStatusForResponse(terminal),
+  });
+  wsSend(ws, {
+    type: "terminal:history",
+    ...terminalHistoryForResponse(terminal, { since: 0 }),
+  });
+
+  ws.on("message", (raw) => {
+    touchSessionById(sessionId);
+    try {
+      let payload = null;
+      try {
+        payload = JSON.parse(String(raw || ""));
+      } catch {
+        wsSend(ws, {
+          type: "terminal:error",
+          error: "Invalid JSON message.",
+        });
+        return;
+      }
+
+      const messageType = String(payload?.type || "").trim();
+      if (messageType === "terminal:stdin") {
+        writeTerminalInput(terminalSessionId, payload?.data ?? "");
+        return;
+      }
+
+      if (messageType === "terminal:resize") {
+        const nextTerminal = resizeTerminalForSession(terminalSessionId, payload?.cols, payload?.rows);
+        broadcastTerminalPayload(nextTerminal, {
+          type: "terminal:status",
+          terminal: terminalStatusForResponse(nextTerminal),
+        });
+        return;
+      }
+
+      if (messageType === "terminal:interrupt") {
+        const interrupted = interruptTerminalForSession(terminalSessionId);
+        wsSend(ws, {
+          type: "terminal:interrupt",
+          interrupted,
+        });
+        return;
+      }
+
+      if (messageType === "terminal:status") {
+        wsSend(ws, {
+          type: "terminal:status",
+          terminal: terminalStatusForResponse(state.terminalSessions.get(terminalSessionId) || null),
+        });
+        return;
+      }
+
+      if (messageType === "terminal:history") {
+        const since = parseTerminalSequence(payload?.since, 0);
+        wsSend(ws, {
+          type: "terminal:history",
+          ...terminalHistoryForResponse(state.terminalSessions.get(terminalSessionId) || null, { since }),
+        });
+        return;
+      }
+
+      if (messageType === "terminal:resume") {
+        const since = parseTerminalSequence(payload?.since, 0);
+        wsSend(ws, {
+          type: "terminal:resume",
+          ...terminalHistoryForResponse(state.terminalSessions.get(terminalSessionId) || null, { since }),
+        });
+        return;
+      }
+
+      wsSend(ws, {
+        type: "terminal:error",
+        error: `Unsupported message type: ${messageType || "(empty)"}`,
+      });
+    } catch (error) {
+      wsSend(ws, {
+        type: "terminal:error",
+        error: error instanceof Error ? error.message : "Terminal message handling failed.",
+      });
+    }
+  });
+
+  ws.on("close", () => {
+    detachTerminalSocket(ws);
+  });
+
+  ws.on("error", () => {
+    detachTerminalSocket(ws);
+  });
 });
 
 loadSessionStoreSync();
@@ -3620,6 +4994,9 @@ function logStartupBanner() {
       .replace(/\\/g, "/")})`
   );
   console.log(`[remote-panel] Runtime config: ${path.relative(ROOT, settings.runtimeConfigFile).replace(/\\/g, "/")}`);
+  if (process.platform === "win32") {
+    console.log(`[remote-panel] Terminal PTY mode: ${TERMINAL_USE_CONPTY ? "conpty" : "winpty"}`);
+  }
   if (settings.allowlist.length > 0) {
     console.log(`[remote-panel] IP allowlist: ${settings.allowlist.join(", ")}`);
   }
@@ -3665,7 +5042,9 @@ const server = http.createServer(async (req, res) => {
 server.on("upgrade", (req, socket, head) => {
   try {
     const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
-    if (requestUrl.pathname !== WS_PATH) {
+    const isChatWs = requestUrl.pathname === WS_PATH;
+    const isTerminalWs = requestUrl.pathname === TERMINAL_WS_PATH;
+    if (!isChatWs && !isTerminalWs) {
       socket.destroy();
       return;
     }
@@ -3690,8 +5069,15 @@ server.on("upgrade", (req, socket, head) => {
       return;
     }
 
-    wsServer.handleUpgrade(req, socket, head, (ws) => {
-      wsServer.emit("connection", ws, req, session);
+    if (isChatWs) {
+      wsServer.handleUpgrade(req, socket, head, (ws) => {
+        wsServer.emit("connection", ws, req, session);
+      });
+      return;
+    }
+
+    terminalWsServer.handleUpgrade(req, socket, head, (ws) => {
+      terminalWsServer.emit("connection", ws, req, session);
     });
   } catch {
     socket.destroy();
@@ -3703,11 +5089,23 @@ server.listen(settings.port, settings.host, () => {
   pushLog("system", `Remote panel ready at http://${settings.host}:${settings.port}`);
 });
 
+server.on("close", () => {
+  destroyAllTerminalSessions("Server closed.");
+});
+
 const relayBroadcastInterval = setInterval(() => {
   broadcastChatSnapshot("poll").catch(() => null);
 }, 2000);
 if (typeof relayBroadcastInterval.unref === "function") {
   relayBroadcastInterval.unref();
+}
+
+const wsHeartbeatInterval = setInterval(() => {
+  heartbeatWebSocketClients(state.wsClients);
+  heartbeatWebSocketClients(state.terminalWsClients);
+}, WS_HEARTBEAT_INTERVAL_MS);
+if (typeof wsHeartbeatInterval.unref === "function") {
+  wsHeartbeatInterval.unref();
 }
 
 async function shutdown() {
@@ -3719,6 +5117,7 @@ async function shutdown() {
   await persistSessionStore().catch(() => null);
   clearInterval(sessionSweepInterval);
   clearInterval(relayBroadcastInterval);
+  clearInterval(wsHeartbeatInterval);
   for (const ws of state.wsClients) {
     try {
       ws.close(1001, "Server shutting down");
@@ -3726,8 +5125,9 @@ async function shutdown() {
       // ignore socket close failures during shutdown
     }
   }
-  if (state.activeRelay?.pid) {
-    await stopRelayWatcher().catch(() => null);
+  destroyAllTerminalSessions("Server shutting down.");
+  if (state.activeRelays.size > 0 || state.activeRelay?.pid) {
+    await stopRelayWatcher({ all: true }).catch(() => null);
   }
   if (state.activeTunnel?.pid) {
     await stopTunnelProcess().catch(() => null);

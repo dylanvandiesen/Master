@@ -40,6 +40,8 @@ Primary implementation files:
 - quick numeric reply chips for Codex "1/2/3" prompts
 - live activity feed (`thinking`, `working`, tool progress)
 - collapsible utility panels (preview/activity/sessions/remote/output)
+- preview panel selected by default on load
+- inline runtime status dots shown in the title row (tap/hover for details)
 
 ### Relay
 
@@ -75,6 +77,7 @@ Panel runtime/auth state:
 
 - `.agency/remote/panel-runtime.json` (security/tunnel mode + host hint)
 - `.agency/remote/panel-sessions.json` (persisted auth sessions when enabled)
+- `.agency/remote/panel-credentials.json` (generated fallback password/session secret when env values are not set)
 
 Dev manifests:
 
@@ -136,6 +139,7 @@ REMOTE_PANEL_PORT=8787
 REMOTE_PANEL_SECURITY_MODE=off
 REMOTE_PANEL_PUBLIC_HOST=
 REMOTE_PANEL_RUNTIME_CONFIG=.agency/remote/panel-runtime.json
+REMOTE_PANEL_CREDENTIALS_FILE=.agency/remote/panel-credentials.json
 REMOTE_PANEL_ALLOWLIST=
 REMOTE_PANEL_BIND_SESSION_IP=true
 REMOTE_PANEL_PERSIST_SESSIONS=true
@@ -145,34 +149,43 @@ REMOTE_PANEL_CLOUDFLARED_TUNNEL_TOKEN=
 REMOTE_PANEL_CLOUDFLARED_TUNNEL_NAME=
 REMOTE_PANEL_CLOUDFLARED_CONFIG=
 REMOTE_PANEL_CLOUDFLARED_BIN=
+REMOTE_PANEL_TERMINAL_USE_CONPTY=false
 ```
 
 `REMOTE_PANEL_PUBLIC_HOST` is the host hint shown as mobile/public URL when tunnel auto-discovery is unavailable.
 
-If `REMOTE_PANEL_PASSWORD` or `REMOTE_PANEL_SESSION_SECRET` is missing, the server generates one-time values at startup and logs them.
+If `REMOTE_PANEL_PASSWORD` or `REMOTE_PANEL_SESSION_SECRET` is missing, the server reuses values from `panel-credentials.json` when available, otherwise it generates and persists new values.
+
+`REMOTE_PANEL_TERMINAL_USE_CONPTY` controls Windows PTY mode for terminal sessions (`false` = winpty, `true` = conpty).
 
 ## 7) Commands
 
 From repo root:
 
 ```powershell
-cmd /c npm run remote:panel
-cmd /c npm run remote:panel:local
-cmd /c npm run remote:panel:remote
-cmd /c npm run remote:stack
-cmd /c npm run remote:stack:remote
-cmd /c npm run remote:stack -- --project=csscroll
-cmd /c npm run remote:stack:remote -- --project=csscroll --panel-port=8787
-cmd /c npm run remote:relay:codex:watch
-cmd /c npm run remote:relay:codex:once -- --dry-run=true
-cmd /c npm run remote:agent:status -- --state=working --message="Investigating issue"
-cmd /c npm run remote:agent:reply -- --message="Implemented fix"
+cmd /c npm run commander
+cmd /c npm run commander:local
+cmd /c npm run commander:remote
+cmd /c npm run commander:start
+cmd /c npm run commander:start:remote
+cmd /c npm run commander:start:remote:full
+cmd /c npm run commander:start:all
+cmd /c npm run commander:start -- --project=csscroll
+cmd /c npm run commander:start:remote -- --project=csscroll --panel-port=8787
+cmd /c npm run commander:relay:codex:watch
+cmd /c npm run commander:relay:codex:once -- --dry-run=true
+cmd /c npm run commander:terminal:attach
+cmd /c npm run commander:terminal:attach:once
+cmd /c npm run commander:agent:status -- --state=working --message="Investigating issue"
+cmd /c npm run commander:agent:reply -- --message="Implemented fix"
 ```
 
 Stack presets:
 
-- `remote:stack`: panel (local profile) + dev + relay watcher
-- `remote:stack:remote`: panel (LAN/adaptive profile) + dev + relay watcher
+- `commander:start`: panel (local profile) + dev + relay watcher
+- `commander:start:remote`: panel (LAN/adaptive profile) + dev + relay watcher
+- `commander:start:remote:full`: `chat:new:full` prep, then panel (LAN/adaptive profile) + dev + relay watcher
+- `commander:start:all`: alias of `commander:start:remote:full`
 - optional: `--no-dev=true` or `--no-relay=true`
 
 ## 8) Panel Controls (What They Do)
@@ -199,7 +212,13 @@ Quick replies:
 - manage registered Codex session aliases
 - set defaults by project/global
 - run quick/full prep from panel
+- spawn super-agent sessions directly from panel:
+  - `Spawn Super`: quick bootstrap + thread create + registry upsert + relay start
+  - `Spawn Super Full`: full bootstrap + thread create + registry upsert + relay start
 - start/stop relay watcher
+- relay watchers support multiple unique session names in parallel
+- `Start Relay` acts on the selected/typed session alias
+- `Stop Relay` targets the selected running alias (or the active relay when no alias match)
 
 ### Remote Access
 
@@ -214,6 +233,18 @@ Quick replies:
 - choose manifest
 - open preview in-panel/fullscreen/new tab
 - auto-refresh interval control
+
+### Terminal
+
+- terminal channel auto-connects on login/bootstrap
+- terminal channel health loop re-opens the socket/process if connectivity drops
+- status bars show terminal runtime and workspace summary
+- primary terminal surface is a live DomTerm renderer (not xterm), so touch selection/copy works directly on terminal output
+- mobile dock keeps focus locked while using arrow/special buttons for consecutive taps and reduced keyboard collapse
+- toolbar buttons run through pointerdown-first handling on touch to avoid duplicate click/input paths
+- `Select Text` mode remains available as a fallback overlay when explicit copy-first behavior is preferred
+- Codex session switching triggers immediate terminal re-sync (`codex resume <thread-id>` when target exists)
+- `commander:terminal:attach` connects a local shell (for example a VS Code terminal tab) to the same shared remote PTY for true live mirrored control
 
 ## 9) API and WS Contract
 
@@ -235,6 +266,12 @@ Chat/relay:
 - `GET /api/relay/status`
 - `POST /api/relay/start`
 - `POST /api/relay/stop`
+
+Relay API notes:
+
+- `GET /api/relay/status` returns both `activeRelay` (primary) and `activeRelays` (all running relay instances)
+- `POST /api/relay/start` starts a relay for the requested `sessionName` (unique per running relay)
+- `POST /api/relay/stop` accepts optional `{ sessionName }` or `{ all: true }`
 
 Tunnel:
 
@@ -260,12 +297,18 @@ Workspace:
 - `POST /api/codex/sessions/default`
 - `POST /api/codex/sessions/retire`
 - `POST /api/codex/sessions/prep`
+- `POST /api/codex/sessions/super-agent/spawn`
 - `GET /api/inbox/latest`
 - `GET /api/agent/reply/latest`
 - `GET /api/agent/poller`
 - `POST /api/agent/status`
 - `POST /api/agent/reply`
 - `GET /api/events` (SSE logs/state)
+- `POST /api/terminal/start`
+- `GET /api/terminal/status`
+- `GET /api/terminal/history`
+- `POST /api/terminal/interrupt`
+- `POST /api/terminal/stop`
 
 WebSocket:
 
@@ -274,13 +317,24 @@ WebSocket:
 - `chat:ack`
 - `chat:error`
 - `activity:event`
+- `/terminal-ws` (`terminal:init`, `terminal:history`, `terminal:output`, `terminal:status`, `terminal:exit`)
+
+Terminal channel behavior:
+
+- panel now auto-establishes a persistent terminal channel after login/bootstrap
+- the channel auto-reconnects and uses keepalive heartbeat
+- the channel stays connected even when the PTY process is stopped (fast reattach/start)
+- the PTY session is reattachable per authenticated session
+- terminal status strip summarizes running/socket/pid/session state for quick health checks
+- client now auto-refreshes once when the panel process restarts (boot token mismatch) so remote tabs stay in sync on the same URL
+- mobile layout uses `interactive-widget=resizes-content` viewport mode so keyboard resizing pushes content naturally
 
 ## 10) Recommended Profiles
 
 ### Local only (default)
 
 ```powershell
-cmd /c npm run remote:panel
+cmd /c npm run commander
 ```
 
 Open:
@@ -290,7 +344,7 @@ Open:
 ### Phone on same network
 
 ```powershell
-cmd /c npm run remote:stack:remote -- --project=csscroll
+cmd /c npm run commander:start:remote -- --project=csscroll
 ```
 
 Then use panel-provided Mobile URL.
@@ -308,10 +362,10 @@ Do not expose raw router port forwarding directly to panel.
 
 ### `Missing --message for reply command`
 
-`remote:agent:reply` needs a message:
+`commander:agent:reply` needs a message:
 
 ```powershell
-cmd /c npm run remote:agent:reply -- --message="Your reply text"
+cmd /c npm run commander:agent:reply -- --message="Your reply text"
 ```
 
 ### `chat:new:quick` project arg fails
@@ -324,7 +378,7 @@ cmd /c npm run chat:new:quick -- --project=csscroll
 
 ### Phone says `connection refused`
 
-- ensure panel host is `0.0.0.0` (`remote:panel:remote` or `remote:stack:remote`)
+- ensure panel host is `0.0.0.0` (`commander:remote` or `commander:start:remote`)
 - verify firewall allows chosen port
 - verify correct LAN IP (not stale virtual adapter IP)
 - if outside LAN, use tunnel URL

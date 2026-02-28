@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Eye 3D Layer Studio (No Pixi)</title>
+  <style>
+    :root {
+      --bg-0: #09101a;
+      --bg-1: #151f2f;
+      --panel: rgba(15, 22, 35, 0.88);
+      --line: rgba(255,255,255,0.12);
+      --text: #ecf3ff;
+      --muted: #9aabcf;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: radial-gradient(circle at 20% 0%, #1f2b42 0%, var(--bg-1) 45%, var(--bg-0) 100%);
+    }
+    .layout {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 1rem;
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: minmax(320px, 390px) minmax(0, 1fr);
+    }
+    .panel {
+      position: sticky;
+      top: .6rem;
+      border-radius: 16px;
+      padding: .9rem;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      backdrop-filter: blur(8px);
+      max-height: calc(100dvh - 1.2rem);
+      overflow: auto;
+    }
+    h1 { margin: 0 0 .4rem; font-size: 1.05rem; }
+    .intro { margin: 0 0 .7rem; color: var(--muted); font-size: .86rem; line-height: 1.45; }
+    .group { border-top: 1px solid rgba(255,255,255,.12); margin-top: .7rem; padding-top: .7rem; }
+    .group h2 { margin: 0 0 .5rem; font-size: .8rem; letter-spacing: .05em; text-transform: uppercase; }
+    label { display: grid; gap: .16rem; margin-bottom: .42rem; font-size: .79rem; }
+    label span { display: flex; justify-content: space-between; color: #bfcbeb; font-size: .74rem; }
+    input[type="range"], select, input[type="color"], input[type="file"] { width: 100%; }
+    .row { display: grid; gap: .4rem; grid-template-columns: 1fr 1fr; }
+    button {
+      border: 1px solid rgba(255,255,255,.2);
+      background: #1e2d48;
+      color: #eaf2ff;
+      border-radius: 8px;
+      padding: .42rem .55rem;
+      font-size: .76rem;
+      cursor: pointer;
+    }
+    .button-row { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .stage { display: grid; gap: .8rem; }
+    .hero {
+      position: relative;
+      width: min(84vmin, 860px);
+      aspect-ratio: 1;
+      margin-inline: auto;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 0%, rgba(255,255,255,.1), rgba(255,255,255,0));
+      box-shadow: inset 0 0 45px rgba(0,0,0,.35);
+    }
+    #mainCanvas { width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; }
+    .grid { display: grid; gap: .8rem; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .tile { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+    .tile h3 { margin: 0; padding: .4rem .55rem; font-size: .74rem; text-transform: uppercase; letter-spacing: .05em; }
+    .tile canvas { width: 100%; aspect-ratio: 1; display: block; image-rendering: pixelated; }
+    .layer-list { display: grid; gap: .55rem; }
+    .layer-item { border: 1px solid rgba(255,255,255,.14); border-radius: 10px; padding: .5rem; background: rgba(255,255,255,.03); }
+    .layer-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .4rem; font-size: .75rem; }
+    .layer-chip { display: inline-flex; align-items: center; gap: .28rem; font-size: .68rem; color: #c7d4f6; opacity: .95; }
+    .layer-chip::before { content: ''; width: .55rem; height: .55rem; border-radius: 50%; background: #8fc0ff; box-shadow: 0 0 8px rgba(143,192,255,.8); }
+    .layer-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: .35rem; color: #b8c7ea; font-size: .7rem; }
+    .note { color: var(--muted); margin: 0; font-size: .78rem; }
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .panel { position: static; max-height: none; }
+      .grid { grid-template-columns: 1fr; }
+      .hero { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="panel">
+      <h1>Eye 3D Layer Studio</h1>
+      <p class="intro">No extra iris/pupil element. The source image itself rotates/warps near the center while the outer shell stays anchored. Add multiple warped or normal layers, mix blend modes, and colorize each layer.</p>
+
+      <div class="group">
+        <h2>Base asset</h2>
+        <label><span>Upload base eye image</span><input id="baseFile" type="file" accept="image/png,image/webp,image/jpeg" /></label>
+        <p class="note">Tip: use the black-pupil source image directly. Center can be preserved with "No-warp center".</p>
+      </div>
+
+      <div class="group">
+        <h2>Motion</h2>
+        <label><span>Max movement radius <output id="outMaxTravel">0.34</output></span><input id="maxTravel" type="range" min="0.05" max="0.65" step="0.005" value="0.34" /></label>
+        <label><span>Damping <output id="outDamping">0.14</output></span><input id="damping" type="range" min="0.03" max="0.35" step="0.01" value="0.14" /></label>
+        <label><span>No-warp center radius <output id="outCenterSafe">0.24</output></span><input id="centerSafe" type="range" min="0.02" max="0.55" step="0.01" value="0.24" /></label>
+        <label><span>Map detail boost <output id="outDetailBoost">1.20</output></span><input id="detailBoost" type="range" min="0" max="2.5" step="0.05" value="1.20" /></label>
+      </div>
+
+      <div class="group">
+        <h2>Layers</h2>
+        <div class="button-row">
+          <button id="addStack" type="button">Add dramatic stack</button>
+          <button id="addWarp" type="button">Add warped layer</button>
+          <button id="addImage" type="button">Add image layer</button>
+          <button id="resetGaze" type="button">Reset gaze</button>
+        </div>
+        <p class="note">Each layer has upload + blend + color controls. Use “Add dramatic stack” to instantly create visible multi-layer differences.</p>
+        <div id="layerList" class="layer-list"></div>
+      </div>
+    </aside>
+
+    <section class="stage">
+      <div class="hero"><canvas id="mainCanvas" width="900" height="900"></canvas></div>
+      <div class="grid">
+        <article class="tile"><h3>Source</h3><canvas id="sourceCanvas" width="280" height="280"></canvas></article>
+        <article class="tile"><h3>Depth map</h3><canvas id="depthCanvas" width="280" height="280"></canvas></article>
+        <article class="tile"><h3>Normal map</h3><canvas id="normalCanvas" width="280" height="280"></canvas></article>
+      </div>
+    </section>
+  </div>
+
+<script>
+const FALLBACK_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Cdefs%3E%3CradialGradient id='r' cx='46%25' cy='36%25' r='68%25'%3E%3Cstop offset='0%25' stop-color='%23b8b8b8'/%3E%3Cstop offset='56%25' stop-color='%23747474'/%3E%3Cstop offset='100%25' stop-color='%23484848'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='300' cy='300' r='276' fill='url(%23r)'/%3E%3Ccircle cx='300' cy='300' r='278' fill='none' stroke='%23292929' stroke-width='6'/%3E%3Ccircle cx='300' cy='300' r='84' fill='%23000'/%3E%3C/svg%3E";
+
+const mainCanvas = document.getElementById('mainCanvas');
+const mainCtx = mainCanvas.getContext('2d', { alpha: true, willReadFrequently: true });
+const sourceCanvas = document.getElementById('sourceCanvas');
+const sourceCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+const depthCanvas = document.getElementById('depthCanvas');
+const depthCtx = depthCanvas.getContext('2d', { willReadFrequently: true });
+const normalCanvas = document.getElementById('normalCanvas');
+const normalCtx = normalCanvas.getContext('2d', { willReadFrequently: true });
+
+const controls = {
+  baseFile: document.getElementById('baseFile'),
+  maxTravel: document.getElementById('maxTravel'),
+  damping: document.getElementById('damping'),
+  centerSafe: document.getElementById('centerSafe'),
+  detailBoost: document.getElementById('detailBoost'),
+  addWarp: document.getElementById('addWarp'),
+  addImage: document.getElementById('addImage'),
+  addStack: document.getElementById('addStack'),
+  resetGaze: document.getElementById('resetGaze'),
+  layerList: document.getElementById('layerList'),
+};
+
+const outputs = {
+  maxTravel: document.getElementById('outMaxTravel'),
+  damping: document.getElementById('outDamping'),
+  centerSafe: document.getElementById('outCenterSafe'),
+  detailBoost: document.getElementById('outDetailBoost'),
+};
+
+const blendModes = ['source-over', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity'];
+
+const state = {
+  w: mainCanvas.width,
+  h: mainCanvas.height,
+  cx: mainCanvas.width / 2,
+  cy: mainCanvas.height / 2,
+  holeRadius: mainCanvas.width * 0.12,
+  outerRadius: mainCanvas.width * 0.46,
+  srcData: null,
+  alphaMask: null,
+  depth: null,
+  gradX: null,
+  gradY: null,
+  gazeTargetX: 0,
+  gazeTargetY: 0,
+  gazeX: 0,
+  gazeY: 0,
+  layers: [],
+  running: false,
+  layerId: 1,
+};
+
+function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
+function smoothstep(e0, e1, x) { const t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t); }
+
+function setOutputValues() {
+  for (const key of Object.keys(outputs)) outputs[key].textContent = Number(controls[key].value).toFixed(2);
+}
+
+function makeImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+function detectGeometry(data) {
+  let count = 0, sumX = 0, sumY = 0;
+  for (let y = 0; y < state.h; y++) {
+    for (let x = 0; x < state.w; x++) {
+      const i = (y * state.w + x) * 4;
+      if (data[i + 3] > 10) { count++; sumX += x; sumY += y; }
+    }
+  }
+  if (count > 0) { state.cx = sumX / count; state.cy = sumY / count; }
+
+  let outer = 0;
+  for (let y = 0; y < state.h; y++) {
+    for (let x = 0; x < state.w; x++) {
+      const i = (y * state.w + x) * 4;
+      if (data[i + 3] > 10) outer = Math.max(outer, Math.hypot(x - state.cx, y - state.cy));
+    }
+  }
+  if (outer > 0) state.outerRadius = outer;
+
+  let inner = state.w;
+  for (let a = 0; a < 360; a += 3) {
+    const rads = a * Math.PI / 180;
+    for (let r = 1; r < state.outerRadius; r++) {
+      const x = Math.round(state.cx + Math.cos(rads) * r);
+      const y = Math.round(state.cy + Math.sin(rads) * r);
+      if (x < 0 || x >= state.w || y < 0 || y >= state.h) break;
+      const i = (y * state.w + x) * 4;
+      if (data[i + 3] > 24) { inner = Math.min(inner, r); break; }
+    }
+  }
+  if (inner < state.w) state.holeRadius = inner;
+}
+
+function rebuildMaps() {
+  if (!state.srcData) return;
+  const px = state.w * state.h;
+  const src = state.srcData.data;
+  const depth = new Float32Array(px);
+  const alphaMask = new Float32Array(px);
+  const detailBoost = Number(controls.detailBoost.value);
+
+  for (let y = 0; y < state.h; y++) {
+    for (let x = 0; x < state.w; x++) {
+      const p = y * state.w + x;
+      const i = p * 4;
+      const a = src[i + 3] / 255;
+      alphaMask[p] = a;
+      if (a < 0.01) continue;
+      const lum = (0.2126 * src[i] + 0.7152 * src[i + 1] + 0.0722 * src[i + 2]) / 255;
+      const d = Math.hypot(x - state.cx, y - state.cy);
+      const radial = 1 - smoothstep(state.holeRadius * 0.92, state.outerRadius, d);
+      depth[p] = clamp((Math.pow(1 - lum, 1.25) + radial * 0.45) * a * (1 + detailBoost * 0.45), 0, 1);
+    }
+  }
+
+  const smooth = depth.slice();
+  for (let y = 1; y < state.h - 1; y++) {
+    for (let x = 1; x < state.w - 1; x++) {
+      let s = 0;
+      for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) s += depth[(y + oy) * state.w + (x + ox)];
+      smooth[y * state.w + x] = s / 9;
+    }
+  }
+
+  const gradX = new Float32Array(px);
+  const gradY = new Float32Array(px);
+  for (let y = 1; y < state.h - 1; y++) {
+    for (let x = 1; x < state.w - 1; x++) {
+      const p00 = smooth[(y - 1) * state.w + (x - 1)], p10 = smooth[(y - 1) * state.w + x], p20 = smooth[(y - 1) * state.w + (x + 1)];
+      const p01 = smooth[y * state.w + (x - 1)], p21 = smooth[y * state.w + (x + 1)];
+      const p02 = smooth[(y + 1) * state.w + (x - 1)], p12 = smooth[(y + 1) * state.w + x], p22 = smooth[(y + 1) * state.w + (x + 1)];
+      const sx = (p20 + 2 * p21 + p22) - (p00 + 2 * p01 + p02);
+      const sy = (p02 + 2 * p12 + p22) - (p00 + 2 * p10 + p20);
+      const dx = x - state.cx;
+      const dy = y - state.cy;
+      const dist = Math.hypot(dx, dy) || 1;
+      const radial = 1 - smoothstep(state.holeRadius, state.outerRadius, dist);
+      gradX[y * state.w + x] = sx + (dx / dist) * radial * 0.8;
+      gradY[y * state.w + x] = sy + (dy / dist) * radial * 0.8;
+    }
+  }
+
+  state.depth = smooth;
+  state.gradX = gradX;
+  state.gradY = gradY;
+  state.alphaMask = alphaMask;
+
+  drawDebugMaps();
+}
+
+function drawDebugMaps() {
+  const px = state.w * state.h;
+  const dImg = depthCtx.createImageData(state.w, state.h);
+  const nImg = normalCtx.createImageData(state.w, state.h);
+  for (let i = 0; i < px; i++) {
+    const v = Math.round(clamp(state.depth[i], 0, 1) * 255);
+    const k = i * 4;
+    dImg.data[k] = v; dImg.data[k + 1] = v; dImg.data[k + 2] = v; dImg.data[k + 3] = 255;
+    nImg.data[k] = Math.round(clamp(state.gradX[i] * 120 + 128, 0, 255));
+    nImg.data[k + 1] = Math.round(clamp(state.gradY[i] * 120 + 128, 0, 255));
+    nImg.data[k + 2] = 200;
+    nImg.data[k + 3] = 255;
+  }
+  const tmp1 = document.createElement('canvas'); tmp1.width = state.w; tmp1.height = state.h; tmp1.getContext('2d').putImageData(state.srcData, 0, 0);
+  sourceCtx.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height); sourceCtx.drawImage(tmp1, 0, 0, sourceCanvas.width, sourceCanvas.height);
+  const tmp2 = document.createElement('canvas'); tmp2.width = state.w; tmp2.height = state.h; tmp2.getContext('2d').putImageData(dImg, 0, 0);
+  depthCtx.clearRect(0, 0, depthCanvas.width, depthCanvas.height); depthCtx.drawImage(tmp2, 0, 0, depthCanvas.width, depthCanvas.height);
+  const tmp3 = document.createElement('canvas'); tmp3.width = state.w; tmp3.height = state.h; tmp3.getContext('2d').putImageData(nImg, 0, 0);
+  normalCtx.clearRect(0, 0, normalCanvas.width, normalCanvas.height); normalCtx.drawImage(tmp3, 0, 0, normalCanvas.width, normalCanvas.height);
+}
+
+function makeLayer(type) {
+  return {
+    id: state.layerId++,
+    type,
+    name: type === 'warp' ? `Warp ${state.layerId - 1}` : `Image ${state.layerId - 1}`,
+    enabled: true,
+    opacity: 1,
+    blend: 'source-over',
+    brightness: 1,
+    contrast: 1,
+    saturate: 1,
+    hue: 0,
+    tint: '#ffffff',
+    tintMix: 0,
+    warpStrength: 20,
+    orbitStrength: 36,
+    depthWeight: 1,
+    normalWeight: 0.45,
+    radialWeight: 0.75,
+    centerSafe: Number(controls.centerSafe.value),
+    imageData: null,
+    workCanvas: document.createElement('canvas'),
+    workCtx: null,
+  };
+}
+
+function applyLayerUpload(layer, file) {
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  makeImage(url).then((img) => {
+    const c = document.createElement('canvas');
+    c.width = state.w; c.height = state.h;
+    const cctx = c.getContext('2d', { willReadFrequently: true });
+    cctx.drawImage(img, 0, 0, state.w, state.h);
+    layer.imageData = cctx.getImageData(0, 0, state.w, state.h);
+  }).finally(() => URL.revokeObjectURL(url));
+}
+
+function renderLayerList() {
+  controls.layerList.innerHTML = '';
+  state.layers.forEach((layer) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'layer-item';
+    wrap.innerHTML = `
+      <div class="layer-head"><strong>${layer.name}</strong><span class="layer-chip">${layer.type === 'warp' ? 'distortion' : 'image'}</span><button data-del="${layer.id}" type="button">Delete</button></div>
+      <div class="layer-meta"><span>Layer ${layer.id}</span><label><input data-key="enabled" data-id="${layer.id}" type="checkbox" ${layer.enabled ? 'checked' : ''}/> enabled</label></div>
+      <div class="row">
+        <label><span>Blend mode</span><select data-key="blend" data-id="${layer.id}">${blendModes.map((m) => `<option value="${m}" ${m === layer.blend ? 'selected' : ''}>${m}</option>`).join('')}</select></label>
+        <label><span>Opacity ${layer.opacity.toFixed(2)}</span><input data-key="opacity" data-id="${layer.id}" type="range" min="0" max="1" step="0.01" value="${layer.opacity}" /></label>
+      </div>
+      <div class="row">
+        <label><span>Brightness ${layer.brightness.toFixed(2)}</span><input data-key="brightness" data-id="${layer.id}" type="range" min="0" max="2" step="0.01" value="${layer.brightness}" /></label>
+        <label><span>Contrast ${layer.contrast.toFixed(2)}</span><input data-key="contrast" data-id="${layer.id}" type="range" min="0" max="2" step="0.01" value="${layer.contrast}" /></label>
+      </div>
+      <div class="row">
+        <label><span>Saturate ${layer.saturate.toFixed(2)}</span><input data-key="saturate" data-id="${layer.id}" type="range" min="0" max="3" step="0.01" value="${layer.saturate}" /></label>
+        <label><span>Hue ${layer.hue.toFixed(0)}°</span><input data-key="hue" data-id="${layer.id}" type="range" min="-180" max="180" step="1" value="${layer.hue}" /></label>
+      </div>
+      <div class="row">
+        <label><span>Tint color</span><input data-key="tint" data-id="${layer.id}" type="color" value="${layer.tint}" /></label>
+        <label><span>Tint mix ${layer.tintMix.toFixed(2)}</span><input data-key="tintMix" data-id="${layer.id}" type="range" min="0" max="1" step="0.01" value="${layer.tintMix}" /></label>
+      </div>
+      <label><span>Upload image for this layer</span><input data-upload="${layer.id}" type="file" accept="image/png,image/webp,image/jpeg" /></label>
+      ${layer.type === 'warp' ? `
+      <div class="row">
+        <label><span>Warp ${layer.warpStrength.toFixed(1)}</span><input data-key="warpStrength" data-id="${layer.id}" type="range" min="0" max="70" step="0.5" value="${layer.warpStrength}" /></label>
+        <label><span>Orbit ${layer.orbitStrength.toFixed(1)}</span><input data-key="orbitStrength" data-id="${layer.id}" type="range" min="0" max="120" step="0.5" value="${layer.orbitStrength}" /></label>
+      </div>
+      <div class="row">
+        <label><span>Depth map ${layer.depthWeight.toFixed(2)}</span><input data-key="depthWeight" data-id="${layer.id}" type="range" min="0" max="2" step="0.01" value="${layer.depthWeight}" /></label>
+        <label><span>Normal map ${layer.normalWeight.toFixed(2)}</span><input data-key="normalWeight" data-id="${layer.id}" type="range" min="0" max="2" step="0.01" value="${layer.normalWeight}" /></label>
+      </div>
+      <div class="row">
+        <label><span>Radial map ${layer.radialWeight.toFixed(2)}</span><input data-key="radialWeight" data-id="${layer.id}" type="range" min="0" max="2" step="0.01" value="${layer.radialWeight}" /></label>
+        <label><span>No-warp center ${layer.centerSafe.toFixed(2)}</span><input data-key="centerSafe" data-id="${layer.id}" type="range" min="0.02" max="0.65" step="0.01" value="${layer.centerSafe}" /></label>
+      </div>` : ''}
+    `;
+    controls.layerList.appendChild(wrap);
+  });
+}
+
+function setupLayerCanvas(layer) {
+  if (!layer.workCtx) {
+    layer.workCanvas.width = state.w;
+    layer.workCanvas.height = state.h;
+    layer.workCtx = layer.workCanvas.getContext('2d');
+  }
+}
+
+function warpLayerToCanvas(layer) {
+  setupLayerCanvas(layer);
+  const srcData = (layer.imageData || state.srcData).data;
+  const out = layer.workCtx.createImageData(state.w, state.h);
+  const dst = out.data;
+  const w = state.w;
+  const h = state.h;
+
+  const gazeDist = Math.hypot(state.gazeX, state.gazeY);
+  const maxTravelPx = w * Number(controls.maxTravel.value);
+  const gazeNorm = clamp(gazeDist / Math.max(maxTravelPx, 1), 0, 1);
+  const dirX = gazeDist > 0.001 ? state.gazeX / gazeDist : 0;
+  const dirY = gazeDist > 0.001 ? state.gazeY / gazeDist : 0;
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const p = y * w + x;
+      const i = p * 4;
+      const a = state.alphaMask[p];
+      if (a < 0.01) continue;
+
+      const rx = x - state.cx;
+      const ry = y - state.cy;
+      const dist = Math.hypot(rx, ry);
+      const outerAnchor = 1 - smoothstep(state.holeRadius * 0.95, state.outerRadius, dist);
+      const centerGuard = smoothstep(state.holeRadius * layer.centerSafe, state.holeRadius * (layer.centerSafe + 0.16), dist);
+      const ring = outerAnchor * centerGuard;
+
+      const gx = state.gradX[p];
+      const gy = state.gradY[p];
+      const gmag = Math.hypot(gx, gy) || 1;
+      const nx = gx / gmag;
+      const ny = gy / gmag;
+      const radialX = dist > 0.001 ? rx / dist : 0;
+      const radialY = dist > 0.001 ? ry / dist : 0;
+      const tangentX = -radialY;
+      const tangentY = radialX;
+
+      const dynamic = state.depth[p] * layer.depthWeight + (nx * dirX + ny * dirY) * layer.normalWeight + (radialX * dirX + radialY * dirY) * layer.radialWeight;
+      const warpAmount = layer.warpStrength * ring * (0.25 + dynamic * 0.8);
+      const orbitAmount = layer.orbitStrength * ring * gazeNorm;
+
+      const sx = clamp(Math.round(x - (dirX + nx * 0.45) * warpAmount - tangentX * orbitAmount), 0, w - 1);
+      const sy = clamp(Math.round(y - (dirY + ny * 0.45) * warpAmount - tangentY * orbitAmount), 0, h - 1);
+      const si = (sy * w + sx) * 4;
+      dst[i] = srcData[si];
+      dst[i + 1] = srcData[si + 1];
+      dst[i + 2] = srcData[si + 2];
+      dst[i + 3] = srcData[si + 3];
+    }
+  }
+  layer.workCtx.putImageData(out, 0, 0);
+}
+
+function drawLayerToMain(layer) {
+  if (!layer.enabled) return;
+  setupLayerCanvas(layer);
+  if (layer.type === 'warp') {
+    warpLayerToCanvas(layer);
+  } else {
+    layer.workCtx.clearRect(0, 0, state.w, state.h);
+    const src = layer.imageData || state.srcData;
+    const c = document.createElement('canvas');
+    c.width = state.w; c.height = state.h;
+    c.getContext('2d').putImageData(src, 0, 0);
+    layer.workCtx.drawImage(c, 0, 0);
+  }
+
+  mainCtx.save();
+  mainCtx.globalCompositeOperation = layer.blend;
+  mainCtx.globalAlpha = layer.opacity;
+  mainCtx.filter = `brightness(${layer.brightness}) contrast(${layer.contrast}) saturate(${layer.saturate}) hue-rotate(${layer.hue}deg)`;
+  mainCtx.drawImage(layer.workCanvas, 0, 0);
+
+  if (layer.tintMix > 0.001) {
+    mainCtx.globalCompositeOperation = 'source-atop';
+    mainCtx.globalAlpha = layer.tintMix * layer.opacity;
+    mainCtx.fillStyle = layer.tint;
+    mainCtx.fillRect(0, 0, state.w, state.h);
+  }
+  mainCtx.restore();
+}
+
+function render() {
+  if (!state.srcData || !state.depth || !state.gradX || !state.gradY) return;
+  mainCtx.clearRect(0, 0, state.w, state.h);
+  state.layers.forEach(drawLayerToMain);
+}
+
+function animate() {
+  if (!state.running) return;
+  const d = Number(controls.damping.value);
+  state.gazeX += (state.gazeTargetX - state.gazeX) * d;
+  state.gazeY += (state.gazeTargetY - state.gazeY) * d;
+  render();
+  requestAnimationFrame(animate);
+}
+
+function setGazeFromClient(clientX, clientY) {
+  const rect = mainCanvas.getBoundingClientRect();
+  const x = ((clientX - rect.left) / rect.width) * state.w;
+  const y = ((clientY - rect.top) / rect.height) * state.h;
+  const dx = x - state.cx;
+  const dy = y - state.cy;
+  const maxTravelPx = state.w * Number(controls.maxTravel.value);
+  const dist = Math.hypot(dx, dy) || 1;
+  const scale = Math.min(1, maxTravelPx / dist);
+  state.gazeTargetX = dx * scale;
+  state.gazeTargetY = dy * scale;
+}
+
+async function loadBaseTexture(image) {
+  const c = document.createElement('canvas');
+  c.width = state.w; c.height = state.h;
+  const cctx = c.getContext('2d', { willReadFrequently: true });
+  cctx.clearRect(0, 0, state.w, state.h);
+  cctx.drawImage(image, 0, 0, state.w, state.h);
+  state.srcData = cctx.getImageData(0, 0, state.w, state.h);
+  detectGeometry(state.srcData.data);
+  rebuildMaps();
+}
+
+function bindEvents() {
+  for (const key of Object.keys(outputs)) {
+    controls[key].addEventListener('input', () => {
+      setOutputValues();
+      if (key === 'detailBoost') rebuildMaps();
+      if (key === 'centerSafe') {
+        state.layers.filter((l) => l.type === 'warp').forEach((l) => { l.centerSafe = Number(controls.centerSafe.value); });
+        renderLayerList();
+      }
+    });
+  }
+
+  mainCanvas.addEventListener('pointermove', (e) => setGazeFromClient(e.clientX, e.clientY));
+  mainCanvas.addEventListener('pointerleave', () => { state.gazeTargetX = 0; state.gazeTargetY = 0; });
+
+  controls.baseFile.addEventListener('change', async () => {
+    const file = controls.baseFile.files && controls.baseFile.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await makeImage(url);
+      await loadBaseTexture(img);
+    } finally { URL.revokeObjectURL(url); }
+  });
+
+  controls.addWarp.addEventListener('click', () => { state.layers.push(makeLayer('warp')); renderLayerList(); });
+  controls.addImage.addEventListener('click', () => { const l = makeLayer('image'); l.opacity = 0.6; l.blend = 'soft-light'; state.layers.push(l); renderLayerList(); });
+  controls.addStack.addEventListener('click', () => {
+    const w1 = makeLayer('warp');
+    w1.name = 'Warp Base';
+    w1.warpStrength = 28;
+    w1.orbitStrength = 78;
+
+    const w2 = makeLayer('warp');
+    w2.name = 'Warp Accent';
+    w2.blend = 'overlay';
+    w2.opacity = 0.6;
+    w2.warpStrength = 18;
+    w2.orbitStrength = 94;
+    w2.tint = '#9ee5ff';
+    w2.tintMix = 0.14;
+
+    const i1 = makeLayer('image');
+    i1.name = 'Image Glow';
+    i1.blend = 'soft-light';
+    i1.opacity = 0.45;
+    i1.saturate = 1.45;
+    i1.contrast = 1.15;
+
+    state.layers.push(w1, w2, i1);
+    renderLayerList();
+  });
+  controls.resetGaze.addEventListener('click', () => { state.gazeTargetX = 0; state.gazeTargetY = 0; });
+
+  controls.layerList.addEventListener('input', (e) => {
+    const t = e.target;
+    const id = Number(t.dataset.id);
+    const layer = state.layers.find((l) => l.id === id);
+    if (!layer) return;
+    const key = t.dataset.key;
+    if (!key) return;
+    if (t.type === 'checkbox') {
+      layer[key] = t.checked;
+    } else {
+      layer[key] = t.type === 'color' || key === 'blend' ? t.value : Number(t.value);
+    }
+    renderLayerList();
+  });
+
+  controls.layerList.addEventListener('change', (e) => {
+    const t = e.target;
+    if (t.dataset.upload) {
+      const id = Number(t.dataset.upload);
+      const layer = state.layers.find((l) => l.id === id);
+      if (layer) applyLayerUpload(layer, t.files && t.files[0]);
+      return;
+    }
+  });
+
+  controls.layerList.addEventListener('click', (e) => {
+    const del = e.target.dataset.del;
+    if (!del) return;
+    const id = Number(del);
+    state.layers = state.layers.filter((l) => l.id !== id);
+    renderLayerList();
+  });
+}
+
+async function init() {
+  setOutputValues();
+  bindEvents();
+  const base = await makeImage(FALLBACK_IMAGE);
+  await loadBaseTexture(base);
+  state.layers = [makeLayer('warp')];
+  state.layers[0].name = 'Warp Base';
+  state.layers[0].blend = 'source-over';
+  state.layers[0].warpStrength = 30;
+  state.layers[0].orbitStrength = 88;
+
+  const seedAccent = makeLayer('warp');
+  seedAccent.name = 'Warp Accent';
+  seedAccent.blend = 'overlay';
+  seedAccent.opacity = 0.55;
+  seedAccent.warpStrength = 16;
+  seedAccent.orbitStrength = 110;
+  seedAccent.tint = '#9bd3ff';
+  seedAccent.tintMix = 0.1;
+  state.layers.push(seedAccent);
+  renderLayerList();
+  state.running = true;
+  animate();
+}
+
+init().catch((err) => console.error('init failed', err));
+</script>
+</body>
+</html>

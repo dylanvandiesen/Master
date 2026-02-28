@@ -90,7 +90,9 @@ async function main() {
   }
 
   const expiresSuffix = tokenResult.expiresAt ? ` (expires ${tokenResult.expiresAt})` : "";
-  process.stdout.write(`[mcp:github] Token source: ${tokenResult.source}${expiresSuffix}\n`);
+  // MCP stdio requires stdout to contain only protocol frames.
+  // Diagnostics must go to stderr to avoid corrupting handshake JSON.
+  process.stderr.write(`[mcp:github] Token source: ${tokenResult.source}${expiresSuffix}\n`);
 
   const env = {
     ...process.env,

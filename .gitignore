@@ -23,3 +23,7 @@ pnpm-debug.log*
 Thumbs.db
 .vscode/*.code-workspace
 .lh/
+.codex-home/
+
+# Local memory/state (can contain sensitive conversation data)
+mcp/data/memory.jsonl

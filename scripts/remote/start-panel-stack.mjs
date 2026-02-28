@@ -1,3 +1,4 @@
+import http from "node:http";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -46,6 +47,17 @@ function npmCommand() {
   return process.platform === "win32" ? "npm.cmd" : "npm";
 }
 
+function quoteForCmd(arg) {
+  const text = String(arg ?? "");
+  if (!text) {
+    return '""';
+  }
+  if (!/[ \t"&|<>^]/.test(text)) {
+    return text;
+  }
+  return `"${text.replace(/(["^])/g, "^$1")}"`;
+}
+
 function loadDotEnvFile(filePath, env) {
   try {
     const raw = fs.readFileSync(filePath, "utf8");
@@ -70,12 +82,19 @@ function loadDotEnvFile(filePath, env) {
 }
 
 function runNpmScript(commandName, script, scriptArgs = [], env = process.env) {
-  const child = spawn(npmCommand(), ["run", script, "--", ...scriptArgs], {
+  const spawnOptions = {
     cwd: ROOT,
     env,
     stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,
-  });
+  };
+  let child = null;
+  if (process.platform === "win32") {
+    const command = ["npm", "run", script, "--", ...scriptArgs].map(quoteForCmd).join(" ");
+    child = spawn("cmd.exe", ["/d", "/s", "/c", command], spawnOptions);
+  } else {
+    child = spawn(npmCommand(), ["run", script, "--", ...scriptArgs], spawnOptions);
+  }
 
   const onLine = (source) => (line) => {
     process.stdout.write(`[${commandName}:${source}] ${line}\n`);
@@ -93,6 +112,33 @@ function runNpmScript(commandName, script, scriptArgs = [], env = process.env) {
   child.once("error", cleanup);
 
   return child;
+}
+
+async function isPanelReachable(port) {
+  const numericPort = Number.parseInt(String(port || ""), 10);
+  if (!Number.isFinite(numericPort) || numericPort <= 0 || numericPort > 65535) {
+    return false;
+  }
+  return new Promise((resolve) => {
+    const req = http.get(
+      {
+        host: "127.0.0.1",
+        port: numericPort,
+        path: "/api/health",
+        timeout: 1200,
+      },
+      (res) => {
+        const ok = Number(res.statusCode || 0) >= 200 && Number(res.statusCode || 0) < 500;
+        res.resume();
+        resolve(ok);
+      }
+    );
+    req.on("timeout", () => {
+      req.destroy();
+      resolve(false);
+    });
+    req.on("error", () => resolve(false));
+  });
 }
 
 async function terminateChild(child) {
@@ -122,14 +168,14 @@ async function main() {
   loadDotEnvFile(path.join(ROOT, ".env"), process.env);
   const mode = normalizeMode(parseArgValue("mode") || process.env.REMOTE_PANEL_START_MODE || "local");
   const project = String(parseArgValue("project") || process.env.PROJECT || "").trim();
-  const panelPort = String(parseArgValue("panel-port") || process.env.REMOTE_PANEL_PORT || "").trim();
+  const panelPort = String(parseArgValue("panel-port") || process.env.REMOTE_PANEL_PORT || "8787").trim();
   const devPort = String(parseArgValue("dev-port") || process.env.DEV_PORT || "").trim();
   const sessionName = String(parseArgValue("session-name") || "codex-chat").trim() || "codex-chat";
   const noDev = parseBool(parseArgValue("no-dev"), false);
   const noRelay = parseBool(parseArgValue("no-relay"), false);
   const dryRun = parseBool(parseArgValue("dry-run"), false);
 
-  const panelScript = mode === "remote" ? "remote:panel:remote" : "remote:panel:local";
+  const panelScript = mode === "remote" ? "commander:remote" : "commander:local";
   const panelArgs = [];
   if (panelPort) {
     panelArgs.push(`--port=${panelPort}`);
@@ -151,7 +197,7 @@ async function main() {
   const commands = [
     { name: "panel", script: panelScript, args: panelArgs, enabled: true },
     { name: "dev", script: "dev", args: devArgs, enabled: !noDev },
-    { name: "relay", script: "remote:relay:codex:watch", args: relayArgs, enabled: !noRelay },
+    { name: "relay", script: "commander:relay:codex:watch", args: relayArgs, enabled: !noRelay },
   ].filter((command) => command.enabled);
 
   process.stdout.write(
@@ -166,6 +212,23 @@ async function main() {
         `[panel-stack] dry-run ${command.name} -> npm run ${command.script}${command.args.length ? ` -- ${command.args.join(" ")}` : ""}\n`
       );
     }
+    return;
+  }
+
+  const filteredCommands = [];
+  for (const command of commands) {
+    if (command.name === "panel") {
+      const running = await isPanelReachable(panelPort);
+      if (running) {
+        process.stdout.write(`[panel-stack] reusing existing panel at http://127.0.0.1:${panelPort}\n`);
+        continue;
+      }
+    }
+    filteredCommands.push(command);
+  }
+
+  if (!filteredCommands.length) {
+    process.stdout.write("[panel-stack] nothing to start (panel already running and optional workers disabled).\n");
     return;
   }
 
@@ -188,7 +251,7 @@ async function main() {
   process.on("SIGTERM", signalHandler);
 
   const exitPromises = [];
-  for (const command of commands) {
+  for (const command of filteredCommands) {
     const child = runNpmScript(command.name, command.script, command.args, process.env);
     children.push({ ...command, child });
     process.stdout.write(`[panel-stack] started ${command.name} -> npm run ${command.script}${command.args.length ? ` -- ${command.args.join(" ")}` : ""}\n`);

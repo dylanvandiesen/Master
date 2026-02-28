@@ -11,6 +11,12 @@ Use this workflow to fully prepare a fresh chat instance for agency + MCP work.
 - Fast prep (skip build):
   - `cmd /c npm run chat:new:quick`
 
+- Super-agent quick bootstrap (chat prep + MCP refresh + briefings + super context):
+  - `cmd /c npm run super:bootstrap -- --project=csscroll`
+
+- Super-agent full bootstrap (installs deps first):
+  - `cmd /c npm run super:bootstrap:full -- --project=csscroll`
+
 `chat:new:*` commands now run through `scripts/chat/run-prepare-chat-instance.mjs`, which normalizes forwarded args so this works reliably:
 
 - `cmd /c npm run chat:new:quick -- --project=csscroll`
@@ -28,15 +34,56 @@ Use this workflow to fully prepare a fresh chat instance for agency + MCP work.
 5. Writes session artifacts:
    - `.agency/chat/sessions/<session-id>/session.json`
    - `.agency/chat/sessions/<session-id>/briefing.md`
+   - `.agency/chat/sessions/<session-id>/commander-briefing.md`
+   - `.agency/chat/sessions/<session-id>/system-briefing.md`
+   - `.agency/chat/sessions/<session-id>/super-context.json`
+   - `.agency/chat/sessions/<session-id>/super-context.md`
+
+## Super-Agent Context Bundle
+
+- Generate latest machine-readable + markdown super context:
+  - `cmd /c npm run super:context`
+
+- Latest outputs:
+  - `.agency/chat/latest-super-context.json`
+  - `.agency/chat/latest-super-context.md`
+
+## Super-Agent Spawn (Desktop CLI)
+
+- Quick spawn (runs quick bootstrap unless disabled):
+  - `cmd /c npm run super:agent -- --project=csscroll`
+
+- Full spawn (runs full bootstrap unless disabled):
+  - `cmd /c npm run super:agent:full -- --project=csscroll`
+
+- Common flags:
+  - `--name=<session-name>`
+  - `--model=<codex-model>`
+  - `--notes="..."`
+  - `--no-prep=true` (skip bootstrap step)
+  - `--make-default=false` (avoid changing session default)
 
 ## Briefing Command
 
-- Generate latest briefing shortcut:
+- Generate latest project + commander briefings:
   - `cmd /c npm run chat:briefing`
+
+- Generate project-only briefing:
+  - `cmd /c npm run chat:briefing:project`
+
+- Generate commander-only briefing:
+  - `cmd /c npm run chat:briefing:commander`
+
+- Generate system-only briefing:
+  - `cmd /c npm run chat:briefing:system`
 
 Output:
 
 - `.agency/chat/latest-briefing.md`
+- `.agency/chat/latest-commander-briefing.md`
+- `.agency/chat/latest-system-briefing.md`
+- `.agency/chat/latest-super-context.json` (from `chat:new` or `super:context`)
+- `.agency/chat/latest-super-context.md` (from `chat:new` or `super:context`)
 
 ## MCP Preparation Command
 
@@ -63,15 +110,26 @@ Status output:
 3. `cmd /c npm run chat:new:full`
 4. `cmd /c npm run chat:new:quick -- --project=csscroll`
 5. `cmd /c npm run chat:briefing`
-6. `cmd /c npm run mcp:prep`
-7. `powershell -ExecutionPolicy Bypass -File scripts/chat/prepare-chat-instance.ps1 -Project csscroll -PrepareMcp`
-8. `powershell -ExecutionPolicy Bypass -File scripts/chat/prepare-chat-instance.ps1 -InstallRootDeps -InstallMcpDeps -PrepareMcp`
-9. `powershell -ExecutionPolicy Bypass -File scripts/chat/prepare-mcp.ps1 -StartServer memory`
-10. `powershell -ExecutionPolicy Bypass -File scripts/chat/new-chat-briefing.ps1 -OutputPath .agency/chat/manual-briefing.md`
+6. `cmd /c npm run chat:briefing:commander`
+7. `cmd /c npm run chat:briefing:system`
+8. `cmd /c npm run mcp:prep`
+9. `powershell -ExecutionPolicy Bypass -File scripts/chat/prepare-chat-instance.ps1 -Project csscroll -PrepareMcp`
+10. `powershell -ExecutionPolicy Bypass -File scripts/chat/prepare-chat-instance.ps1 -InstallRootDeps -InstallMcpDeps -PrepareMcp`
+11. `powershell -ExecutionPolicy Bypass -File scripts/chat/prepare-mcp.ps1 -StartServer memory`
+12. `powershell -ExecutionPolicy Bypass -File scripts/chat/new-chat-briefing.ps1 -Mode project -OutputPath .agency/chat/manual-briefing.md`
+13. `powershell -ExecutionPolicy Bypass -File scripts/chat/new-chat-briefing.ps1 -Mode commander -OutputPath .agency/chat/manual-commander-briefing.md`
+14. `powershell -ExecutionPolicy Bypass -File scripts/chat/new-chat-briefing.ps1 -Mode system -OutputPath .agency/chat/manual-system-briefing.md`
+15. `cmd /c npm run super:context`
+16. `cmd /c npm run super:bootstrap -- --project=csscroll`
+17. `cmd /c npm run super:bootstrap:full -- --project=csscroll`
+18. `cmd /c npm run super:agent -- --project=csscroll`
+19. `cmd /c npm run super:agent:full -- --project=csscroll`
 
 ## Recommended Daily Start
 
 1. `cmd /c npm run chat:new:quick`
-2. `cmd /c npm run dev -- --project csscroll`
-3. `cmd /c npm run mcp:prep`
-4. `cmd /c npm run chat:briefing`
+2. `cmd /c npm run super:context`
+3. `cmd /c npm run dev -- --project csscroll`
+4. `cmd /c npm run commander:local -- --port=8787` (stable local panel URL)
+5. Spawn from desktop CLI: `cmd /c npm run super:agent -- --project=csscroll`
+6. Read `wiki/super-agent-mcp-skills-strategy.md` for speed-first MCP + skills orchestration.

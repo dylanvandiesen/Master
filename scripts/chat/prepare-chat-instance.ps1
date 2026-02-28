@@ -8,7 +8,8 @@ param(
     [switch]$PrepareMcp,
     [switch]$SkipScaffold,
     [switch]$SkipBuild,
-    [switch]$NoBriefing
+    [switch]$NoBriefing,
+    [switch]$NoSuperContext
 )
 
 Set-StrictMode -Version Latest
@@ -96,10 +97,39 @@ if ($PrepareMcp) {
 }
 
 $briefingPath = Join-Path $sessionRoot "briefing.md"
+$commanderBriefingPath = Join-Path $sessionRoot "commander-briefing.md"
+$systemBriefingPath = Join-Path $sessionRoot "system-briefing.md"
+$superContextPath = Join-Path $sessionRoot "super-context.json"
+$superContextMarkdownPath = Join-Path $sessionRoot "super-context.md"
+$latestSuperContextPath = Join-Path $RepoRoot ".agency/chat/latest-super-context.json"
+$latestSuperContextMarkdownPath = Join-Path $RepoRoot ".agency/chat/latest-super-context.md"
 if (-not $NoBriefing) {
     $briefingScript = Join-Path $RepoRoot "scripts/chat/new-chat-briefing.ps1"
     Assert-PathExists $briefingScript
-    & $briefingScript -RepoRoot $RepoRoot -Project $Project -OutputPath $briefingPath | Out-Host
+    & $briefingScript -RepoRoot $RepoRoot -Project $Project -Mode "project" -OutputPath $briefingPath | Out-Host
+    & $briefingScript -RepoRoot $RepoRoot -Project $Project -Mode "commander" -OutputPath $commanderBriefingPath | Out-Host
+    & $briefingScript -RepoRoot $RepoRoot -Project $Project -Mode "system" -OutputPath $systemBriefingPath | Out-Host
+}
+
+if (-not $NoSuperContext) {
+    $contextScript = Join-Path $RepoRoot "scripts/chat/export-super-agent-context.ps1"
+    if (Test-Path -LiteralPath $contextScript) {
+        & $contextScript `
+            -RepoRoot $RepoRoot `
+            -Project $Project `
+            -SessionId $SessionId `
+            -OutputPath $superContextPath `
+            -EmitMarkdown `
+            -MarkdownOutputPath $superContextMarkdownPath | Out-Host
+
+        $null = New-Item -ItemType Directory -Path (Split-Path -Parent $latestSuperContextPath) -Force
+        Copy-Item -LiteralPath $superContextPath -Destination $latestSuperContextPath -Force
+        if (Test-Path -LiteralPath $superContextMarkdownPath) {
+            Copy-Item -LiteralPath $superContextMarkdownPath -Destination $latestSuperContextMarkdownPath -Force
+        }
+    } else {
+        Write-Warning "Super context export script not found: $contextScript"
+    }
 }
 
 $summary = [ordered]@{
@@ -108,9 +138,16 @@ $summary = [ordered]@{
     repoRoot       = $RepoRoot
     project        = $Project
     briefingPath   = $briefingPath
+    commanderBriefingPath = $commanderBriefingPath
+    systemBriefingPath = $systemBriefingPath
+    superContextPath = $superContextPath
+    superContextMarkdownPath = $superContextMarkdownPath
+    latestSuperContextPath = $latestSuperContextPath
+    latestSuperContextMarkdownPath = $latestSuperContextMarkdownPath
     installRoot    = [bool]$InstallRootDeps
     installMcp     = [bool]$InstallMcpDeps
     prepareMcp     = [bool]$PrepareMcp
+    superContextGenerated = [bool](-not $NoSuperContext)
     commands       = @(
         "cmd /c npm run scaffold"
         "cmd /c npm run list:projects"
@@ -126,5 +163,12 @@ Write-Host "  Session folder: $sessionRoot"
 Write-Host "  Session metadata: $(Join-Path $sessionRoot "session.json")"
 if (-not $NoBriefing) {
     Write-Host "  Briefing: $briefingPath"
+    Write-Host "  Commander briefing: $commanderBriefingPath"
+    Write-Host "  System briefing: $systemBriefingPath"
+}
+if (-not $NoSuperContext) {
+    Write-Host "  Super context: $superContextPath"
+    Write-Host "  Super context markdown: $superContextMarkdownPath"
+    Write-Host "  Latest super context: $latestSuperContextPath"
 }
 Write-Host "  Start dev: cmd /c npm run dev -- --project=$Project"

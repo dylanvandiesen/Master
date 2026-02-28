@@ -1,37 +1,21 @@
 import { spawn } from "node:child_process";
 
-const MODE_DEFAULT_SWITCHES = {
-  standard: {
-    PrepareMcp: true,
-  },
-  quick: {
-    SkipBuild: true,
-    PrepareMcp: true,
-  },
-  full: {
-    InstallRootDeps: true,
-    InstallMcpDeps: true,
-    PrepareMcp: true,
-  },
-};
-
 const VALUE_KEYS = new Map([
-  ["mode", "mode"],
   ["project", "Project"],
   ["sessionid", "SessionId"],
   ["session", "SessionId"],
   ["reporoot", "RepoRoot"],
   ["repo", "RepoRoot"],
+  ["outputpath", "OutputPath"],
+  ["output", "OutputPath"],
+  ["markdownoutputpath", "MarkdownOutputPath"],
+  ["mdoutput", "MarkdownOutputPath"],
 ]);
 
 const SWITCH_KEYS = new Map([
-  ["installrootdeps", "InstallRootDeps"],
-  ["installmcpdeps", "InstallMcpDeps"],
-  ["preparemcp", "PrepareMcp"],
-  ["skipscaffold", "SkipScaffold"],
-  ["skipbuild", "SkipBuild"],
-  ["nobriefing", "NoBriefing"],
-  ["nosupercontext", "NoSuperContext"],
+  ["emitmarkdown", "EmitMarkdown"],
+  ["markdown", "EmitMarkdown"],
+  ["nomarkdown", "NoMarkdown"],
 ]);
 
 function normalizeKey(raw) {
@@ -113,27 +97,12 @@ function parseArgs(argv) {
   return { values, switches };
 }
 
-function normalizeMode(rawMode) {
-  const normalized = String(rawMode || "standard")
-    .trim()
-    .toLowerCase();
-  if (Object.prototype.hasOwnProperty.call(MODE_DEFAULT_SWITCHES, normalized)) {
-    return normalized;
-  }
-  return "standard";
-}
-
 function buildPowerShellArgs(parsed) {
-  const mode = normalizeMode(parsed.values.mode);
-  const defaults = MODE_DEFAULT_SWITCHES[mode];
-  const mergedSwitches = {
-    ...defaults,
-    ...parsed.switches,
-  };
   const projectFromEnv = String(process.env.npm_config_project || "").trim();
   const effectiveProject = String(parsed.values.Project || projectFromEnv || "").trim();
+  const emitMarkdown = parsed.switches.NoMarkdown ? false : parsed.switches.EmitMarkdown !== false;
 
-  const args = ["-ExecutionPolicy", "Bypass", "-File", "scripts/chat/prepare-chat-instance.ps1"];
+  const args = ["-ExecutionPolicy", "Bypass", "-File", "scripts/chat/export-super-agent-context.ps1"];
 
   if (parsed.values.RepoRoot) {
     args.push("-RepoRoot", parsed.values.RepoRoot);
@@ -144,11 +113,14 @@ function buildPowerShellArgs(parsed) {
   if (parsed.values.SessionId) {
     args.push("-SessionId", parsed.values.SessionId);
   }
+  if (parsed.values.OutputPath) {
+    args.push("-OutputPath", parsed.values.OutputPath);
+  }
 
-  const switchOrder = ["InstallRootDeps", "InstallMcpDeps", "PrepareMcp", "SkipScaffold", "SkipBuild", "NoBriefing", "NoSuperContext"];
-  for (const key of switchOrder) {
-    if (mergedSwitches[key]) {
-      args.push(`-${key}`);
+  if (emitMarkdown) {
+    args.push("-EmitMarkdown");
+    if (parsed.values.MarkdownOutputPath) {
+      args.push("-MarkdownOutputPath", parsed.values.MarkdownOutputPath);
     }
   }
 
@@ -164,7 +136,7 @@ function run() {
   });
 
   child.on("error", (error) => {
-    process.stderr.write(`[chat:new] Failed to start PowerShell: ${error.message}\n`);
+    process.stderr.write(`[super:context] Failed to start PowerShell: ${error.message}\n`);
     process.exit(1);
   });
 
@@ -174,3 +146,4 @@ function run() {
 }
 
 run();
+

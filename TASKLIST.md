@@ -4,7 +4,6 @@ Shared, persistent task board for this repository.
 
 ## Active
 
-
 ## Backlog
 - [ ] Add an MCP install workflow plan (commands, prerequisites, security checks) for panel/session tooling; document only, do not auto-execute installers.
 - [ ] Add Pester tests for `scripts/chat/*.ps1` bootstrap tooling.
@@ -16,6 +15,8 @@ Shared, persistent task board for this repository.
 - [ ] Add rate-limit and account lockout metrics dashboard for remote panel auth endpoints.
 
 ## Archived
+- [x] Added `browser_eyes_local` Playwright MCP wiring, prep checks, and smoke validation for browser vision access.
+- [x] Replaced commander’s mobile terminal path with a DomTerm-first renderer and focus-stable keyboard dock behavior (DomTerm asset serving, live DomTerm init, touch toolbar refocus hardening, selectable output fallback).
 - [x] Finalized remote panel runbook/docs cleanup and startup ergonomics (`wiki/remote-control-panel.md`, `wiki/README.md`, `wiki/chat-session-bootstrap.md`, `scripts/chat/run-prepare-chat-instance.mjs`, `package.json`).
 - [x] Ran `cmd /c npm run chat:new:full` with real tokens and verified end-to-end bootstrap (`GITHUB_PERSONAL_ACCESS_TOKEN loaded: True`, `GITHUB_MCP_PAT loaded: True`).
 - [x] Validated `github_modern_remote` auth flow with `github_mcp_pat` input (unauthenticated request returned `401`; authenticated request reached `github-mcp-server-remote` and returned `400`, confirming token-authenticated endpoint access).

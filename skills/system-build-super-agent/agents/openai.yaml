@@ -1,0 +1,4 @@
+interface:
+  display_name: "System Build Super Agent"
+  short_description: "Operate the root build system at max speed with strict boundary control."
+  default_prompt: "Use this skill to run super:bootstrap/super:context workflows, reason about Playground build architecture and command surface, and enforce explicit boundary confirmation before touching project-source or commander internals."

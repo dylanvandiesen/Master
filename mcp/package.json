@@ -7,12 +7,14 @@
   "scripts": {
     "start:filesystem": "node node_modules/@modelcontextprotocol/server-filesystem/dist/index.js \"../\"",
     "start:memory": "node node_modules/@modelcontextprotocol/server-memory/dist/index.js",
+    "start:browser-eyes": "node node_modules/@playwright/mcp/cli.js --headless --caps=vision --isolated --output-mode=stdout",
     "start:github": "node ../scripts/mcp/run-github-mcp.mjs",
     "start:github:legacy": "node ../scripts/mcp/run-github-mcp.mjs",
     "start:github:modern:docker": "node ../scripts/mcp/run-github-mcp.mjs --docker=true",
     "list": "npm ls --depth=0"
   },
   "dependencies": {
+    "@playwright/mcp": "^0.0.68",
     "@modelcontextprotocol/server-filesystem": "^2026.1.14",
     "@modelcontextprotocol/server-github": "^2025.4.8",
     "@modelcontextprotocol/server-memory": "^2026.1.26"

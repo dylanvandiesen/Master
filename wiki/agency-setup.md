@@ -116,19 +116,27 @@ Project overrides live in `projects/<name>/project.config.json`.
 - `cmd /c npm run scaffold`
 - `cmd /c npm run list:projects`
 - `cmd /c npm run chat:new`
+- `cmd /c npm run chat:new:standard`
 - `cmd /c npm run chat:new:full`
 - `cmd /c npm run chat:new:quick`
 - `cmd /c npm run chat:briefing`
 - `cmd /c npm run mcp:prep`
+- `cmd /c npm run mcp:start:filesystem`
+- `cmd /c npm run mcp:start:memory`
+- `cmd /c npm run mcp:start:github:legacy`
+- `cmd /c npm run mcp:start:github:modern:docker`
 - `cmd /c npm run skills:list`
 - `cmd /c npm run skills:validate`
-- `cmd /c npm run remote:panel`
-- `cmd /c npm run remote:panel:local`
-- `cmd /c npm run remote:panel:remote`
-- `cmd /c npm run remote:stack`
-- `cmd /c npm run remote:stack:remote`
-- `cmd /c npm run remote:relay:codex:watch`
-- `cmd /c npm run remote:relay:codex:once`
+- `cmd /c npm run commander`
+- `cmd /c npm run commander:local`
+- `cmd /c npm run commander:remote`
+- `cmd /c npm run commander:start`
+- `cmd /c npm run commander:start:local`
+- `cmd /c npm run commander:start:remote`
+- `cmd /c npm run commander:agent:status`
+- `cmd /c npm run commander:agent:reply`
+- `cmd /c npm run commander:relay:codex:watch`
+- `cmd /c npm run commander:relay:codex:once`
 
 ### Gulp Task Surface
 

@@ -61,12 +61,13 @@ This repository uses a root-controlled agency build system for all playground pr
 - `npm run dev:all` watches all projects.
 
 ## Remote Control Panel Commands
-- `npm run remote:panel`: start secure remote control web panel on localhost.
-- `npm run remote:panel:remote`: start panel in LAN/adaptive mode (`--host=0.0.0.0`, `--security=auto`).
-- `npm run remote:panel:lan`: alias for LAN/adaptive panel mode.
-- `npm run remote:stack`: start panel (local profile) + dev + relay watcher.
-- `npm run remote:stack:remote`: start panel (remote profile) + dev + relay watcher.
-- `npm run remote:panel -- --port=<port>`: override panel port at runtime.
+- `npm run commander`: start secure remote control web panel on localhost.
+- `npm run commander:remote`: start panel in LAN/adaptive mode (`--host=0.0.0.0`, `--security=auto`).
+- `npm run commander:lan`: alias for LAN/adaptive panel mode.
+- `npm run commander:start`: start panel (local profile) + dev + relay watcher.
+- `npm run commander:start:remote`: start panel (remote profile) + dev + relay watcher.
+- `npm run commander -- --port=<port>`: override panel port at runtime.
+- Sessions panel supports super-agent spawning with `Spawn Super` (quick) and `Spawn Super Full` (full), backed by `POST /api/codex/sessions/super-agent/spawn`.
 - Canonical runbook: `wiki/remote-control-panel.md`.
 
 ## Remote Control Panel Security Guardrails
@@ -85,6 +86,11 @@ This repository uses a root-controlled agency build system for all playground pr
 - `npm run chat:new:quick`: faster prep without build.
 - `npm run chat:new:full`: install deps + prep + MCP.
 - `npm run chat:briefing`: generate startup briefing markdown.
+- `npm run super:context`: generate machine-readable + markdown super-agent context bundle.
+- `npm run super:bootstrap -- --project=<slug>`: one-command quick bootstrap (prep + MCP + briefings + super context).
+- `npm run super:bootstrap:full -- --project=<slug>`: full bootstrap including dependency install.
+- `npm run super:agent -- --project=<slug>`: spawn super-agent from desktop CLI (quick bootstrap by default).
+- `npm run super:agent:full -- --project=<slug>`: full bootstrap + super-agent spawn from desktop CLI.
 - `npm run mcp:prep`: validate MCP configs, env values, and memory file.
 
 ## Dev Server Outputs
@@ -101,6 +107,7 @@ Repository skills are stored under `skills/`:
 - `skills/agency-playground-ops`
 - `skills/mcp-orchestration-ops`
 - `skills/chat-instance-bootstrap`
+- `skills/system-build-super-agent`
 
 Skill utility commands:
 - `npm run skills:list`

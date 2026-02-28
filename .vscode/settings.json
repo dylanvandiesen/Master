@@ -2,5 +2,9 @@
     "chatgpt.openOnStartup": true,
     "chatgpt.composerEnterBehavior": "cmdIfMultiline",
     "chatgpt.followUpQueueMode": "queue",
-    "chatgpt.runCodexInWindowsSubsystemForLinux": true
+    "chatgpt.runCodexInWindowsSubsystemForLinux": true,
+    "chat.mcp.assisted.nuget.enabled": true,
+    "chat.mcp.gallery.enabled": true,
+    "github.copilot.chat.githubMcpServer.enabled": true,
+    "github.copilot.chat.newWorkspace.useContext7": true
 }

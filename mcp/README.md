@@ -5,6 +5,7 @@ This folder is the local MCP runtime hub for this workspace.
 ## What Is Installed
 - `@modelcontextprotocol/server-filesystem`
 - `@modelcontextprotocol/server-memory`
+- `@playwright/mcp` (browser automation + vision tools)
 - `@modelcontextprotocol/server-github` (legacy fallback)
 
 ## GitHub MCP Strategy
@@ -22,6 +23,13 @@ This folder is the local MCP runtime hub for this workspace.
 $env:GITHUB_PERSONAL_ACCESS_TOKEN = "YOUR_GITHUB_TOKEN"
 ```
 
+## Browser Runtime Prereq
+Run once to install the Chromium runtime used by `start:browser-eyes`:
+
+```powershell
+cmd /c npm --prefix mcp exec playwright install chromium
+```
+
 ## Commands
 Run from `mcp/`:
 
@@ -29,15 +37,17 @@ Run from `mcp/`:
 cmd /c npm run list
 cmd /c npm run start:filesystem
 cmd /c npm run start:memory
+cmd /c npm run start:browser-eyes
 cmd /c npm run start:github
 cmd /c npm run start:github:legacy
-cmd /c npm run start:github:modern:docker
+# cmd /c npm run start:github:modern:docker
 ```
 
 From repo root:
 
 ```powershell
 cmd /c npm run mcp:prep
+cmd /c npm run mcp:start:browser:eyes
 cmd /c npm run chat:new
 ```
 

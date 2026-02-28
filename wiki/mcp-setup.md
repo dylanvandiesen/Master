@@ -22,6 +22,7 @@ Configured servers:
 - `github_modern_remote` (HTTP, preferred)
 - `filesystem_local` (local command)
 - `memory_local` (local command with memory file path)
+- `browser_eyes_local` (local Playwright MCP with vision capability)
 - `github_legacy_local` (local command fallback)
 
 ### Root Runtime (Agent)
@@ -32,6 +33,7 @@ Configured servers:
 
 - `mcp_servers.filesystem_local`
 - `mcp_servers.memory_local`
+- `mcp_servers.browser_eyes_local`
 - `mcp_servers.github_local` (legacy local fallback)
 - `mcp_servers.github_modern_docker` (modern local runtime via Docker)
 
@@ -50,6 +52,8 @@ The remote panel relay (`scripts/remote/codex-interactive-relay.mjs`) can use th
 - default memory file: `mcp/data/memory.jsonl`
 - relay writes/reads memory observations per session name
 - session registry for relay targets: `.agency/remote/codex-sessions.json`
+- remote panel can run multiple relay watchers in parallel when session names are unique
+- relay runtime state is exposed as primary `activeRelay` plus full `activeRelays` list
 
 ## 3) Modern vs Legacy GitHub MCP Strategy
 
@@ -107,12 +111,16 @@ From repo root:
 
 - `Set-Location C:\Users\SKIKK\Documents\websites\Playground`
 - `Set-Location .\mcp`
+- `cmd /c npm exec playwright install chromium`
 - `cmd /c npm run list`
 - `cmd /c npm run start:filesystem`
 - `cmd /c npm run start:memory`
+- `cmd /c npm run start:browser-eyes`
 - `cmd /c npm run start:github`
 - `cmd /c npm run start:github:legacy`
 - `cmd /c npm run start:github:modern:docker`
+- `Set-Location ..`
+- `cmd /c npm run mcp:start:browser:eyes`
 
 Validation helpers:
 
@@ -127,6 +135,7 @@ Key points:
 - `github_modern_remote` uses prompt input `github_mcp_pat`.
 - `github_legacy_local` runs `scripts/mcp/run-github-mcp.mjs`, which resolves PAT first, then GitHub App credentials.
 - `memory_local` stores data in `${workspaceFolder}/mcp/data/memory.jsonl`.
+- `browser_eyes_local` runs `${workspaceFolder}/mcp/node_modules/@playwright/mcp/cli.js` with `--caps=vision` and `--headless`.
 
 When editing this file:
 
@@ -139,6 +148,7 @@ Key points:
 
 - `filesystem_local` runs local filesystem MCP server.
 - `memory_local` runs memory server with explicit `MEMORY_FILE_PATH`.
+- `browser_eyes_local` runs Playwright MCP in headless vision mode for browser inspection.
 - `github_local` runs `scripts/mcp/run-github-mcp.mjs` with automatic credential resolution.
 - `github_modern_docker` runs `scripts/mcp/run-github-mcp.mjs --docker=true` with the same token resolver.
 
@@ -190,8 +200,8 @@ Key points:
 
 34. `Copy-Item .\config.toml .\config.toml.bak`
 35. `Copy-Item .\.vscode\mcp.json .\.vscode\mcp.json.bak`
-36. `Select-String -Path .\config.toml -Pattern "github_modern_docker|github_local|memory_local|filesystem_local"`
-37. `Select-String -Path .\.vscode\mcp.json -Pattern "github_modern_remote|github_legacy_local|memory_local|filesystem_local"`
+36. `Select-String -Path .\config.toml -Pattern "github_modern_docker|github_local|browser_eyes_local|memory_local|filesystem_local"`
+37. `Select-String -Path .\.vscode\mcp.json -Pattern "github_modern_remote|github_legacy_local|browser_eyes_local|memory_local|filesystem_local"`
 38. `Get-FileHash .\config.toml`
 39. `Get-FileHash .\.vscode\mcp.json`
 40. `Remove-Item Env:GITHUB_PERSONAL_ACCESS_TOKEN`

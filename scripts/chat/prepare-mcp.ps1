@@ -2,7 +2,7 @@
 param(
     [string]$RepoRoot = "",
     [switch]$SkipEnvLoad,
-    [ValidateSet("none", "filesystem", "memory", "github", "github-legacy", "github-modern-docker")]
+    [ValidateSet("none", "filesystem", "memory", "browser-eyes", "github", "github-legacy", "github-modern-docker")]
     [string]$StartServer = "none"
 )
 
@@ -163,6 +163,7 @@ if (-not (Test-Path -LiteralPath $memoryPath)) {
 $requiredTomlEntries = @(
     "mcp_servers.filesystem_local"
     "mcp_servers.memory_local"
+    "mcp_servers.browser_eyes_local"
     "mcp_servers.github_local"
     "mcp_servers.github_modern_docker"
 )
@@ -175,7 +176,7 @@ foreach ($entry in $requiredTomlEntries) {
 
 $vscodeConfig = Get-Content -Raw -Path (Join-Path $RepoRoot ".vscode/mcp.json") | ConvertFrom-Json
 $vscodeServers = @($vscodeConfig.servers.PSObject.Properties.Name)
-$requiredVscodeServers = @("github_modern_remote", "filesystem_local", "memory_local", "github_legacy_local")
+$requiredVscodeServers = @("github_modern_remote", "filesystem_local", "memory_local", "browser_eyes_local", "github_legacy_local")
 $missingVscodeServers = @($requiredVscodeServers | Where-Object { $_ -notin $vscodeServers })
 
 Invoke-CmdOrThrow -WorkingDirectory $mcpRoot -Command "npm run list"
@@ -183,6 +184,7 @@ Invoke-CmdOrThrow -WorkingDirectory $mcpRoot -Command "npm run list"
 $serverScripts = @{
     "filesystem" = "start:filesystem"
     "memory" = "start:memory"
+    "browser-eyes" = "start:browser-eyes"
     "github" = "start:github"
     "github-legacy" = "start:github:legacy"
     "github-modern-docker" = "start:github:modern:docker"
@@ -245,7 +247,7 @@ if ($StartServer -ne "none") {
 } else {
     Write-Host ""
     Write-Host "Start a server on demand:"
-    foreach ($name in @("filesystem", "memory", "github-legacy", "github-modern-docker")) {
+    foreach ($name in @("filesystem", "memory", "browser-eyes", "github-legacy", "github-modern-docker")) {
         Write-Host "  $name -> cmd /c npm --prefix mcp run $($serverScripts[$name])"
     }
 }

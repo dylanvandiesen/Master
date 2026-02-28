@@ -1,19 +1,6 @@
 import { spawn } from "node:child_process";
 
-const MODE_DEFAULT_SWITCHES = {
-  standard: {
-    PrepareMcp: true,
-  },
-  quick: {
-    SkipBuild: true,
-    PrepareMcp: true,
-  },
-  full: {
-    InstallRootDeps: true,
-    InstallMcpDeps: true,
-    PrepareMcp: true,
-  },
-};
+const MODE_VALUES = new Set(["quick", "standard", "full"]);
 
 const VALUE_KEYS = new Map([
   ["mode", "mode"],
@@ -25,13 +12,11 @@ const VALUE_KEYS = new Map([
 ]);
 
 const SWITCH_KEYS = new Map([
-  ["installrootdeps", "InstallRootDeps"],
-  ["installmcpdeps", "InstallMcpDeps"],
-  ["preparemcp", "PrepareMcp"],
-  ["skipscaffold", "SkipScaffold"],
-  ["skipbuild", "SkipBuild"],
-  ["nobriefing", "NoBriefing"],
-  ["nosupercontext", "NoSuperContext"],
+  ["skipmcpprep", "SkipMcpPrep"],
+  ["skipbriefing", "SkipBriefingRefresh"],
+  ["skipbriefingrefresh", "SkipBriefingRefresh"],
+  ["skipcontext", "SkipContextExport"],
+  ["skipcontextexport", "SkipContextExport"],
 ]);
 
 function normalizeKey(raw) {
@@ -114,26 +99,21 @@ function parseArgs(argv) {
 }
 
 function normalizeMode(rawMode) {
-  const normalized = String(rawMode || "standard")
+  const normalized = String(rawMode || "quick")
     .trim()
     .toLowerCase();
-  if (Object.prototype.hasOwnProperty.call(MODE_DEFAULT_SWITCHES, normalized)) {
+  if (MODE_VALUES.has(normalized)) {
     return normalized;
   }
-  return "standard";
+  return "quick";
 }
 
 function buildPowerShellArgs(parsed) {
   const mode = normalizeMode(parsed.values.mode);
-  const defaults = MODE_DEFAULT_SWITCHES[mode];
-  const mergedSwitches = {
-    ...defaults,
-    ...parsed.switches,
-  };
   const projectFromEnv = String(process.env.npm_config_project || "").trim();
   const effectiveProject = String(parsed.values.Project || projectFromEnv || "").trim();
 
-  const args = ["-ExecutionPolicy", "Bypass", "-File", "scripts/chat/prepare-chat-instance.ps1"];
+  const args = ["-ExecutionPolicy", "Bypass", "-File", "scripts/chat/super-agent-bootstrap.ps1", "-Mode", mode];
 
   if (parsed.values.RepoRoot) {
     args.push("-RepoRoot", parsed.values.RepoRoot);
@@ -145,9 +125,9 @@ function buildPowerShellArgs(parsed) {
     args.push("-SessionId", parsed.values.SessionId);
   }
 
-  const switchOrder = ["InstallRootDeps", "InstallMcpDeps", "PrepareMcp", "SkipScaffold", "SkipBuild", "NoBriefing", "NoSuperContext"];
+  const switchOrder = ["SkipMcpPrep", "SkipBriefingRefresh", "SkipContextExport"];
   for (const key of switchOrder) {
-    if (mergedSwitches[key]) {
+    if (parsed.switches[key]) {
       args.push(`-${key}`);
     }
   }
@@ -164,7 +144,7 @@ function run() {
   });
 
   child.on("error", (error) => {
-    process.stderr.write(`[chat:new] Failed to start PowerShell: ${error.message}\n`);
+    process.stderr.write(`[super:bootstrap] Failed to start PowerShell: ${error.message}\n`);
     process.exit(1);
   });
 
@@ -174,3 +154,4 @@ function run() {
 }
 
 run();
+

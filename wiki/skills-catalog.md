@@ -24,6 +24,15 @@ This repository now includes a local skill pack under `skills/`.
      - `scripts/bootstrap-session.ps1`
      - `references/startup-checklist.md`
 
+4. `skills/system-build-super-agent`
+   - Purpose: system-wide build/MCP/skills orchestration with strict boundary protocol (excludes project source + commander internals by default).
+   - Helpers:
+     - `scripts/generate-system-briefing.ps1`
+     - `references/build-system-topology.md`
+     - `references/command-surface-and-runbooks.md`
+     - `references/mcp-skills-acceleration.md`
+     - `references/boundary-crossing-protocol.md`
+
 ## Skill Commands
 
 - List local skills:
@@ -38,3 +47,4 @@ This repository now includes a local skill pack under `skills/`.
 3. `powershell -ExecutionPolicy Bypass -File skills/mcp-orchestration-ops/scripts/mcp-doctor.ps1`
 4. `powershell -ExecutionPolicy Bypass -File skills/chat-instance-bootstrap/scripts/bootstrap-session.ps1 -Project csscroll`
 5. `powershell -ExecutionPolicy Bypass -File skills/chat-instance-bootstrap/scripts/bootstrap-session.ps1 -Project csscroll -Full`
+6. `powershell -ExecutionPolicy Bypass -File skills/system-build-super-agent/scripts/generate-system-briefing.ps1 -Project csscroll`

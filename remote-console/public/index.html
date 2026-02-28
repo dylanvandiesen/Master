@@ -2,15 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Playground Remote Console</title>
-    <link rel="stylesheet" href="/vendor/fontello/css/fontello.css" />
-    <link rel="stylesheet" href="/styles.css" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <title>RoboAI</title>
+    <link rel="stylesheet" href="/vendor/fontello/css/fontello.css?v=20260222c" />
+    <link rel="stylesheet" href="/vendor/xterm/xterm.css?v=20260222c" />
+    <link rel="stylesheet" href="/styles.css?v=20260223i" />
   </head>
   <body>
     <main class="layout">
       <section id="loginView" class="panel login-panel">
-        <h1>Remote Console</h1>
+        <h1>RoboAI</h1>
         <p class="muted">Session-based Codex relay with preview and activity tracking.</p>
         <form id="loginForm" autocomplete="off">
           <label for="password">Password</label>
@@ -21,13 +25,28 @@
       </section>
 
       <section id="appView" class="app" hidden>
-        <section class="workspace-shell">
+        <section id="workspaceShell" class="workspace-shell">
           <nav id="panelNav" class="icon-nav panel" aria-label="Panel Navigation">
             <div class="icon-nav-head">
               <strong>Panels</strong>
               <button id="mobileNavCloseBtn" class="icon-nav-close circle-btn" type="button" aria-label="Close panel menu">
                 <i class="icon-cancel" aria-hidden="true"></i>
               </button>
+            </div>
+            <details id="chatRuntimeDetails" class="chat-runtime panel-nav-runtime" open>
+              <summary>
+                <span><i class="icon-cog-alt" aria-hidden="true"></i> System Runtime</span>
+                <span id="chatRuntimeSummary" class="muted">loading...</span>
+              </summary>
+              <div id="chatRuntimeValues" class="chat-runtime-values"></div>
+            </details>
+            <div class="panel-nav-tools">
+              <button id="terminalToolsToggleBtn" type="button" class="chip-btn chip-btn-icon" data-terminal-action="tools" aria-expanded="false" aria-controls="terminalToolsPopover">
+                <i class="icon-cog-alt" aria-hidden="true"></i>
+                <span>Tools</span>
+              </button>
+              <span id="chatConnection" class="chip muted">Link...</span>
+              <span id="agentStateBadge" class="chip">idle</span>
             </div>
             <button id="navPreviewBtn" class="nav-btn active" type="button" title="Preview" data-panel-target="preview">
               <i class="icon-eye" aria-hidden="true"></i>
@@ -45,13 +64,13 @@
               <i class="icon-globe" aria-hidden="true"></i>
               <span>Remote</span>
             </button>
-            <button id="navOutputBtn" class="nav-btn" type="button" title="Output" data-panel-target="output">
+            <button id="navTerminalBtn" class="nav-btn" type="button" title="Terminal" data-panel-target="terminal">
               <i class="icon-terminal" aria-hidden="true"></i>
-              <span>Output</span>
+              <span>Terminal</span>
             </button>
-            <button id="navTogglePanelsBtn" class="nav-btn toggle" type="button" title="Hide or show utility panels">
-              <i class="icon-columns" aria-hidden="true"></i>
-              <span>Hide</span>
+            <button id="navOutputBtn" class="nav-btn" type="button" title="Client" data-panel-target="output">
+              <i class="icon-terminal" aria-hidden="true"></i>
+              <span>Client</span>
             </button>
             <div class="icon-nav-footer">
               <button id="refreshBtn" type="button" class="nav-btn nav-utility">
@@ -68,7 +87,7 @@
           <button id="utilityDockBackdrop" class="utility-dock-backdrop" type="button" aria-hidden="true" hidden></button>
 
           <section class="main-stage">
-            <article class="panel chat-panel">
+            <article class="panel chat-panel terminal-command-panel">
               <div class="chat-head">
                 <div class="chat-head-start">
                   <button
@@ -81,68 +100,287 @@
                   >
                     <i class="icon-menu" aria-hidden="true"></i>
                   </button>
-                  <span class="chat-head-label">RoboAI Commando</span>
+                  <span class="chat-head-label">RoboAI</span>
                 </div>
-                <div class="chat-meta">
-                  <button id="chatPreviewBtn" type="button" class="chip-btn">
-                    <i class="icon-eye" aria-hidden="true"></i>
-                    <span>Preview</span>
-                  </button>
-                  <span id="chatConnection" class="chip muted">Connecting...</span>
-                  <span id="agentStateBadge" class="chip">idle</span>
+                <div id="statusDotBar" class="status-dot-bar" aria-label="Runtime status indicators">
+                  <button type="button" class="status-dot unknown" data-status-dot="auth" aria-label="Authentication status"></button>
+                  <button type="button" class="status-dot unknown" data-status-dot="socket" aria-label="Socket status"></button>
+                  <button type="button" class="status-dot unknown" data-status-dot="agent" aria-label="Agent status"></button>
+                  <button type="button" class="status-dot unknown" data-status-dot="relay" aria-label="Relay status"></button>
+                  <button type="button" class="status-dot unknown" data-status-dot="terminal" aria-label="Terminal status"></button>
+                  <button type="button" class="status-dot unknown" data-status-dot="tunnel" aria-label="Tunnel status"></button>
+                  <button type="button" class="status-dot unknown" data-status-dot="preview" aria-label="Preview status"></button>
+                </div>
+                <div id="statusDotPopover" class="status-dot-popover" hidden>
+                  <p id="statusDotPopoverText" class="muted">Status details.</p>
                 </div>
               </div>
-              <p id="chatLiveStatus" class="chat-live muted">Waiting for Codex activity...</p>
-              <div class="chat-statusbar">
+              <p id="chatLiveStatus" class="chat-live muted">Terminal channel initializing...</p>
+              <div class="chat-statusbar command-statusbar">
                 <p id="statusLine" class="status-line muted">Loading session...</p>
-                <span id="chatTokenUsage" class="chip muted">Tokens est: n/a</span>
-                <span id="chatMessageCount" class="chip muted">0 messages</span>
               </div>
-              <details id="chatRuntimeDetails" class="chat-runtime" open>
-                <summary>
-                  <span><i class="icon-cog-alt" aria-hidden="true"></i> Runtime Checks</span>
-                  <span id="chatRuntimeSummary" class="muted">loading...</span>
-                </summary>
-                <div id="chatRuntimeValues" class="chat-runtime-values"></div>
-              </details>
 
-              <div id="chatStream" class="chat-stream" aria-live="polite"></div>
+              <section id="terminalCommandDeck" class="terminal-command-deck dom-renderer">
+                <div id="terminalViewport" class="terminal-viewport terminal-hero-viewport">
+                  <div class="terminal-hero-glow" aria-hidden="true"></div>
+                  <div class="terminal-hero-scan" aria-hidden="true"></div>
+                  <div id="terminalMount" class="terminal-mount" role="region" aria-label="RoboAI terminal output"></div>
+                  <div id="terminalSearchMarkerRail" class="terminal-search-marker-rail" aria-hidden="true" hidden></div>
+                  <textarea
+                    id="terminalDirectInputProxy"
+                    class="terminal-direct-input-proxy"
+                    rows="1"
+                    inputmode="text"
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    enterkeyhint="send"
+                    aria-label="Direct terminal input"
+                  ></textarea>
+                  <textarea
+                    id="terminalSelectableOutput"
+                    class="terminal-selectable-output"
+                    rows="6"
+                    readonly
+                    wrap="off"
+                    spellcheck="false"
+                    aria-label="Selectable terminal output"
+                  ></textarea>
+                </div>
+                <section id="terminalToolsPopover" class="terminal-tools-popover" hidden>
+                  <div class="terminal-command-row terminal-command-live-row">
+                    <label for="terminalCommandInput" class="sr-only">NPM Command</label>
+                    <input
+                      id="terminalCommandInput"
+                      type="text"
+                      autocomplete="off"
+                      placeholder="NPM command (example: run build:all)"
+                    />
+                    <button id="terminalCommandSendBtn" type="button" class="accent">
+                      <i class="icon-play" aria-hidden="true"></i>
+                      <span>Enter Live</span>
+                    </button>
+                    <button id="terminalSendQueueBtn" type="button">
+                      <i class="icon-arrows-cw" aria-hidden="true"></i>
+                      <span>Tab Que</span>
+                    </button>
+                    <button id="terminalQueueFlushBtn" type="button">
+                      <i class="icon-right-circled2" aria-hidden="true"></i>
+                      <span>Send Que</span>
+                    </button>
+                    <button id="terminalFocusInputBtn" type="button" data-terminal-action="focus">
+                      <i class="icon-terminal" aria-hidden="true"></i>
+                      <span>Tap To Type</span>
+                    </button>
+                    <button id="terminalTransactionModeBtn" type="button" class="mode-btn" data-terminal-action="transaction-mode" aria-pressed="false">
+                      <span>Txn Off</span>
+                    </button>
+                    <span id="terminalQueueCount" class="chip muted">Queue 0</span>
+                    <button id="terminalGapRecoverBtn" type="button" class="danger-lite" data-terminal-action="gap-recover" hidden>
+                      <span>Gap</span>
+                    </button>
+                  </div>
+                  <p class="terminal-type-hint muted">Tap terminal to type. Shift+Enter sends a soft line break. Select Text lets you scroll and copy output.</p>
+                  <div class="terminal-search-row">
+                    <label for="terminalSearchInput" class="sr-only">Search terminal output</label>
+                    <input
+                      id="terminalSearchInput"
+                      type="search"
+                      autocomplete="off"
+                      spellcheck="false"
+                      placeholder="Search terminal output"
+                    />
+                    <button id="terminalSearchPrevBtn" type="button" data-terminal-action="search-prev">Prev</button>
+                    <button id="terminalSearchNextBtn" type="button" data-terminal-action="search-next">Next</button>
+                    <button id="terminalSearchClearBtn" type="button" data-terminal-action="search-clear">Clear</button>
+                    <span id="terminalSearchStatus" class="chip muted">0 / 0</span>
+                  </div>
 
-              <div class="composer">
-                <label for="noteMessage" class="sr-only">Message</label>
-                <div class="prompt-mode-bar" aria-label="Prompt mode controls">
-                  <button id="promptModeLiveBtn" type="button" class="mode-chip active">
-                    <i class="icon-play" aria-hidden="true"></i>
-                    <span>Live</span>
-                  </button>
-                  <button id="promptModeQueueBtn" type="button" class="mode-chip">
-                    <i class="icon-arrows-cw" aria-hidden="true"></i>
-                    <span>Queue</span>
-                  </button>
-                  <button id="promptModeStopBtn" type="button" class="mode-chip danger-lite">
-                    <i class="icon-stop" aria-hidden="true"></i>
-                    <span>Stop</span>
-                  </button>
-                  <button id="chatRefreshBtn" type="button" class="mode-chip mode-chip-sync" aria-label="Sync chat">
-                    <i class="icon-arrows-cw" aria-hidden="true"></i>
-                    <span>Sync</span>
-                  </button>
-                  <span id="promptQueueCount" class="chip muted">Queue 0</span>
+                  <div class="terminal-context-strip">
+                    <details class="context-menu" open>
+                      <summary>
+                        <i class="icon-cog-alt" aria-hidden="true"></i>
+                        <span>Actions</span>
+                      </summary>
+                      <div class="context-menu-content">
+                        <div class="button-row context-grid">
+                          <button id="terminalRefreshBtn" type="button">
+                            <i class="icon-arrows-cw" aria-hidden="true"></i>
+                            <span>Refresh</span>
+                          </button>
+                          <button id="terminalStartBtn" type="button" class="accent">
+                            <i class="icon-play-circled2" aria-hidden="true"></i>
+                            <span>Start</span>
+                          </button>
+                          <button id="terminalReattachBtn" type="button">
+                            <i class="icon-link-ext" aria-hidden="true"></i>
+                            <span>Attach</span>
+                          </button>
+                          <button id="terminalInterruptBtn" type="button">
+                            <i class="icon-flash" aria-hidden="true"></i>
+                            <span>Ctrl+C</span>
+                          </button>
+                          <button id="terminalStopBtn" type="button" class="danger-lite">
+                            <i class="icon-stop" aria-hidden="true"></i>
+                            <span>Stop</span>
+                          </button>
+                          <button id="terminalClearBtn" type="button">
+                            <i class="icon-cancel" aria-hidden="true"></i>
+                            <span>Clear</span>
+                          </button>
+                        </div>
+                        <div id="terminalQuickCommands" class="terminal-quick-commands" aria-label="Quick commands">
+                          <button type="button" data-terminal-command="npm run build:all">
+                            <i class="icon-cog-alt" aria-hidden="true"></i>
+                            <span>Build All</span>
+                          </button>
+                          <button type="button" data-terminal-command="npm run dev:all">
+                            <i class="icon-play" aria-hidden="true"></i>
+                            <span>Dev All</span>
+                          </button>
+                          <button type="button" data-terminal-command="npm run scaffold">
+                            <i class="icon-doc-text" aria-hidden="true"></i>
+                            <span>Scaffold</span>
+                          </button>
+                          <button type="button" data-terminal-command="npm run list:projects">
+                            <i class="icon-doc-text" aria-hidden="true"></i>
+                            <span>List Projects</span>
+                          </button>
+                          <button id="terminalExecResumeBtn" type="button" data-terminal-command="cmd /c codex resume 019c8541-fb16-7390-afc5-5f7c1130c66a">
+                            <i class="icon-terminal" aria-hidden="true"></i>
+                            <span>Exec Resume</span>
+                          </button>
+                          <button type="button" data-terminal-sequence="\u0015">
+                            <i class="icon-cancel" aria-hidden="true"></i>
+                            <span>Clear Line</span>
+                          </button>
+                        </div>
+                        <div class="button-row context-grid">
+                          <button id="terminalTextModeBtn" type="button" data-terminal-action="select">
+                            <i class="icon-doc-text" aria-hidden="true"></i>
+                            <span>Select Text</span>
+                          </button>
+                          <button id="terminalCopyTextBtn" type="button" data-terminal-action="copy">
+                            <i class="icon-docs" aria-hidden="true"></i>
+                            <span>Copy Text</span>
+                          </button>
+                          <button id="terminalSelectExitBtn" type="button" data-terminal-action="select-exit" hidden>
+                            <i class="icon-check" aria-hidden="true"></i>
+                            <span>Exit Select</span>
+                          </button>
+                        </div>
+                        <details class="command-result-shell command-result-inline">
+                          <summary>
+                            <i class="icon-terminal" aria-hidden="true"></i>
+                            <span>NPM Result</span>
+                          </summary>
+                          <pre id="commandResult" class="command-result">No operations yet.</pre>
+                        </details>
+                        <p id="terminalStatus" class="muted terminal-status">Disconnected.</p>
+                      </div>
+                    </details>
+
+                    <details class="context-menu">
+                      <summary>
+                        <i class="icon-terminal" aria-hidden="true"></i>
+                        <span>Keys</span>
+                      </summary>
+                      <div class="context-menu-content">
+                        <div id="terminalSpecialControls" class="terminal-special-controls" aria-label="Special keyboard controls">
+                          <div class="terminal-modifier-row">
+                            <button type="button" class="mode-btn" data-terminal-mod="ctrl">Ctrl</button>
+                            <button type="button" class="mode-btn" data-terminal-mod="alt">Alt</button>
+                            <button type="button" class="mode-btn" data-terminal-mod="shift">Shift</button>
+                            <button type="button" data-terminal-key="Escape">Esc</button>
+                            <button type="button" data-terminal-key="Tab">Tab</button>
+                            <button type="button" data-terminal-key="Enter">Enter</button>
+                          </div>
+                          <div class="terminal-nav-row">
+                            <button type="button" data-terminal-key="ArrowUp">Up</button>
+                            <button type="button" data-terminal-key="ArrowLeft">Left</button>
+                            <button type="button" data-terminal-key="ArrowDown">Down</button>
+                            <button type="button" data-terminal-key="ArrowRight">Right</button>
+                            <button type="button" data-terminal-key="Home">Home</button>
+                            <button type="button" data-terminal-key="End">End</button>
+                            <button type="button" data-terminal-key="PageUp">PgUp</button>
+                            <button type="button" data-terminal-key="PageDown">PgDn</button>
+                            <button type="button" data-terminal-key="Backspace">Bksp</button>
+                            <button type="button" data-terminal-key="Delete">Del</button>
+                            <button type="button" data-terminal-text="/">/</button>
+                            <button type="button" data-terminal-text="-">-</button>
+                            <button type="button" data-terminal-text="|">|</button>
+                          </div>
+                        </div>
+                      </div>
+                    </details>
+
+                    <details class="context-menu">
+                      <summary>
+                        <i class="icon-columns" aria-hidden="true"></i>
+                        <span>Panels</span>
+                      </summary>
+                      <div class="context-menu-content">
+                        <div class="button-row context-grid context-grid-panels">
+                          <button type="button" data-open-panel="preview">Preview</button>
+                          <button type="button" data-open-panel="activity">Activity</button>
+                          <button type="button" data-open-panel="sessions">Sessions</button>
+                          <button type="button" data-open-panel="connection">Remote</button>
+                          <button type="button" data-open-panel="output">Output</button>
+                          <button id="terminalPanelToggleBtn" type="button">
+                            <i class="icon-columns" aria-hidden="true"></i>
+                            <span>Toggle Sidepanel</span>
+                          </button>
+                        </div>
+                      </div>
+                    </details>
+                  </div>
+                </section>
+                <div id="terminalKeyboardDock" class="terminal-keyboard-dock" aria-label="Terminal mobile keyboard" hidden>
+                  <div class="terminal-dock-row terminal-dock-row-main">
+                    <button type="button" class="terminal-dock-arrow" data-terminal-key="ArrowLeft" aria-label="Move cursor left"><i class="icon-left-open" aria-hidden="true"></i></button>
+                    <button type="button" class="terminal-dock-arrow" data-terminal-key="ArrowRight" aria-label="Move cursor right"><i class="icon-right-open" aria-hidden="true"></i></button>
+                    <button type="button" class="terminal-dock-arrow" data-terminal-key="ArrowUp" aria-label="Move cursor up"><i class="icon-up-open" aria-hidden="true"></i></button>
+                    <button type="button" class="terminal-dock-arrow" data-terminal-key="ArrowDown" aria-label="Move cursor down"><i class="icon-down-open" aria-hidden="true"></i></button>
+                    <button id="terminalQueueModeBtn" type="button" class="mode-btn" data-terminal-action="queue-mode" aria-pressed="false"><i class="icon-list-alt" aria-hidden="true"></i><span>Que Off</span></button>
+                    <button id="terminalDockTransactionModeBtn" type="button" class="mode-btn" data-terminal-action="transaction-mode" aria-pressed="false"><i class="icon-exchange" aria-hidden="true"></i><span>Txn Off</span></button>
+                    <button id="terminalSoftEnterBtn" type="button" data-terminal-soft-enter="true"><i class="icon-down-dir" aria-hidden="true"></i><span>Soft</span></button>
+                    <button id="terminalDockSendBtn" type="button"><i class="icon-play" aria-hidden="true"></i><span>Send</span></button>
+                    <button id="terminalDockQueueBtn" type="button"><i class="icon-export" aria-hidden="true"></i><span>Que</span></button>
+                    <button id="terminalDockMoreBtn" type="button" data-terminal-action="dock-extend" aria-pressed="false"><i class="icon-menu" aria-hidden="true"></i><span>More</span></button>
+                  </div>
+                  <div id="terminalDockExtensions" class="terminal-dock-row terminal-dock-row-extensions" hidden>
+                    <button id="terminalSelectDockBtn" type="button" data-terminal-action="select"><i class="icon-scissors" aria-hidden="true"></i><span>Select</span></button>
+                    <button type="button" data-terminal-action="copy"><i class="icon-docs" aria-hidden="true"></i><span>Copy</span></button>
+                    <button type="button" data-terminal-action="copy-live" disabled><i class="icon-ok" aria-hidden="true"></i><span>Copy+Live</span></button>
+                    <button id="terminalSelectDockExitBtn" type="button" data-terminal-action="select-exit" hidden><i class="icon-check" aria-hidden="true"></i><span>Live</span></button>
+                    <button type="button" data-terminal-action="focus"><i class="icon-keyboard" aria-hidden="true"></i><span>Type</span></button>
+                    <button type="button" data-terminal-key="Backspace"><i class="icon-left-open" aria-hidden="true"></i><span>Bksp</span></button>
+                    <button type="button" data-terminal-key="Delete"><i class="icon-cancel" aria-hidden="true"></i><span>Del</span></button>
+                    <button type="button" data-terminal-key="Tab"><span>Tab</span></button>
+                    <button type="button" data-terminal-key="Enter"><span>Enter</span></button>
+                    <button type="button" data-terminal-key="Escape"><span>Esc</span></button>
+                    <button type="button" class="mode-btn" data-terminal-mod="ctrl"><span>Ctrl</span></button>
+                    <button type="button" class="mode-btn" data-terminal-mod="alt"><span>Alt</span></button>
+                    <button type="button" class="mode-btn" data-terminal-mod="shift"><span>Shift</span></button>
+                    <button type="button" data-terminal-key="Home"><span>Home</span></button>
+                    <button type="button" data-terminal-key="End"><span>End</span></button>
+                    <button type="button" data-terminal-key="PageUp"><span>PgUp</span></button>
+                    <button type="button" data-terminal-key="PageDown"><span>PgDn</span></button>
+                    <button type="button" data-terminal-text="/"><span>/</span></button>
+                    <button type="button" data-terminal-text="-"><span>-</span></button>
+                    <button type="button" data-terminal-text="|"><span>|</span></button>
+                    <button type="button" data-terminal-action="search-prev"><i class="icon-search" aria-hidden="true"></i><span>Find -</span></button>
+                    <button type="button" data-terminal-action="search-next"><i class="icon-search" aria-hidden="true"></i><span>Find +</span></button>
+                  </div>
                 </div>
-                <div id="chatQuickReplies" class="chat-quick-replies" hidden aria-label="Quick replies"></div>
-                <div class="composer-shell">
-                  <textarea id="noteMessage" rows="3" placeholder="Type a message for Codex..."></textarea>
-                  <button id="sendNoteBtn" type="button" class="composer-send-btn" aria-label="Send message">
-                    <i class="icon-right-circled2" aria-hidden="true"></i>
-                  </button>
-                </div>
-                <p id="noteStatus" class="muted"></p>
-              </div>
+              </section>
+
             </article>
           </section>
 
           <aside id="utilityDock" class="utility-dock">
-            <button id="utilityDockCloseBtn" class="utility-dock-close circle-btn" type="button" aria-label="Close utility panel" hidden>
+            <button id="utilityDockCloseBtn" class="utility-dock-close circle-btn" type="button" aria-label="Collapse utility panels" title="Collapse utility panels" hidden>
               <i class="icon-cancel" aria-hidden="true"></i>
             </button>
             <article class="panel preview-panel utility-card" data-panel-id="preview">
@@ -171,7 +409,7 @@
                   <span>Open Tab</span>
                 </button>
                 <label class="checkbox-wrap">
-                  <input id="autoRefreshToggle" type="checkbox" checked />
+                  <input id="autoRefreshToggle" type="checkbox" />
                   <span>Auto refresh</span>
                 </label>
               </div>
@@ -240,6 +478,14 @@
                 <button id="codexPrepFullBtn" type="button" class="accent">
                   <i class="icon-rocket" aria-hidden="true"></i>
                   <span>Prep Full</span>
+                </button>
+                <button id="codexSpawnSuperQuickBtn" type="button" class="accent">
+                  <i class="icon-star" aria-hidden="true"></i>
+                  <span>Spawn Super</span>
+                </button>
+                <button id="codexSpawnSuperFullBtn" type="button" class="accent">
+                  <i class="icon-star" aria-hidden="true"></i>
+                  <span>Spawn Super Full</span>
                 </button>
               </div>
               <div class="button-row">
@@ -326,15 +572,59 @@
               <p id="connectionAdvice" class="muted"></p>
             </article>
 
+            <article class="panel terminal-panel utility-card" data-panel-id="terminal" hidden>
+              <h3>Terminal Controls Moved</h3>
+              <p class="muted">
+                Terminal controls are now pinned on the main screen for faster mobile operation.
+                Use this dock for supporting panels only.
+              </p>
+            </article>
+
             <article class="panel output-panel utility-card" data-panel-id="output" hidden>
-              <h3>Operation Output</h3>
-              <pre id="commandResult" class="command-result">No operations yet.</pre>
+              <h3>Client Interface</h3>
+              <p class="muted">Chat history and message composer now live in this panel.</p>
+              <section class="legacy-chat-shell">
+                <div id="chatStream" class="chat-stream" aria-live="polite"></div>
+                <div id="chatQuickReplies" class="chat-quick-replies" hidden aria-label="Quick replies"></div>
+                <span id="chatTokenUsage" class="chip muted">Tokens est: n/a</span>
+                <span id="chatMessageCount" class="chip muted">0 messages</span>
+                <div class="composer">
+                  <label for="noteMessage" class="sr-only">Message</label>
+                  <div class="prompt-mode-bar" aria-label="Prompt mode controls">
+                    <button id="promptModeLiveBtn" type="button" class="mode-chip active">
+                      <i class="icon-play" aria-hidden="true"></i>
+                      <span>Live</span>
+                    </button>
+                    <button id="promptModeQueueBtn" type="button" class="mode-chip">
+                      <i class="icon-arrows-cw" aria-hidden="true"></i>
+                      <span>Queue</span>
+                    </button>
+                    <button id="promptModeStopBtn" type="button" class="mode-chip danger-lite">
+                      <i class="icon-stop" aria-hidden="true"></i>
+                      <span>Stop</span>
+                    </button>
+                    <button id="chatRefreshBtn" type="button" class="mode-chip mode-chip-sync" aria-label="Sync chat">
+                      <i class="icon-arrows-cw" aria-hidden="true"></i>
+                      <span>Sync</span>
+                    </button>
+                    <span id="promptQueueCount" class="chip muted">Queue 0</span>
+                  </div>
+                  <div class="composer-shell">
+                    <textarea id="noteMessage" rows="3" placeholder="Type a message for Codex..."></textarea>
+                    <button id="sendNoteBtn" type="button" class="composer-send-btn" aria-label="Send message">
+                      <i class="icon-right-circled2" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                  <p id="noteStatus" class="muted"></p>
+                </div>
+              </section>
             </article>
           </aside>
         </section>
       </section>
     </main>
 
-    <script type="module" src="/app.js"></script>
+    <script src="/vendor/xterm/xterm.js?v=20260222c"></script>
+    <script type="module" src="/app.js?v=20260222h"></script>
   </body>
 </html>
