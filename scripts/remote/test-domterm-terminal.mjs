@@ -99,6 +99,7 @@ function decodeEscapedArg(raw) {
 }
 
 async function requestJson(baseUrl, pathname, options = {}, auth = {}) {
+  const url = new URL(String(pathname || "").replace(/^\/+/, ""), `${baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`}`);
   const headers = {
     Accept: "application/json",
     ...(options.body ? { "Content-Type": "application/json" } : {}),
@@ -106,7 +107,7 @@ async function requestJson(baseUrl, pathname, options = {}, auth = {}) {
     ...(auth.csrf ? { "x-csrf-token": auth.csrf } : {}),
     ...(options.headers || {}),
   };
-  const response = await fetch(`${baseUrl}${pathname}`, {
+  const response = await fetch(url, {
     method: options.method || "GET",
     headers,
     body: options.body ? JSON.stringify(options.body) : undefined,
@@ -117,7 +118,8 @@ async function requestJson(baseUrl, pathname, options = {}, auth = {}) {
 }
 
 async function readAsset(baseUrl, pathname) {
-  const response = await fetch(`${baseUrl}${pathname}`);
+  const url = new URL(String(pathname || "").replace(/^\/+/, ""), `${baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`}`);
+  const response = await fetch(url);
   const contentType = String(response.headers.get("content-type") || "").toLowerCase();
   const text = await response.text();
   return { response, contentType, text };
@@ -201,7 +203,7 @@ async function run() {
   try {
     await waitFor(
       async () => {
-        const response = await fetch(`${baseUrl}/api/health`);
+        const response = await fetch(new URL("api/health", `${baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`}`));
         return response.ok;
       },
       shouldSpawnServer ? 15000 : 8000,
@@ -244,7 +246,8 @@ async function run() {
     assert(start.response.ok, `Terminal start failed: ${JSON.stringify(start.payload)}`);
     assert(start.payload?.terminal?.running === true, "Terminal did not report running state.");
 
-    const { ws, messages } = await connectTerminalWs(`${wsBaseUrl}/terminal-ws`, cookie);
+    const terminalWsUrl = new URL("terminal-ws", `${wsBaseUrl}${base.pathname.endsWith("/") ? base.pathname : `${base.pathname}/`}`);
+    const { ws, messages } = await connectTerminalWs(terminalWsUrl.toString(), cookie);
     await waitFor(() => messages.some((msg) => String(msg?.type || "").toLowerCase() === "terminal:init"), 8000, "WS init");
     await waitFor(() => messages.some((msg) => String(msg?.type || "").toLowerCase() === "terminal:history"), 8000, "WS history");
 

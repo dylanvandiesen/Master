@@ -38,7 +38,7 @@
     "skills:validate": "powershell -ExecutionPolicy Bypass -File scripts/chat/validate-skills.ps1",
     "security:secrets": "powershell -ExecutionPolicy Bypass -File scripts/security/scan-secrets.ps1",
     "commander": "npm run commander:local --",
-    "commander:local": "node remote-console/server.mjs --host=127.0.0.1 --security=off",
+    "commander:local": "node remote-console/server.mjs --host=127.0.0.1",
     "commander:remote": "node remote-console/server.mjs --host=0.0.0.0 --security=auto",
     "commander:start": "npm run commander:start:local --",
     "commander:start:local": "node scripts/remote/start-panel-stack.mjs --mode=local",

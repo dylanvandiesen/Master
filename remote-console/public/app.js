@@ -268,6 +268,41 @@ const TERMINAL_RECONNECT_MS = 2200;
 const TERMINAL_FIT_DEBOUNCE_MS = 120;
 const TERMINAL_RESUME_ACK_MS = 1350;
 const TERMINAL_RESUME_FALLBACK_MS = 1750;
+const PANEL_BASE_PATH = (() => {
+  const meta = document.querySelector('meta[name="remote-panel-base-path"]');
+  const raw = String(meta?.content || "").trim();
+  if (!raw || raw === "/") {
+    return "";
+  }
+  const prefixed = raw.startsWith("/") ? raw : `/${raw}`;
+  return prefixed.replace(/\/+$/, "");
+})();
+
+function normalizePanelPath(path = "/") {
+  const raw = String(path || "").trim();
+  if (!raw) {
+    return "/";
+  }
+  const prefixed = raw.startsWith("/") ? raw : `/${raw}`;
+  return prefixed.replace(/\/{2,}/g, "/");
+}
+
+function withBasePath(path = "/") {
+  const normalized = normalizePanelPath(path);
+  if (!PANEL_BASE_PATH) {
+    return normalized;
+  }
+  if (normalized === "/") {
+    return `${PANEL_BASE_PATH}/`;
+  }
+  return `${PANEL_BASE_PATH}${normalized}`;
+}
+
+function wsUrlFor(path) {
+  const scheme = window.location.protocol === "https:" ? "wss" : "ws";
+  return `${scheme}://${window.location.host}${withBasePath(path)}`;
+}
+
 const TOOLTIP_TEXTS = {
   statusLine: "Current workspace runtime summary.",
   refreshBtn: "Reload session, projects, manifests, chat, and activity data.",
@@ -433,7 +468,7 @@ async function api(path, options = {}) {
     headers["x-csrf-token"] = state.csrfToken;
   }
 
-  const response = await fetch(path, {
+  const response = await fetch(withBasePath(path), {
     method,
     credentials: "same-origin",
     headers,
@@ -448,6 +483,9 @@ async function api(path, options = {}) {
   }
   if (!response.ok) {
     throw new Error(payload?.error || `${response.status} ${response.statusText}`);
+  }
+  if (!payload || typeof payload !== "object") {
+    throw new Error(`Invalid panel response for ${path}.`);
   }
   return payload;
 }
@@ -3619,8 +3657,7 @@ function connectTerminalSocket(options = {}) {
 
   closeTerminalSocket({ preserveAutoReconnect: true });
 
-  const scheme = window.location.protocol === "https:" ? "wss" : "ws";
-  const ws = new WebSocket(`${scheme}://${window.location.host}${TERMINAL_WS_PATH}`);
+  const ws = new WebSocket(wsUrlFor(TERMINAL_WS_PATH));
   state.terminalSocket = ws;
   state.terminalSocketConnected = false;
   renderTerminalControls("Connecting terminal socket...");
@@ -4348,8 +4385,7 @@ function scheduleChatReconnect() {
 
 function connectChatSocket() {
   closeChatSocket();
-  const scheme = window.location.protocol === "https:" ? "wss" : "ws";
-  const ws = new WebSocket(`${scheme}://${window.location.host}/ws`);
+  const ws = new WebSocket(wsUrlFor("/ws"));
   state.ws = ws;
   setChatConnectionState("Connecting...");
 
@@ -4499,7 +4535,11 @@ async function sendChatMessage(messageOverride = null, options = {}) {
 
 function previewUrlFor(manifestId) {
   if (!manifestId) return "about:blank";
-  return `/preview/${encodeURIComponent(manifestId)}/`;
+  const manifest = state.manifests.find((entry) => entry.id === manifestId);
+  if (manifest?.previewUrl) {
+    return manifest.previewUrl;
+  }
+  return withBasePath(`/preview/${encodeURIComponent(manifestId)}/`);
 }
 
 function markPreviewFrameLoading() {
@@ -5322,6 +5362,9 @@ async function onLoginSubmit(event) {
       method: "POST",
       body: { password: els.password.value },
     });
+    if (typeof payload.csrfToken !== "string" || !payload.csrfToken) {
+      throw new Error("Login succeeded but no CSRF token was returned by the panel.");
+    }
     state.csrfToken = payload.csrfToken;
     els.password.value = "";
     await refreshSessionData();

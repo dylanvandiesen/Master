@@ -71,10 +71,20 @@ function normalizePanelUrl(raw) {
     value = `http://${value}`;
   }
   const parsed = new URL(value);
-  parsed.pathname = "/";
+  if (!parsed.pathname) {
+    parsed.pathname = "/";
+  }
+  if (!parsed.pathname.endsWith("/")) {
+    parsed.pathname = `${parsed.pathname}/`;
+  }
   parsed.search = "";
   parsed.hash = "";
   return parsed;
+}
+
+function panelRouteUrl(baseUrl, routePath) {
+  const relativePath = String(routePath || "").replace(/^\/+/, "");
+  return new URL(relativePath, baseUrl);
 }
 
 function readTerminalSize() {
@@ -111,7 +121,7 @@ function requestJson(baseUrl, method, routePath, options = {}) {
   const body = options.body;
   const headers = options.headers && typeof options.headers === "object" ? { ...options.headers } : {};
   const timeoutMs = Math.max(1000, Number.parseInt(String(options.timeoutMs || DEFAULT_CONNECT_TIMEOUT_MS), 10));
-  const requestUrl = new URL(routePath, baseUrl);
+  const requestUrl = panelRouteUrl(baseUrl, routePath);
   const transport = requestUrl.protocol === "https:" ? https : http;
   const payload = body === undefined ? null : Buffer.from(JSON.stringify(body), "utf8");
   if (payload) {
@@ -159,9 +169,8 @@ function requestJson(baseUrl, method, routePath, options = {}) {
 }
 
 function wsUrlFor(baseUrl) {
-  const url = new URL(baseUrl.toString());
+  const url = panelRouteUrl(baseUrl, "terminal-ws");
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
-  url.pathname = "/terminal-ws";
   url.search = "";
   url.hash = "";
   return url.toString();

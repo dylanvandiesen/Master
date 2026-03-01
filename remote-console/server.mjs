@@ -335,19 +335,50 @@ function normalizePublicHost(value) {
   return normalized.replace(/\/+$/, "");
 }
 
+function normalizeBasePath(value) {
+  const raw = String(value || "").trim();
+  if (!raw || raw === "/") {
+    return "";
+  }
+  const prefixed = raw.startsWith("/") ? raw : `/${raw}`;
+  const normalized = prefixed.replace(/\/{2,}/g, "/").replace(/\/+$/, "");
+  return normalized === "/" ? "" : normalized;
+}
+
+function normalizeRequestPath(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return "/";
+  }
+  const prefixed = raw.startsWith("/") ? raw : `/${raw}`;
+  const normalized = prefixed.replace(/\/{2,}/g, "/");
+  return normalized || "/";
+}
+
 function buildPublicUrl(rawHost, protocol) {
   const input = normalizePublicHost(rawHost);
   if (!input) {
     return "";
   }
   if (/^https?:\/\//i.test(input)) {
-    return input;
+    try {
+      const parsed = new URL(input);
+      if (settings.basePath && (!parsed.pathname || parsed.pathname === "/")) {
+        parsed.pathname = withBasePath("/");
+      }
+      return parsed.toString().replace(/\/$/, parsed.pathname === "/" ? "/" : "");
+    } catch {
+      return input;
+    }
   }
   const hasPort = /:\d+$/.test(input);
-  if (hasPort) {
-    return `${protocol}://${input}`;
+  const built = hasPort ? `${protocol}://${input}` : `${protocol}://${input}:${settings.port}`;
+  if (!settings.basePath) {
+    return built;
   }
-  return `${protocol}://${input}:${settings.port}`;
+  const parsed = new URL(built);
+  parsed.pathname = withBasePath("/");
+  return parsed.toString();
 }
 
 const legacyRequireHttps = parseBool(process.env.REMOTE_PANEL_REQUIRE_HTTPS, false);
@@ -369,6 +400,10 @@ const settings = {
     normalizePublicHost(runtimeConfig.publicHost) ||
     normalizePublicHost(process.env.REMOTE_PANEL_PUBLIC_HOST) ||
     normalizePublicHost(process.env.REMOTE_PANEL_MOBILE_IP),
+  basePath:
+    normalizeBasePath(parseArgValue("base-path")) ||
+    normalizeBasePath(runtimeConfig.basePath) ||
+    normalizeBasePath(process.env.REMOTE_PANEL_BASE_PATH),
   persistSessions: parseBool(process.env.REMOTE_PANEL_PERSIST_SESSIONS, true),
   sessionStoreFile: path.resolve(ROOT, process.env.REMOTE_PANEL_SESSION_STORE || ".agency/remote/panel-sessions.json"),
   runtimeConfigFile: PANEL_RUNTIME_CONFIG_FILE,
@@ -387,6 +422,37 @@ const settings = {
   cloudflaredConfig: String(parseArgValue("cloudflared-config") || process.env.REMOTE_PANEL_CLOUDFLARED_CONFIG || "").trim(),
   credentialsFile: PANEL_CREDENTIALS_FILE,
 };
+
+function withBasePath(pathname = "/") {
+  const normalized = normalizeRequestPath(pathname);
+  if (!settings.basePath) {
+    return normalized;
+  }
+  if (normalized === "/") {
+    return `${settings.basePath}/`;
+  }
+  return `${settings.basePath}${normalized}`;
+}
+
+function stripBasePath(pathname = "/") {
+  const normalized = normalizeRequestPath(pathname);
+  if (!settings.basePath) {
+    return normalized;
+  }
+  if (normalized === settings.basePath || normalized === `${settings.basePath}/`) {
+    return "/";
+  }
+  const prefix = `${settings.basePath}/`;
+  if (!normalized.startsWith(prefix)) {
+    return null;
+  }
+  const stripped = normalized.slice(settings.basePath.length);
+  return stripped || "/";
+}
+
+function sessionCookiePath() {
+  return settings.basePath || "/";
+}
 
 const PANEL_BOOT_AT = Date.now();
 const PANEL_BOOT_ISO = new Date(PANEL_BOOT_AT).toISOString();
@@ -437,6 +503,7 @@ function buildRuntimeConfigPayload() {
     updatedAt: timestamp(),
     securityMode: settings.securityMode,
     publicHost: settings.publicHost || "",
+    basePath: settings.basePath || "",
     tunnelMode: parseTunnelMode(settings.tunnelMode, "quick"),
   };
 }
@@ -495,13 +562,27 @@ function buildConnectionHelpPayload() {
   const securityMode = settings.securityMode;
   const lanProtocol = securityMode === "on" ? "https" : "http";
   const canDirectLan = settings.host === "0.0.0.0" && securityMode !== "on";
-  const directLanUrls = canDirectLan ? lanIps.map((ip) => `${lanProtocol}://${ip}:${settings.port}`) : [];
+  const directLanUrls = canDirectLan
+    ? lanIps.map((ip) => {
+        const url = new URL(`${lanProtocol}://${ip}:${settings.port}`);
+        if (settings.basePath) {
+          url.pathname = withBasePath("/");
+        }
+        return url.toString();
+      })
+    : [];
   const publicUrl = buildPublicUrl(settings.publicHost, securityMode === "on" ? "https" : "http");
   const tunnel = publicTunnelState();
   const configuredTunnelMode = parseTunnelMode(settings.tunnelMode, "quick");
   const tunnelUrl = String(tunnel?.url || "").trim();
-  const localUrl = `http://127.0.0.1:${settings.port}`;
-  const bindUrl = `http://${settings.host}:${settings.port}`;
+  const localUrlObject = new URL(`http://127.0.0.1:${settings.port}`);
+  const bindUrlObject = new URL(`http://${settings.host}:${settings.port}`);
+  if (settings.basePath) {
+    localUrlObject.pathname = withBasePath("/");
+    bindUrlObject.pathname = withBasePath("/");
+  }
+  const localUrl = localUrlObject.toString();
+  const bindUrl = bindUrlObject.toString();
 
   let action = "";
   if (tunnelUrl) {
@@ -533,6 +614,7 @@ function buildConnectionHelpPayload() {
       requireHttps: securityMode === "on",
       securityMode,
       publicHost: settings.publicHost,
+      basePath: settings.basePath,
       tunnelMode: configuredTunnelMode,
       tunnelProvider: settings.tunnelProvider,
       bindSessionIp: settings.bindSessionIp,
@@ -741,7 +823,7 @@ function verifySessionCookie(cookieValue) {
 function setSessionCookie(res, sessionId, secureCookie = false) {
   const attributes = [
     `${SESSION_COOKIE_NAME}=${sessionCookieValue(sessionId)}`,
-    "Path=/",
+    `Path=${sessionCookiePath()}`,
     "HttpOnly",
     "SameSite=Strict",
     `Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`,
@@ -755,7 +837,7 @@ function setSessionCookie(res, sessionId, secureCookie = false) {
 function clearSessionCookie(res, secureCookie = false) {
   const attributes = [
     `${SESSION_COOKIE_NAME}=`,
-    "Path=/",
+    `Path=${sessionCookiePath()}`,
     "HttpOnly",
     "SameSite=Strict",
     "Max-Age=0",
@@ -2618,7 +2700,7 @@ async function listManifests() {
       port: manifest.port || null,
       url: manifest.url || null,
       generatedAt: manifest.generatedAt || null,
-      previewUrl: `/preview/${encodeURIComponent(manifest.id || id)}/`,
+      previewUrl: withBasePath(`/preview/${encodeURIComponent(manifest.id || id)}/`),
     });
   }
 
@@ -3075,7 +3157,9 @@ async function handlePreviewProxy(req, res, pathname, search) {
         try {
           const location = new URL(String(proxiedHeaders.location), `http://${host}:${port}`);
           if (location.hostname === host && Number(location.port || "80") === port) {
-            proxiedHeaders.location = `/preview/${encodeURIComponent(manifestId)}${location.pathname}${location.search}`;
+            proxiedHeaders.location = withBasePath(
+              `/preview/${encodeURIComponent(manifestId)}${location.pathname}${location.search}`
+            );
           }
         } catch {
           // ignore malformed location header rewrite
@@ -3210,6 +3294,16 @@ async function serveStatic(req, res, pathname) {
   };
 
   setSecurityHeaders(res);
+  if (ext === ".html") {
+    const html = await fsp.readFile(targetPath, "utf8");
+    const rendered = html.replace(/__REMOTE_PANEL_BASE_PATH__/g, settings.basePath || "");
+    res.writeHead(200, {
+      "Content-Type": types[ext],
+      "Cache-Control": "no-store",
+    });
+    res.end(rendered);
+    return;
+  }
   res.writeHead(200, {
     "Content-Type": types[ext] || "application/octet-stream",
     "Cache-Control": "no-store",
@@ -4985,6 +5079,9 @@ function logStartupBanner() {
   console.log(`[remote-panel] Listening on http://${settings.host}:${settings.port} (${externalHint})`);
   console.log(`[remote-panel] Security mode: ${settings.securityMode} (${securityModeLabel(settings.securityMode)})`);
   console.log(`[remote-panel] Tunnel mode default: ${parseTunnelMode(settings.tunnelMode, "quick")}`);
+  if (settings.basePath) {
+    console.log(`[remote-panel] Base path: ${settings.basePath}`);
+  }
   if (settings.publicHost) {
     console.log(`[remote-panel] Public/mobile host hint: ${settings.publicHost}`);
   }
@@ -5019,18 +5116,32 @@ const server = http.createServer(async (req, res) => {
 
     const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
     const pathname = requestUrl.pathname;
-
-    if (pathname.startsWith("/api/")) {
-      await handleApi(req, res, pathname, ip);
+    if (settings.basePath && pathname === settings.basePath) {
+      setSecurityHeaders(res);
+      res.writeHead(302, {
+        Location: `${withBasePath("/")}${requestUrl.search || ""}`,
+        "Cache-Control": "no-store",
+      });
+      res.end();
+      return;
+    }
+    const strippedPathname = stripBasePath(pathname);
+    if (strippedPathname === null) {
+      notFound(res);
       return;
     }
 
-    if (pathname.startsWith("/preview/")) {
-      await handlePreviewProxy(req, res, pathname, requestUrl.search);
+    if (strippedPathname.startsWith("/api/")) {
+      await handleApi(req, res, strippedPathname, ip);
       return;
     }
 
-    await serveStatic(req, res, pathname);
+    if (strippedPathname.startsWith("/preview/")) {
+      await handlePreviewProxy(req, res, strippedPathname, requestUrl.search);
+      return;
+    }
+
+    await serveStatic(req, res, strippedPathname);
   } catch (error) {
     json(res, 500, {
       ok: false,
@@ -5042,8 +5153,9 @@ const server = http.createServer(async (req, res) => {
 server.on("upgrade", (req, socket, head) => {
   try {
     const requestUrl = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
-    const isChatWs = requestUrl.pathname === WS_PATH;
-    const isTerminalWs = requestUrl.pathname === TERMINAL_WS_PATH;
+    const strippedPathname = stripBasePath(requestUrl.pathname);
+    const isChatWs = strippedPathname === WS_PATH;
+    const isTerminalWs = strippedPathname === TERMINAL_WS_PATH;
     if (!isChatWs && !isTerminalWs) {
       socket.destroy();
       return;

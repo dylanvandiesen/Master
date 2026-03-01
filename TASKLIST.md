@@ -3,6 +3,7 @@
 Shared, persistent task board for this repository.
 
 ## Active
+- [ ] Finalize commander subdomain routing and local named-tunnel deployment (`remote-console/**`, `scripts/remote/**`).
 
 ## Backlog
 - [ ] Add an MCP install workflow plan (commands, prerequisites, security checks) for panel/session tooling; document only, do not auto-execute installers.
