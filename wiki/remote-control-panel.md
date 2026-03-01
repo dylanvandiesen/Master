@@ -147,6 +147,15 @@ REMOTE_PANEL_HOST=127.0.0.1
 REMOTE_PANEL_PORT=8787
 REMOTE_PANEL_SECURITY_MODE=off
 REMOTE_PANEL_PUBLIC_HOST=
+REMOTE_PANEL_PUBLIC_HOST_VERIFY_TIMEOUT_MS=8000
+REMOTE_PANEL_PUBLIC_AUTH_USER=
+REMOTE_PANEL_PUBLIC_AUTH_PASSWORD=
+REMOTE_PANEL_REMOTE_REDIRECT_ENABLED=false
+REMOTE_PANEL_REMOTE_REDIRECT_HOST=
+REMOTE_PANEL_REMOTE_REDIRECT_USER=
+REMOTE_PANEL_REMOTE_REDIRECT_KEY_PATH=
+REMOTE_PANEL_REMOTE_REDIRECT_SITE_PATH=
+REMOTE_PANEL_LOCAL_COMMANDER_SITE_PATH=
 REMOTE_PANEL_RUNTIME_CONFIG=.agency/remote/panel-runtime.json
 REMOTE_PANEL_CREDENTIALS_FILE=.agency/remote/panel-credentials.json
 REMOTE_PANEL_ALLOWLIST=
@@ -161,7 +170,11 @@ REMOTE_PANEL_CLOUDFLARED_BIN=
 REMOTE_PANEL_TERMINAL_USE_CONPTY=false
 ```
 
-`REMOTE_PANEL_PUBLIC_HOST` is the host hint shown as mobile/public URL when tunnel auto-discovery is unavailable.
+`REMOTE_PANEL_PUBLIC_HOST` is the preferred stable HTTPS hostname. When the panel starts a named/managed tunnel, it now verifies that host and, when redirect automation is configured, can refresh the local-commander redirect automatically.
+
+`REMOTE_PANEL_PUBLIC_AUTH_USER` / `REMOTE_PANEL_PUBLIC_AUTH_PASSWORD` are optional verification credentials for probing the public Commander URL.
+
+`REMOTE_PANEL_REMOTE_REDIRECT_*` and `REMOTE_PANEL_LOCAL_COMMANDER_SITE_PATH` are used only when you want the panel to automatically refresh the remote site config that fronts `local-commander.diesign.dev`.
 
 If `REMOTE_PANEL_PASSWORD` or `REMOTE_PANEL_SESSION_SECRET` is missing, the server reuses values from `panel-credentials.json` when available, otherwise it generates and persists new values.
 
@@ -173,6 +186,7 @@ From repo root:
 
 ```powershell
 cmd /c npm run env -- --context=commander --project=csscroll
+cmd /c npm run env -- --context=commander --project=csscroll --dry-run=true --json=true
 cmd /c npm run env:status
 cmd /c npm run env:down
 cmd /c npm run panel
@@ -241,19 +255,24 @@ The old Sessions/Prep area is now organized as a control plane:
   - choose context, project, prep level, panel mode, dev mode, relay mode, remote mode, public host, and default session alias
   - save reusable environment profiles
   - set default environment profiles per context
+  - `Plan Env` resolves the startup plan without mutating runtime state
   - launch or shut down environment services
   - inspect local URL, remote URL, runtime snapshot, and refreshed artifacts
 - `Agent Profiles`
-  - manage registered Codex session aliases
-  - store target thread, model override, notes, and defaults by project/global
-  - create threads directly from panel
+  - stored separately in `.agency/remote/agent-profiles.json`
+  - define launch behavior: project, prep mode, model, Codex `--profile`, session alias, relay behavior, and default-session policy
+  - `Plan Spawn` shows the exact agent launch request without creating anything
+  - `Spawn Agent` uses the selected profile and records a replayable run
+- `Session Aliases`
+  - stored in `.agency/remote/codex-sessions.json`
+  - map durable alias names to thread/session targets
+  - create threads directly from panel while reusing the selected agent profile for model/Codex-profile defaults
   - run quick/full prep from panel
-  - spawn super-agent sessions directly from panel:
-  - `Spawn Super`: quick bootstrap + thread create + registry upsert + relay start
-  - `Spawn Super Full`: full bootstrap + thread create + registry upsert + relay start
 - `Runs`
   - inspect recent environment launches, thread creation, and super-agent launches
-  - view environment profile, model, thread, prep mode, and URLs used for each run
+  - view environment profile, agent profile, thread, prep mode, and URLs used for each run
+  - `Plan Run` dry-runs the recorded request
+  - `Relaunch` repeats the recorded request from UI
 - `Live Controls`
   - start/stop relay watcher
   - relay watchers support multiple unique session names in parallel
@@ -268,6 +287,7 @@ The old Sessions/Prep area is now organized as a control plane:
 - start/stop tunnel
 - set security mode (`Enable HTTPS` or `Use Adaptive`)
 - preferred stable remote hostname: `https://local-commander.diesign.dev`
+- when redirect automation is configured, the panel verifies and refreshes the stable hostname automatically during tunnel startup
 - local direct access remains valid through `127.0.0.1`, `localhost`, or the LAN IP when bound remotely
 
 ### Preview

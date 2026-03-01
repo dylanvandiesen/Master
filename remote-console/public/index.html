@@ -518,6 +518,10 @@
                   <i class="icon-star" aria-hidden="true"></i>
                   <span>Set Default</span>
                 </button>
+                <button id="envPlanBtn" type="button">
+                  <i class="icon-eye" aria-hidden="true"></i>
+                  <span>Plan Env</span>
+                </button>
                 <button id="envLaunchBtn" type="button" class="accent">
                   <i class="icon-play-circled2" aria-hidden="true"></i>
                   <span>Launch Env</span>
@@ -531,7 +535,82 @@
 
               <h4>Agent Profiles</h4>
               <div class="field-grid">
-                <label for="codexSessionSelect">Agent Profile</label>
+                <label for="agentProfileSelect">Agent Profile</label>
+                <select id="agentProfileSelect"></select>
+
+                <label for="agentProfileName">Profile Name</label>
+                <input id="agentProfileName" type="text" placeholder="super-default" />
+
+                <label for="agentProfileProject">Project</label>
+                <input id="agentProfileProject" type="text" placeholder="csscroll (optional)" />
+
+                <label for="agentProfileModeSelect">Mode</label>
+                <select id="agentProfileModeSelect">
+                  <option value="quick">quick</option>
+                  <option value="full">full</option>
+                </select>
+
+                <label for="agentProfileModel">Model</label>
+                <input id="agentProfileModel" type="text" placeholder="optional model override" />
+
+                <label for="agentProfileCodexProfile">Codex Profile</label>
+                <input id="agentProfileCodexProfile" type="text" placeholder="optional codex --profile value" />
+
+                <label for="agentProfileSessionName">Session Name</label>
+                <input id="agentProfileSessionName" type="text" placeholder="super-csscroll-20260301..." />
+
+                <label for="agentProfileRunPrepSelect">Run Prep</label>
+                <select id="agentProfileRunPrepSelect">
+                  <option value="on">on</option>
+                  <option value="off">off</option>
+                </select>
+
+                <label for="agentProfileStartRelaySelect">Start Relay</label>
+                <select id="agentProfileStartRelaySelect">
+                  <option value="on">on</option>
+                  <option value="off">off</option>
+                </select>
+
+                <label for="agentProfileMakeDefaultSelect">Default Session</label>
+                <select id="agentProfileMakeDefaultSelect">
+                  <option value="on">on</option>
+                  <option value="off">off</option>
+                </select>
+
+                <label for="agentProfileNotes">Notes</label>
+                <textarea id="agentProfileNotes" rows="2" placeholder="optional notes"></textarea>
+              </div>
+              <div class="button-row">
+                <button id="agentProfileRefreshBtn" type="button">
+                  <i class="icon-arrows-cw" aria-hidden="true"></i>
+                  <span>Refresh Profiles</span>
+                </button>
+                <button id="agentProfileSaveBtn" type="button">
+                  <i class="icon-doc-text" aria-hidden="true"></i>
+                  <span>Save Agent</span>
+                </button>
+                <button id="agentProfileSetDefaultBtn" type="button">
+                  <i class="icon-star" aria-hidden="true"></i>
+                  <span>Set Default</span>
+                </button>
+                <button id="agentProfileRetireBtn" type="button" class="danger-lite">
+                  <i class="icon-minus-circled" aria-hidden="true"></i>
+                  <span>Retire</span>
+                </button>
+                <button id="agentProfilePlanBtn" type="button">
+                  <i class="icon-eye" aria-hidden="true"></i>
+                  <span>Plan Spawn</span>
+                </button>
+                <button id="agentProfileSpawnBtn" type="button" class="accent">
+                  <i class="icon-star" aria-hidden="true"></i>
+                  <span>Spawn Agent</span>
+                </button>
+              </div>
+              <textarea id="agentProfilePreview" rows="6" readonly placeholder="Agent launch profile summary."></textarea>
+
+              <h4>Session Aliases</h4>
+              <div class="field-grid">
+                <label for="codexSessionSelect">Session Alias</label>
                 <select id="codexSessionSelect"></select>
 
                 <label for="codexSessionName">Session Name</label>
@@ -543,20 +622,17 @@
                 <label for="codexSessionProject">Project</label>
                 <input id="codexSessionProject" type="text" placeholder="csscroll (optional)" />
 
-                <label for="codexSessionModel">Model</label>
-                <input id="codexSessionModel" type="text" placeholder="optional model override" />
-
                 <label for="codexSessionNotes">Notes</label>
                 <textarea id="codexSessionNotes" rows="2" placeholder="optional notes"></textarea>
               </div>
               <div class="button-row">
                 <button id="codexRefreshBtn" type="button">
                   <i class="icon-arrows-cw" aria-hidden="true"></i>
-                  <span>Refresh Profiles</span>
+                  <span>Refresh Aliases</span>
                 </button>
                 <button id="codexUpsertBtn" type="button">
                   <i class="icon-doc-text" aria-hidden="true"></i>
-                  <span>Save Profile</span>
+                  <span>Save Alias</span>
                 </button>
                 <button id="codexCreateBtn" type="button">
                   <i class="icon-plus-circled" aria-hidden="true"></i>
@@ -578,15 +654,8 @@
                   <i class="icon-rocket" aria-hidden="true"></i>
                   <span>Prep Full</span>
                 </button>
-                <button id="codexSpawnSuperQuickBtn" type="button" class="accent">
-                  <i class="icon-star" aria-hidden="true"></i>
-                  <span>Spawn Super</span>
-                </button>
-                <button id="codexSpawnSuperFullBtn" type="button" class="accent">
-                  <i class="icon-star" aria-hidden="true"></i>
-                  <span>Spawn Super Full</span>
-                </button>
               </div>
+              <textarea id="codexSessionPreview" rows="6" readonly placeholder="Session alias registry summary."></textarea>
 
               <h4>Runs</h4>
               <div class="field-grid">
@@ -600,6 +669,14 @@
                 <button id="launchRunRefreshBtn" type="button">
                   <i class="icon-arrows-cw" aria-hidden="true"></i>
                   <span>Refresh Runs</span>
+                </button>
+                <button id="launchRunPlanBtn" type="button">
+                  <i class="icon-eye" aria-hidden="true"></i>
+                  <span>Plan Run</span>
+                </button>
+                <button id="launchRunRelaunchBtn" type="button" class="accent">
+                  <i class="icon-play-circled2" aria-hidden="true"></i>
+                  <span>Relaunch</span>
                 </button>
               </div>
               <textarea id="launchRunPreview" rows="6" readonly placeholder="Environment and agent launch history."></textarea>
@@ -622,7 +699,6 @@
               <label for="relayStatusText">Relay Watcher</label>
               <input id="relayStatusText" type="text" readonly placeholder="not running" />
               <p id="codexSessionStatus" class="muted"></p>
-              <textarea id="codexSessionPreview" rows="6" readonly placeholder="Agent profile registry summary."></textarea>
             </article>
 
             <article class="panel connection-panel utility-card" data-panel-id="connection" hidden>

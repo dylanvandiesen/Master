@@ -18,6 +18,8 @@ const state = {
   envProfiles: null,
   launchRuns: [],
   envRuntime: null,
+  agentProfileRegistry: null,
+  agentProfiles: [],
   codexRegistry: null,
   codexSessions: [],
   connectionHelp: null,
@@ -197,15 +199,34 @@ const els = {
   envRefreshBtn: document.getElementById("envRefreshBtn"),
   envSaveProfileBtn: document.getElementById("envSaveProfileBtn"),
   envSetDefaultBtn: document.getElementById("envSetDefaultBtn"),
+  envPlanBtn: document.getElementById("envPlanBtn"),
   envLaunchBtn: document.getElementById("envLaunchBtn"),
   envShutdownBtn: document.getElementById("envShutdownBtn"),
   envPreview: document.getElementById("envPreview"),
+
+  agentProfileSelect: document.getElementById("agentProfileSelect"),
+  agentProfileName: document.getElementById("agentProfileName"),
+  agentProfileProject: document.getElementById("agentProfileProject"),
+  agentProfileModeSelect: document.getElementById("agentProfileModeSelect"),
+  agentProfileModel: document.getElementById("agentProfileModel"),
+  agentProfileCodexProfile: document.getElementById("agentProfileCodexProfile"),
+  agentProfileSessionName: document.getElementById("agentProfileSessionName"),
+  agentProfileRunPrepSelect: document.getElementById("agentProfileRunPrepSelect"),
+  agentProfileStartRelaySelect: document.getElementById("agentProfileStartRelaySelect"),
+  agentProfileMakeDefaultSelect: document.getElementById("agentProfileMakeDefaultSelect"),
+  agentProfileNotes: document.getElementById("agentProfileNotes"),
+  agentProfileRefreshBtn: document.getElementById("agentProfileRefreshBtn"),
+  agentProfileSaveBtn: document.getElementById("agentProfileSaveBtn"),
+  agentProfileSetDefaultBtn: document.getElementById("agentProfileSetDefaultBtn"),
+  agentProfileRetireBtn: document.getElementById("agentProfileRetireBtn"),
+  agentProfilePlanBtn: document.getElementById("agentProfilePlanBtn"),
+  agentProfileSpawnBtn: document.getElementById("agentProfileSpawnBtn"),
+  agentProfilePreview: document.getElementById("agentProfilePreview"),
 
   codexSessionSelect: document.getElementById("codexSessionSelect"),
   codexSessionName: document.getElementById("codexSessionName"),
   codexSessionTarget: document.getElementById("codexSessionTarget"),
   codexSessionProject: document.getElementById("codexSessionProject"),
-  codexSessionModel: document.getElementById("codexSessionModel"),
   codexSessionNotes: document.getElementById("codexSessionNotes"),
   codexRefreshBtn: document.getElementById("codexRefreshBtn"),
   codexUpsertBtn: document.getElementById("codexUpsertBtn"),
@@ -214,8 +235,6 @@ const els = {
   codexRetireBtn: document.getElementById("codexRetireBtn"),
   codexPrepQuickBtn: document.getElementById("codexPrepQuickBtn"),
   codexPrepFullBtn: document.getElementById("codexPrepFullBtn"),
-  codexSpawnSuperQuickBtn: document.getElementById("codexSpawnSuperQuickBtn"),
-  codexSpawnSuperFullBtn: document.getElementById("codexSpawnSuperFullBtn"),
   relayStartBtn: document.getElementById("relayStartBtn"),
   relayStopBtn: document.getElementById("relayStopBtn"),
   relayRefreshBtn: document.getElementById("relayRefreshBtn"),
@@ -225,6 +244,8 @@ const els = {
   launchRunSelect: document.getElementById("launchRunSelect"),
   launchRunStatus: document.getElementById("launchRunStatus"),
   launchRunRefreshBtn: document.getElementById("launchRunRefreshBtn"),
+  launchRunPlanBtn: document.getElementById("launchRunPlanBtn"),
+  launchRunRelaunchBtn: document.getElementById("launchRunRelaunchBtn"),
   launchRunPreview: document.getElementById("launchRunPreview"),
 
   connectionMode: document.getElementById("connectionMode"),
@@ -398,33 +419,51 @@ const TOOLTIP_TEXTS = {
   envRefreshBtn: "Refresh environment status, profiles, and current runtime summary.",
   envSaveProfileBtn: "Save the current environment settings as a reusable profile.",
   envSetDefaultBtn: "Set the selected environment profile as the default for its context.",
+  envPlanBtn: "Resolve the environment launch plan without starting services.",
   envLaunchBtn: "Run prep and start the selected environment services.",
   envShutdownBtn: "Stop environment services and optionally shut down the panel.",
   envPreview: "Resolved environment summary, artifacts, and URLs.",
-  codexSessionSelect: "Choose a registered Codex session profile.",
+  agentProfileSelect: "Choose a saved agent launch profile.",
+  agentProfileName: "Name of the reusable agent launch profile.",
+  agentProfileProject: "Optional project slug used as the default for this agent profile.",
+  agentProfileModeSelect: "Choose whether this profile launches quick or full prep.",
+  agentProfileModel: "Optional model override passed to Codex when the agent launches.",
+  agentProfileCodexProfile: "Optional Codex CLI profile value passed with --profile.",
+  agentProfileSessionName: "Optional default session alias created or resumed by this agent profile.",
+  agentProfileRunPrepSelect: "Choose whether the profile runs prep/bootstrap before spawning.",
+  agentProfileStartRelaySelect: "Choose whether the profile starts the relay watcher after spawn.",
+  agentProfileMakeDefaultSelect: "Choose whether spawned sessions become the default alias for their project.",
+  agentProfileNotes: "Optional notes stored with the agent launch profile.",
+  agentProfileRefreshBtn: "Reload agent launch profiles from disk.",
+  agentProfileSaveBtn: "Save or update the current agent launch profile.",
+  agentProfileSetDefaultBtn: "Set the selected agent launch profile as the default.",
+  agentProfileRetireBtn: "Mark the selected agent launch profile as retired.",
+  agentProfilePlanBtn: "Resolve the selected agent launch plan without spawning anything.",
+  agentProfileSpawnBtn: "Spawn an agent using the selected agent launch profile.",
+  agentProfilePreview: "Resolved agent launch profile summary and defaults.",
+  codexSessionSelect: "Choose a registered session alias.",
   codexSessionName: "Session alias name used by relay tooling.",
   codexSessionTarget: "Target thread/session ID or alias.",
   codexSessionProject: "Optional project slug for scoped relay context.",
-  codexSessionModel: "Optional model override when creating or spawning a session.",
-  codexSessionNotes: "Optional notes saved with this session profile.",
-  codexRefreshBtn: "Reload session registry from disk.",
-  codexUpsertBtn: "Save or update the current session profile.",
-  codexCreateBtn: "Create a new Codex session and register it.",
-  codexSetDefaultBtn: "Set selected session as default.",
-  codexRetireBtn: "Mark selected session as retired.",
+  codexSessionNotes: "Optional notes saved with this session alias.",
+  codexRefreshBtn: "Reload session aliases from disk.",
+  codexUpsertBtn: "Save or update the current session alias.",
+  codexCreateBtn: "Create a new Codex thread and register it under this alias.",
+  codexSetDefaultBtn: "Set the selected session alias as default.",
+  codexRetireBtn: "Mark the selected session alias as retired.",
   codexPrepQuickBtn: "Run fast context preparation for this project.",
   codexPrepFullBtn: "Run full context preparation including installs.",
-  codexSpawnSuperQuickBtn: "Bootstrap and spawn a super-agent Codex session for this project.",
-  codexSpawnSuperFullBtn: "Full install/bootstrap + spawn a super-agent Codex session.",
   relayStartBtn: "Start realtime Codex relay watcher.",
   relayStopBtn: "Stop realtime Codex relay watcher.",
   relayRefreshBtn: "Refresh relay process state.",
   relayStatusText: "Current relay watcher status.",
-  codexSessionStatus: "Latest session/relay action result.",
-  codexSessionPreview: "Registry summary for sessions and defaults.",
+  codexSessionStatus: "Latest agent/session/relay action result.",
+  codexSessionPreview: "Registry summary for session aliases and defaults.",
   launchRunSelect: "Select a recent environment or agent launch run.",
   launchRunStatus: "Current selected run status summary.",
   launchRunRefreshBtn: "Refresh recorded environment and agent runs.",
+  launchRunPlanBtn: "Resolve the selected run into a dry-run plan.",
+  launchRunRelaunchBtn: "Repeat the selected run with the recorded request.",
   launchRunPreview: "Recent environment and agent launch history.",
   connectionMode: "Network bind mode and security mode summary.",
   mobileUrlText: "Best URL to open this panel from mobile.",
@@ -731,7 +770,12 @@ function normalizeTunnelMode(value, fallback = "quick") {
 
 function currentTunnelMode() {
   return normalizeTunnelMode(
-    state.activeTunnel?.mode || state.connectionHelp?.tunnel?.mode || state.connectionHelp?.tunnel?.configuredMode || state.preferredTunnelMode,
+    state.activeTunnel?.requestedMode
+      || state.activeTunnel?.mode
+      || state.connectionHelp?.tunnel?.requestedMode
+      || state.connectionHelp?.tunnel?.mode
+      || state.connectionHelp?.tunnel?.configuredMode
+      || state.preferredTunnelMode,
     "quick"
   );
 }
@@ -740,9 +784,9 @@ function formatTunnelStatus() {
   if (!state.activeTunnel) {
     return `Tunnel stopped (${currentTunnelMode()})`;
   }
-  const mode = normalizeTunnelMode(state.activeTunnel.mode || state.preferredTunnelMode, "quick");
+  const mode = normalizeTunnelMode(state.activeTunnel.requestedMode || state.activeTunnel.mode || state.preferredTunnelMode, "quick");
   const provider = state.activeTunnel.provider ? ` (${state.activeTunnel.provider}, ${mode})` : ` (${mode})`;
-  const url = state.activeTunnel.url ? ` ${state.activeTunnel.url}` : "";
+  const url = state.activeTunnel.publicUrl || state.activeTunnel.url ? ` ${state.activeTunnel.publicUrl || state.activeTunnel.url}` : "";
   return `Tunnel live${provider}${url} pid=${state.activeTunnel.pid}`;
 }
 
@@ -772,15 +816,15 @@ function renderRelayStatus() {
 function renderTunnelStatus() {
   const helpTunnel = state.connectionHelp?.tunnel && typeof state.connectionHelp.tunnel === "object" ? state.connectionHelp.tunnel : null;
   state.preferredTunnelMode = normalizeTunnelMode(
-    state.activeTunnel?.mode || helpTunnel?.mode || helpTunnel?.configuredMode || state.preferredTunnelMode,
+    state.activeTunnel?.requestedMode || state.activeTunnel?.mode || helpTunnel?.requestedMode || helpTunnel?.mode || helpTunnel?.configuredMode || state.preferredTunnelMode,
     "quick"
   );
-  const activeUrl = String(state.activeTunnel?.url || helpTunnel?.url || "").trim();
+  const activeUrl = String(state.activeTunnel?.publicUrl || state.activeTunnel?.url || helpTunnel?.publicUrl || helpTunnel?.url || "").trim();
   const hasActiveTunnel = Boolean(state.activeTunnel || (helpTunnel?.active && activeUrl));
   if (state.activeTunnel) {
     els.tunnelUrlText.value = formatTunnelStatus();
   } else if (activeUrl) {
-    const mode = normalizeTunnelMode(helpTunnel?.mode || state.preferredTunnelMode, "quick");
+    const mode = normalizeTunnelMode(helpTunnel?.requestedMode || helpTunnel?.mode || state.preferredTunnelMode, "quick");
     els.tunnelUrlText.value = `Tunnel live (${mode}) ${activeUrl}`;
   } else {
     els.tunnelUrlText.value = `Tunnel stopped (${state.preferredTunnelMode})`;
@@ -1061,7 +1105,9 @@ function renderChatRuntimeStrip() {
   const refreshMs = Number.parseInt(els.refreshMsInput.value, 10);
   const refreshLabel = Number.isFinite(refreshMs) ? `${els.autoRefreshToggle.checked ? "on" : "off"} @ ${refreshMs}ms` : "off";
   const mobile = String(state.connectionHelp?.guidance?.recommendedMobileUrl || "").trim() || "none";
-  const tunnelUrl = String(state.activeTunnel?.url || state.connectionHelp?.tunnel?.url || "").trim();
+  const tunnelUrl = String(
+    state.activeTunnel?.publicUrl || state.activeTunnel?.url || state.connectionHelp?.tunnel?.publicUrl || state.connectionHelp?.tunnel?.url || ""
+  ).trim();
   const agentState = String(state.agentStatus?.state || "idle");
   const socketState = state.wsConnected ? "live" : "offline";
   const relayTotal = relayCount();
@@ -4692,8 +4738,16 @@ function selectedEnvironmentProject() {
   return els.envProject?.value.trim() || state.activeProject || "";
 }
 
+function selectedAgentProject() {
+  return els.agentProfileProject?.value.trim() || selectedEnvironmentProject() || "";
+}
+
 function selectedCodexProject() {
-  return els.codexSessionProject.value.trim() || selectedEnvironmentProject() || "";
+  return els.codexSessionProject.value.trim() || selectedAgentProject() || "";
+}
+
+function selectedAgentProfileName() {
+  return String(els.agentProfileName?.value || els.agentProfileSelect?.value || "").trim();
 }
 
 function suggestedSuperAgentSessionName(project = "") {
@@ -4856,6 +4910,12 @@ function renderLaunchRuns() {
     els.launchRunSelect.appendChild(option);
     els.launchRunStatus.value = "No runs loaded.";
     els.launchRunPreview.value = "No environment or agent runs recorded yet.";
+    if (els.launchRunPlanBtn) {
+      els.launchRunPlanBtn.disabled = true;
+    }
+    if (els.launchRunRelaunchBtn) {
+      els.launchRunRelaunchBtn.disabled = true;
+    }
     return;
   }
 
@@ -4870,20 +4930,33 @@ function renderLaunchRuns() {
   els.launchRunSelect.value = selectedId;
   const selected = state.launchRuns.find((entry) => entry.id === selectedId) || state.launchRuns[0];
   els.launchRunStatus.value = selected?.status || "ready";
+  if (els.launchRunPlanBtn) {
+    els.launchRunPlanBtn.disabled = false;
+  }
+  if (els.launchRunRelaunchBtn) {
+    els.launchRunRelaunchBtn.disabled = false;
+  }
 
   const lines = [
     `Summary: ${selected?.summary || "(none)"}`,
+    `Kind: ${selected?.kind || "(unknown)"}`,
     `Environment Profile: ${selected?.environmentProfileName || "(none)"}`,
+    `Agent Profile: ${selected?.agentProfileName || "(none)"}`,
     `Context: ${selected?.context || "(none)"}`,
     `Project: ${selected?.project || "(default)"}`,
     `Prep: ${selected?.prep || "(none)"}`,
     `Panel: ${selected?.panelMode || "(none)"}`,
     `Remote: ${selected?.remoteMode || "(none)"}`,
+    `Relay: ${selected?.relayEnabled ? "on" : "off"}`,
+    `Public Host: ${selected?.publicHost || "(none)"}`,
     `Session: ${selected?.sessionName || "(none)"}`,
     `Thread: ${selected?.threadId || "(none)"}`,
   ];
   if (selected?.model) {
     lines.push(`Model: ${selected.model}`);
+  }
+  if (selected?.codexProfile) {
+    lines.push(`Codex Profile: ${selected.codexProfile}`);
   }
   const urls = selected?.urls && typeof selected.urls === "object" ? selected.urls : {};
   if (urls.local) {
@@ -4891,6 +4964,16 @@ function renderLaunchRuns() {
   }
   if (urls.public) {
     lines.push(`Remote URL: ${urls.public}`);
+  }
+  if (selected?.request && typeof selected.request === "object") {
+    lines.push("");
+    lines.push("Recorded Request:");
+    for (const [key, value] of Object.entries(selected.request)) {
+      if (value === undefined || value === null || value === "") {
+        continue;
+      }
+      lines.push(`- ${key}: ${typeof value === "object" ? JSON.stringify(value) : value}`);
+    }
   }
   els.launchRunPreview.value = lines.join("\n");
 }
@@ -4900,6 +4983,9 @@ function applyEnvironmentStatusPayload(payload) {
   state.envProfiles = payload?.profiles || state.envProfiles || null;
   state.launchRuns = Array.isArray(payload?.runs) ? payload.runs : state.launchRuns;
   state.envRuntime = payload?.runtime || state.envRuntime || null;
+  if (payload?.agentProfiles) {
+    applyAgentProfilesPayload(payload.agentProfiles);
+  }
   if (payload?.activeDev !== undefined) {
     state.activeDev = payload.activeDev || null;
   }
@@ -4936,6 +5022,12 @@ function applyEnvironmentStatusPayload(payload) {
   if (els.envRelaySelect && state.activeEnvironment) {
     els.envRelaySelect.value = state.activeEnvironment.relayEnabled ? "on" : "off";
   }
+  if (els.envRemoteModeSelect && state.activeEnvironment?.remoteMode) {
+    els.envRemoteModeSelect.value = state.activeEnvironment.remoteMode;
+  }
+  if (els.envPublicHost && state.activeEnvironment?.publicHost) {
+    els.envPublicHost.value = state.activeEnvironment.publicHost;
+  }
 
   renderEnvironmentProfileSelect();
   renderLaunchRuns();
@@ -4954,6 +5046,22 @@ async function refreshLaunchRuns() {
   state.launchRuns = Array.isArray(payload?.runs) ? payload.runs : [];
   renderLaunchRuns();
   return payload;
+}
+
+function buildEnvironmentRequestFromForm(overrides = {}) {
+  return {
+    environmentProfileName: selectedEnvironmentProfileName(),
+    context: els.envContextSelect.value,
+    project: selectedEnvironmentProject(),
+    prep: els.envPrepSelect.value,
+    panelMode: els.envPanelModeSelect.value,
+    devMode: els.envDevModeSelect.value,
+    relayEnabled: els.envRelaySelect?.value !== "off",
+    remoteMode: els.envRemoteModeSelect.value,
+    publicHost: els.envPublicHost.value.trim(),
+    sessionName: els.envSessionName?.value.trim() || "codex-chat",
+    ...overrides,
+  };
 }
 
 async function saveEnvironmentProfile() {
@@ -4999,21 +5107,136 @@ async function setDefaultEnvironmentProfile() {
 async function launchEnvironmentFromPanel() {
   const payload = await api("/api/env/up", {
     method: "POST",
-    body: {
-      environmentProfileName: selectedEnvironmentProfileName(),
-      context: els.envContextSelect.value,
-      project: selectedEnvironmentProject(),
-      prep: els.envPrepSelect.value,
-      panelMode: els.envPanelModeSelect.value,
-      devMode: els.envDevModeSelect.value,
-      relayEnabled: els.envRelaySelect?.value !== "off",
-      remoteMode: els.envRemoteModeSelect.value,
-      publicHost: els.envPublicHost.value.trim(),
-      sessionName: els.envSessionName?.value.trim() || "codex-chat",
-    },
+    body: buildEnvironmentRequestFromForm(),
   });
   applyEnvironmentStatusPayload(payload);
   els.codexSessionStatus.textContent = `Environment launched: ${payload?.environment?.summary || els.envContextSelect.value}.`;
+  setCommandResult(JSON.stringify(payload, null, 2));
+}
+
+async function planEnvironmentFromPanel() {
+  const payload = await api("/api/env/up", {
+    method: "POST",
+    body: buildEnvironmentRequestFromForm({
+      dryRun: true,
+    }),
+  });
+  if (els.envPreview) {
+    const lines = [
+      `Plan: ${payload?.summary || "(none)"}`,
+      `Context: ${payload?.request?.context || els.envContextSelect.value}`,
+      `Project: ${payload?.request?.project || "(default)"}`,
+      `Prep: ${payload?.request?.prep || els.envPrepSelect.value}`,
+      `Panel: ${payload?.request?.panelMode || els.envPanelModeSelect.value}`,
+      `Dev: ${payload?.request?.devMode || els.envDevModeSelect.value}`,
+      `Remote: ${payload?.request?.remoteMode || els.envRemoteModeSelect.value}`,
+      `Relay: ${payload?.request?.relayEnabled ? "on" : "off"}`,
+      `Session: ${payload?.request?.sessionName || "codex-chat"}`,
+    ];
+    if (payload?.tunnel) {
+      lines.push("");
+      lines.push(`Tunnel Requested: ${payload.tunnel.requestedMode || "(none)"}`);
+      lines.push(`Tunnel Effective: ${payload.tunnel.effectiveMode || "(none)"}`);
+      lines.push(`Public Host: ${payload.tunnel.publicHost || "(none)"}`);
+      lines.push(`Named Configured: ${payload.tunnel.namedTunnelConfigured ? "yes" : "no"}`);
+      lines.push(`Redirect Automation: ${payload.tunnel.remoteRedirectAvailable ? "yes" : "no"}`);
+    }
+    els.envPreview.value = lines.join("\n");
+  }
+  els.codexSessionStatus.textContent = payload?.summary || "Environment plan ready.";
+  setCommandResult(JSON.stringify(payload, null, 2));
+}
+
+function selectedLaunchRun() {
+  const selectedId = String(els.launchRunSelect?.value || "").trim();
+  return state.launchRuns.find((entry) => entry.id === selectedId) || null;
+}
+
+function renderLaunchRunPlanPreview(payload) {
+  if (!els.launchRunPreview) {
+    return;
+  }
+  const lines = [
+    `Plan: ${payload?.summary || "(none)"}`,
+    `Kind: ${payload?.kind || payload?.run?.kind || "(unknown)"}`,
+  ];
+  const request = payload?.request && typeof payload.request === "object"
+    ? payload.request
+    : payload?.run?.request && typeof payload.run.request === "object"
+      ? payload.run.request
+      : null;
+  if (request) {
+    for (const [key, value] of Object.entries(request)) {
+      if (value === undefined || value === null || value === "") {
+        continue;
+      }
+      lines.push(`${key}: ${typeof value === "object" ? JSON.stringify(value) : value}`);
+    }
+  }
+  if (payload?.tunnel) {
+    lines.push(`tunnel.requestedMode: ${payload.tunnel.requestedMode || "(none)"}`);
+    lines.push(`tunnel.effectiveMode: ${payload.tunnel.effectiveMode || "(none)"}`);
+    lines.push(`tunnel.publicHost: ${payload.tunnel.publicHost || "(none)"}`);
+  }
+  els.launchRunPreview.value = lines.join("\n");
+}
+
+async function planSelectedRun() {
+  const run = selectedLaunchRun();
+  if (!run?.id) {
+    els.codexSessionStatus.textContent = "Select a run first.";
+    return;
+  }
+  const payload = await api("/api/runs/relaunch", {
+    method: "POST",
+    body: {
+      runId: run.id,
+      dryRun: true,
+    },
+  });
+  renderLaunchRunPlanPreview(payload);
+  els.codexSessionStatus.textContent = payload?.summary || `Run plan ready: ${run.summary || run.id}`;
+  setCommandResult(JSON.stringify(payload, null, 2));
+}
+
+async function relaunchSelectedRun() {
+  const run = selectedLaunchRun();
+  if (!run?.id) {
+    els.codexSessionStatus.textContent = "Select a run first.";
+    return;
+  }
+  const payload = await api("/api/runs/relaunch", {
+    method: "POST",
+    body: {
+      runId: run.id,
+      dryRun: false,
+    },
+  });
+  if (payload?.environment || payload?.runtime || payload?.profiles) {
+    applyEnvironmentStatusPayload(payload);
+  }
+  if (payload?.agentProfiles) {
+    applyAgentProfilesPayload(payload.agentProfiles);
+  }
+  if (payload?.registry) {
+    applyCodexSessionsPayload(payload);
+  }
+  if (Array.isArray(payload?.runs)) {
+    state.launchRuns = payload.runs;
+    renderLaunchRuns();
+  } else {
+    await refreshLaunchRuns().catch(() => null);
+  }
+  if (payload?.relay?.activeRelay || payload?.relay?.activeRelays) {
+    setRelayState(payload.relay.activeRelay || null, payload.relay.activeRelays || []);
+    renderRelayStatus();
+    renderTopStatus();
+  }
+  if (payload?.created?.name) {
+    els.codexSessionName.value = payload.created.name;
+    els.codexSessionTarget.value = payload.created.target || payload.created.threadId || "";
+  }
+  els.codexSessionStatus.textContent = `Run relaunched: ${payload?.run?.summary || run.summary || run.id}`;
   setCommandResult(JSON.stringify(payload, null, 2));
 }
 
@@ -5037,10 +5260,177 @@ async function shutdownEnvironmentFromPanel() {
   setCommandResult(JSON.stringify(payload, null, 2));
 }
 
+function agentProfilesForLookup() {
+  return Array.isArray(state.agentProfiles) ? state.agentProfiles : [];
+}
+
+function agentDefaultProfileName(project = "") {
+  const registry = state.agentProfileRegistry || {};
+  const defaults = registry.defaults && typeof registry.defaults === "object" ? registry.defaults : {};
+  const perProject = defaults.perProject && typeof defaults.perProject === "object" ? defaults.perProject : {};
+  return String((project && perProject[project]) || defaults.global || "").trim();
+}
+
+function renderAgentProfileSummary() {
+  if (!els.agentProfilePreview) {
+    return;
+  }
+  const registry = state.agentProfileRegistry;
+  if (!registry) {
+    els.agentProfilePreview.value = "No agent profile registry loaded.";
+    return;
+  }
+
+  const lines = [];
+  const selectedName = String(els.agentProfileSelect?.value || "").trim();
+  const selected = agentProfilesForLookup().find((entry) => entry.name === selectedName) || null;
+  if (selected) {
+    lines.push(`Selected: ${selected.name}`);
+    lines.push(`Kind: ${selected.agentKind || "super"}`);
+    lines.push(`Project: ${selected.project || "(default)"}`);
+    lines.push(`Mode: ${selected.mode || "quick"}`);
+    lines.push(`Model: ${selected.model || "(default)"}`);
+    lines.push(`Codex Profile: ${selected.codexProfile || "(none)"}`);
+    lines.push(`Session Alias: ${selected.sessionName || "(auto)"}`);
+    lines.push(`Run Prep: ${selected.runPrep ? "on" : "off"}`);
+    lines.push(`Start Relay: ${selected.startRelay ? "on" : "off"}`);
+    lines.push(`Default Session: ${selected.makeDefaultSession ? "on" : "off"}`);
+    if (selected.notes) {
+      lines.push(`Notes: ${selected.notes}`);
+    }
+    lines.push("");
+  }
+  lines.push(`Global default: ${registry?.defaults?.global || "(none)"}`);
+  const perProject = registry?.defaults?.perProject || {};
+  const entries = Object.entries(perProject);
+  if (entries.length) {
+    lines.push("Per-project defaults:");
+    for (const [project, profileName] of entries) {
+      lines.push(`- ${project} -> ${profileName}`);
+    }
+  } else {
+    lines.push("Per-project defaults: (none)");
+  }
+  lines.push("");
+  lines.push("Profiles:");
+  for (const profile of agentProfilesForLookup()) {
+    const parts = [
+      profile.name,
+      `[${profile.mode || "quick"}]`,
+      profile.project ? `project=${profile.project}` : "",
+      profile.model ? `model=${profile.model}` : "",
+      profile.codexProfile ? `profile=${profile.codexProfile}` : "",
+      profile.retired ? "retired" : "",
+    ].filter(Boolean);
+    lines.push(`- ${parts.join(" ")}`);
+  }
+  els.agentProfilePreview.value = lines.join("\n");
+}
+
+function fillAgentProfileFormFromSelection() {
+  const selectedName = String(els.agentProfileSelect?.value || "").trim();
+  const selected = agentProfilesForLookup().find((entry) => entry.name === selectedName);
+  if (!selected) {
+    renderAgentProfileSummary();
+    return;
+  }
+  if (els.agentProfileName) {
+    els.agentProfileName.value = selected.name || "";
+  }
+  if (els.agentProfileProject) {
+    els.agentProfileProject.value = selected.project || "";
+  }
+  if (els.agentProfileModeSelect) {
+    els.agentProfileModeSelect.value = selected.mode || "quick";
+  }
+  if (els.agentProfileModel) {
+    els.agentProfileModel.value = selected.model || "";
+  }
+  if (els.agentProfileCodexProfile) {
+    els.agentProfileCodexProfile.value = selected.codexProfile || "";
+  }
+  if (els.agentProfileSessionName) {
+    els.agentProfileSessionName.value = selected.sessionName || "";
+  }
+  if (els.agentProfileRunPrepSelect) {
+    els.agentProfileRunPrepSelect.value = selected.runPrep ? "on" : "off";
+  }
+  if (els.agentProfileStartRelaySelect) {
+    els.agentProfileStartRelaySelect.value = selected.startRelay ? "on" : "off";
+  }
+  if (els.agentProfileMakeDefaultSelect) {
+    els.agentProfileMakeDefaultSelect.value = selected.makeDefaultSession ? "on" : "off";
+  }
+  if (els.agentProfileNotes) {
+    els.agentProfileNotes.value = selected.notes || "";
+  }
+  if (!els.codexSessionProject.value && selected.project) {
+    els.codexSessionProject.value = selected.project;
+  }
+  renderAgentProfileSummary();
+  renderEnvironmentSummary();
+}
+
+function renderAgentProfileSelect() {
+  if (!els.agentProfileSelect) {
+    return;
+  }
+  const previous = String(els.agentProfileSelect.value || "").trim();
+  els.agentProfileSelect.innerHTML = "";
+  const profiles = agentProfilesForLookup();
+  if (!profiles.length) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No agent profiles";
+    els.agentProfileSelect.appendChild(option);
+    renderAgentProfileSummary();
+    return;
+  }
+  for (const profile of profiles) {
+    const option = document.createElement("option");
+    option.value = profile.name;
+    option.textContent = `${profile.name}${profile.retired ? " (retired)" : ""}`;
+    els.agentProfileSelect.appendChild(option);
+  }
+  const defaultName = agentDefaultProfileName(selectedAgentProject());
+  const preferred = previous && profiles.some((entry) => entry.name === previous)
+    ? previous
+    : selectedAgentProfileName() && profiles.some((entry) => entry.name === selectedAgentProfileName())
+      ? selectedAgentProfileName()
+      : defaultName && profiles.some((entry) => entry.name === defaultName)
+        ? defaultName
+        : profiles[0].name;
+  els.agentProfileSelect.value = preferred;
+  fillAgentProfileFormFromSelection();
+}
+
+function applyAgentProfilesPayload(payload) {
+  state.agentProfileRegistry = payload?.registry || state.agentProfileRegistry || null;
+  const profiles = Array.isArray(payload?.profiles)
+    ? payload.profiles
+    : Array.isArray(payload?.registry?.profiles)
+      ? payload.registry.profiles
+      : [];
+  state.agentProfiles = [...profiles].sort((left, right) => {
+    const retiredDiff = Number(Boolean(left.retired)) - Number(Boolean(right.retired));
+    if (retiredDiff !== 0) {
+      return retiredDiff;
+    }
+    return String(right.updatedAt || "").localeCompare(String(left.updatedAt || ""));
+  });
+  renderAgentProfileSelect();
+}
+
+async function refreshAgentProfiles() {
+  const payload = await api("/api/agents/profiles");
+  applyAgentProfilesPayload(payload);
+  return payload;
+}
+
 function renderCodexRegistrySummary() {
   const registry = state.codexRegistry;
   if (!registry) {
-    els.codexSessionPreview.value = "No registry loaded.";
+    els.codexSessionPreview.value = "No session alias registry loaded.";
     return;
   }
 
@@ -5057,10 +5447,12 @@ function renderCodexRegistrySummary() {
     lines.push("Per-project defaults: (none)");
   }
   lines.push("");
-  lines.push("Agent Profiles:");
+  lines.push("Session Aliases:");
   for (const session of state.codexSessions) {
-    const model = session.model ? ` [model=${session.model}]` : "";
-    lines.push(`- ${session.name} -> ${session.target}${model}${session.retired ? " [retired]" : ""}`);
+    const hints = Array.isArray(session.projectHints) && session.projectHints.length
+      ? ` [projects=${session.projectHints.join(", ")}]`
+      : "";
+    lines.push(`- ${session.name} -> ${session.target}${hints}${session.retired ? " [retired]" : ""}`);
   }
   els.codexSessionPreview.value = lines.join("\n");
 }
@@ -5074,9 +5466,6 @@ function fillCodexFormFromSelection() {
   if (!els.codexSessionProject.value && Array.isArray(selected.projectHints) && selected.projectHints.length) {
     els.codexSessionProject.value = selected.projectHints[0];
   }
-  if (els.codexSessionModel) {
-    els.codexSessionModel.value = selected.model || "";
-  }
   els.codexSessionNotes.value = selected.notes || "";
   renderChatRuntimeStrip();
   renderTerminalExecResumeButton();
@@ -5088,7 +5477,7 @@ function renderCodexSessionSelect() {
   if (!state.codexSessions.length) {
     const option = document.createElement("option");
     option.value = "";
-    option.textContent = "No sessions";
+    option.textContent = "No session aliases";
     els.codexSessionSelect.appendChild(option);
     renderCodexRegistrySummary();
     renderTerminalExecResumeButton();
@@ -5131,6 +5520,7 @@ function applyCodexSessionsPayload(payload) {
 async function refreshCodexSessions() {
   const payload = await api("/api/codex/sessions");
   applyCodexSessionsPayload(payload);
+  return payload;
 }
 
 async function launchCodexSessionFromPanel(options = {}) {
@@ -5177,7 +5567,6 @@ async function upsertCodexSession() {
       name,
       target,
       project: selectedCodexProject(),
-      model: els.codexSessionModel?.value.trim() || "",
       notes: els.codexSessionNotes.value.trim(),
     },
   });
@@ -5201,10 +5590,14 @@ async function createCodexSession() {
     body: {
       name,
       project: selectedCodexProject(),
-      model: els.codexSessionModel?.value.trim() || "",
+      agentProfileName: selectedAgentProfileName(),
+      codexProfile: els.agentProfileCodexProfile?.value.trim() || "",
       notes: els.codexSessionNotes.value.trim(),
     },
   });
+  if (payload?.agentProfiles) {
+    applyAgentProfilesPayload(payload.agentProfiles);
+  }
   applyCodexSessionsPayload(payload);
   if (Array.isArray(payload?.runs)) {
     state.launchRuns = payload.runs;
@@ -5285,25 +5678,110 @@ async function prepCodexContext(mode) {
   els.codexSessionStatus.textContent = `Prep complete (${mode}) -> ${folder}`;
 }
 
-async function spawnSuperAgent(mode) {
-  const project = selectedCodexProject();
-  const sessionNameInput = els.codexSessionName.value.trim();
-  const sessionName = sessionNameInput || suggestedSuperAgentSessionName(project);
-  els.codexSessionStatus.textContent = `Spawning super agent (${mode})${project ? ` for ${project}` : ""}...`;
+async function saveAgentProfile() {
+  const name = selectedAgentProfileName();
+  if (!name) {
+    els.codexSessionStatus.textContent = "Agent profile name is required.";
+    return;
+  }
+  const payload = await api("/api/agents/profiles/upsert", {
+    method: "POST",
+    body: {
+      name,
+      agentKind: "super",
+      project: selectedAgentProject(),
+      mode: els.agentProfileModeSelect?.value || "quick",
+      model: els.agentProfileModel?.value.trim() || "",
+      codexProfile: els.agentProfileCodexProfile?.value.trim() || "",
+      sessionName: els.agentProfileSessionName?.value.trim() || "",
+      runPrep: els.agentProfileRunPrepSelect?.value !== "off",
+      startRelay: els.agentProfileStartRelaySelect?.value !== "off",
+      makeDefaultSession: els.agentProfileMakeDefaultSelect?.value !== "off",
+      notes: els.agentProfileNotes?.value.trim() || "",
+    },
+  });
+  applyAgentProfilesPayload(payload);
+  els.codexSessionStatus.textContent = `Saved agent profile ${name}.`;
+}
+
+async function setDefaultAgentProfile() {
+  const name = selectedAgentProfileName();
+  if (!name) {
+    els.codexSessionStatus.textContent = "Agent profile name is required.";
+    return;
+  }
+  const payload = await api("/api/agents/profiles/default", {
+    method: "POST",
+    body: {
+      name,
+      project: selectedAgentProject(),
+    },
+  });
+  applyAgentProfilesPayload(payload);
+  els.codexSessionStatus.textContent = `Default agent profile set to ${name}${selectedAgentProject() ? ` for ${selectedAgentProject()}` : " (global)"}.`;
+}
+
+async function retireAgentProfile() {
+  const name = selectedAgentProfileName();
+  if (!name) {
+    els.codexSessionStatus.textContent = "Agent profile name is required.";
+    return;
+  }
+  const payload = await api("/api/agents/profiles/retire", {
+    method: "POST",
+    body: { name },
+  });
+  applyAgentProfilesPayload(payload);
+  els.codexSessionStatus.textContent = `Retired agent profile ${name}.`;
+}
+
+async function spawnAgentFromProfile(options = {}) {
+  const dryRun = Boolean(options.dryRun);
+  const project = selectedAgentProject();
+  const sessionName = els.agentProfileSessionName?.value.trim() || suggestedSuperAgentSessionName(project);
+  const mode = String(els.agentProfileModeSelect?.value || "quick").trim().toLowerCase();
+  const action = dryRun ? "Planning" : "Spawning";
+  els.codexSessionStatus.textContent = `${action} agent (${mode})${project ? ` for ${project}` : ""}...`;
 
   const payload = await api("/api/codex/sessions/super-agent/spawn", {
     method: "POST",
     body: {
-      mode,
+      dryRun,
+      agentProfileName: selectedAgentProfileName(),
       project,
       name: sessionName,
-      model: els.codexSessionModel?.value.trim() || "",
-      notes: els.codexSessionNotes.value.trim(),
-      makeDefault: true,
-      runPrep: true,
-      startRelay: true,
+      mode,
+      model: els.agentProfileModel?.value.trim() || "",
+      codexProfile: els.agentProfileCodexProfile?.value.trim() || "",
+      notes: els.agentProfileNotes?.value.trim() || "",
+      makeDefault: els.agentProfileMakeDefaultSelect?.value !== "off",
+      runPrep: els.agentProfileRunPrepSelect?.value !== "off",
+      startRelay: els.agentProfileStartRelaySelect?.value !== "off",
     },
   });
+
+  if (payload?.agentProfiles) {
+    applyAgentProfilesPayload(payload.agentProfiles);
+  }
+  if (dryRun) {
+    els.codexSessionStatus.textContent = payload?.summary || "Agent launch plan ready.";
+    if (els.agentProfilePreview) {
+      const lines = [
+        `Plan: ${payload?.summary || "(none)"}`,
+        `Profile: ${payload?.request?.agentProfileName || selectedAgentProfileName() || "(none)"}`,
+        `Project: ${payload?.request?.project || project || "(default)"}`,
+        `Mode: ${payload?.request?.mode || mode}`,
+        `Session: ${payload?.request?.name || sessionName}`,
+        `Model: ${payload?.request?.model || "(default)"}`,
+        `Codex Profile: ${payload?.request?.codexProfile || "(none)"}`,
+        `Run Prep: ${payload?.request?.runPrep ? "on" : "off"}`,
+        `Start Relay: ${payload?.request?.startRelay ? "on" : "off"}`,
+      ];
+      els.agentProfilePreview.value = lines.join("\n");
+    }
+    setCommandResult(JSON.stringify(payload, null, 2));
+    return;
+  }
 
   applyCodexSessionsPayload(payload);
   if (Array.isArray(payload?.runs)) {
@@ -5320,9 +5798,9 @@ async function spawnSuperAgent(mode) {
   }
 
   if (payload?.relay?.error) {
-    els.codexSessionStatus.textContent = `Super agent created (${payload?.created?.name || sessionName}) but relay failed: ${payload.relay.error}`;
+    els.codexSessionStatus.textContent = `Agent created (${payload?.created?.name || sessionName}) but relay failed: ${payload.relay.error}`;
   } else {
-    els.codexSessionStatus.textContent = `Super agent ready: ${payload?.created?.name || sessionName}`;
+    els.codexSessionStatus.textContent = `Agent ready: ${payload?.created?.name || sessionName}`;
   }
 
   if (payload?.relay?.activeRelay || payload?.relay?.activeRelays) {
@@ -5409,19 +5887,31 @@ function renderConnectionHelp() {
     return;
   }
   const helpTunnel = help?.tunnel && typeof help.tunnel === "object" ? help.tunnel : null;
-  if (helpTunnel?.active && helpTunnel?.url) {
+  if (helpTunnel?.active && (helpTunnel?.url || helpTunnel?.publicUrl)) {
     state.activeTunnel = {
       provider: String(helpTunnel.provider || state.activeTunnel?.provider || ""),
       mode: normalizeTunnelMode(helpTunnel.mode || state.activeTunnel?.mode || state.preferredTunnelMode, "quick"),
+      requestedMode: normalizeTunnelMode(
+        helpTunnel.requestedMode || state.activeTunnel?.requestedMode || helpTunnel.mode || state.preferredTunnelMode,
+        "quick"
+      ),
       url: String(helpTunnel.url || ""),
+      publicUrl: String(helpTunnel.publicUrl || state.activeTunnel?.publicUrl || ""),
+      publicHost: String(helpTunnel.publicHost || state.activeTunnel?.publicHost || ""),
+      verification: helpTunnel.verification || state.activeTunnel?.verification || null,
       pid: Number.parseInt(String(helpTunnel.pid || state.activeTunnel?.pid || 0), 10) || 0,
       startedAt: String(helpTunnel.startedAt || state.activeTunnel?.startedAt || ""),
     };
-  } else if (!state.activeTunnel?.url) {
+  } else if (!state.activeTunnel?.url && !state.activeTunnel?.publicUrl) {
     state.activeTunnel = null;
   }
   state.preferredTunnelMode = normalizeTunnelMode(
-    helpTunnel?.configuredMode || helpTunnel?.mode || state.activeTunnel?.mode || state.preferredTunnelMode,
+    helpTunnel?.configuredMode
+      || helpTunnel?.requestedMode
+      || helpTunnel?.mode
+      || state.activeTunnel?.requestedMode
+      || state.activeTunnel?.mode
+      || state.preferredTunnelMode,
     "quick"
   );
   const isHttpsRequired = Boolean(help?.panel?.requireHttps);
@@ -5429,7 +5919,13 @@ function renderConnectionHelp() {
   const host = String(help?.panel?.host || "");
   const bindLabel = host === "0.0.0.0" ? "LAN bind active" : "Local bind only";
   const security = String(help?.security?.label || (isHttpsRequired ? "HTTPS required" : "HTTP allowed"));
-  const activeTunnelUrl = String(state.activeTunnel?.url || helpTunnel?.url || "").trim();
+  const activeTunnelUrl = String(
+    state.activeTunnel?.publicUrl
+      || state.activeTunnel?.url
+      || helpTunnel?.publicUrl
+      || helpTunnel?.url
+      || ""
+  ).trim();
   let mobile = activeTunnelUrl || String(help?.guidance?.recommendedMobileUrl || "");
   if (!mobile) {
     mobile = isHttpsRequired ? "(HTTPS tunnel URL required)" : "(No LAN URL available)";
@@ -5444,9 +5940,8 @@ function renderConnectionHelp() {
   if (els.envRemoteUrlText) {
     els.envRemoteUrlText.value = mobile.startsWith("(") ? "" : mobile;
   }
-  els.connectionAdvice.textContent = activeTunnelUrl
-    ? `External tunnel live: ${activeTunnelUrl}`
-    : String(help?.guidance?.action || "");
+  els.connectionAdvice.textContent = String(help?.guidance?.action || "")
+    || (activeTunnelUrl ? `External tunnel live: ${activeTunnelUrl}` : "");
   els.connectionAdvice.title = `Connection guidance: ${els.connectionAdvice.textContent}`;
   els.enableHttpsBtn.disabled = securityMode === "on";
   els.useAdaptiveSecurityBtn.disabled = securityMode === "auto";
@@ -5464,7 +5959,10 @@ async function refreshConnectionHelp() {
 async function refreshTunnelStatus() {
   const payload = await api("/api/tunnel/status");
   state.activeTunnel = payload.activeTunnel || null;
-  state.preferredTunnelMode = normalizeTunnelMode(payload.mode || state.activeTunnel?.mode || state.preferredTunnelMode, "quick");
+  state.preferredTunnelMode = normalizeTunnelMode(
+    payload.mode || state.activeTunnel?.requestedMode || state.activeTunnel?.mode || state.preferredTunnelMode,
+    "quick"
+  );
   if (payload?.help) {
     state.connectionHelp = payload.help;
   }
@@ -5478,16 +5976,21 @@ async function startTunnel() {
     method: "POST",
     body: {
       mode,
+      publicHost: els.envPublicHost?.value.trim() || "",
     },
   });
   state.activeTunnel = payload.activeTunnel || null;
-  state.preferredTunnelMode = normalizeTunnelMode(payload.mode || state.activeTunnel?.mode || state.preferredTunnelMode, "quick");
+  state.preferredTunnelMode = normalizeTunnelMode(
+    payload.mode || state.activeTunnel?.requestedMode || state.activeTunnel?.mode || state.preferredTunnelMode,
+    "quick"
+  );
   if (payload?.help) {
     state.connectionHelp = payload.help;
   }
   renderConnectionHelp();
-  if (state.activeTunnel?.url) {
-    els.connectionAdvice.textContent = `Tunnel live (${state.preferredTunnelMode}): ${state.activeTunnel.url}`;
+  const liveTunnelUrl = state.activeTunnel?.publicUrl || state.activeTunnel?.url || "";
+  if (liveTunnelUrl) {
+    els.connectionAdvice.textContent = `Tunnel live (${state.preferredTunnelMode}): ${liveTunnelUrl}`;
   } else {
     els.connectionAdvice.textContent = `Tunnel started (${state.preferredTunnelMode}).`;
   }
@@ -5570,6 +6073,18 @@ function setControlsDisabled(disabled) {
     els.previewFullscreenBtn,
     els.openPreviewTabBtn,
     els.activityRefreshBtn,
+    els.envRefreshBtn,
+    els.envSaveProfileBtn,
+    els.envSetDefaultBtn,
+    els.envPlanBtn,
+    els.envLaunchBtn,
+    els.envShutdownBtn,
+    els.agentProfileRefreshBtn,
+    els.agentProfileSaveBtn,
+    els.agentProfileSetDefaultBtn,
+    els.agentProfileRetireBtn,
+    els.agentProfilePlanBtn,
+    els.agentProfileSpawnBtn,
     els.codexRefreshBtn,
     els.codexUpsertBtn,
     els.codexCreateBtn,
@@ -5577,11 +6092,12 @@ function setControlsDisabled(disabled) {
     els.codexRetireBtn,
     els.codexPrepQuickBtn,
     els.codexPrepFullBtn,
-    els.codexSpawnSuperQuickBtn,
-    els.codexSpawnSuperFullBtn,
     els.relayStartBtn,
     els.relayStopBtn,
     els.relayRefreshBtn,
+    els.launchRunRefreshBtn,
+    els.launchRunPlanBtn,
+    els.launchRunRelaunchBtn,
     els.refreshConnectionHelpBtn,
     els.copyMobileUrlBtn,
     els.tunnelStartBtn,
@@ -5714,6 +6230,9 @@ async function refreshSessionData() {
   if (!els.codexSessionProject.value) {
     els.codexSessionProject.value = selectedEnvironmentProject() || state.activeProject || "";
   }
+  if (!els.agentProfileProject.value) {
+    els.agentProfileProject.value = selectedEnvironmentProject() || state.activeProject || "";
+  }
   if (!els.envProject.value) {
     els.envProject.value = state.activeProject || "";
   }
@@ -5723,6 +6242,7 @@ async function refreshSessionData() {
 
   await refreshConnectionHelp().catch(() => null);
   await refreshEnvironmentStatus().catch(() => null);
+  await refreshAgentProfiles().catch(() => null);
   await refreshCodexSessions().catch(() => null);
   await refreshLaunchRuns().catch(() => null);
   await refreshChatHistory().catch(() => null);
@@ -5866,6 +6386,8 @@ async function onLogout() {
   state.activeEnvironment = null;
   state.envProfiles = null;
   state.envRuntime = null;
+  state.agentProfileRegistry = null;
+  state.agentProfiles = [];
   state.launchRuns = [];
   setRelayState(null, []);
   stopPolling();
@@ -6097,6 +6619,10 @@ function bindEvents() {
   if (els.envProject) {
     els.envProject.addEventListener("input", () => {
       renderEnvironmentSummary();
+      if (!els.agentProfileProject.value) {
+        els.agentProfileProject.value = els.envProject.value.trim();
+        renderAgentProfileSummary();
+      }
       if (!els.codexSessionProject.value) {
         els.codexSessionProject.value = els.envProject.value.trim();
       }
@@ -6143,6 +6669,12 @@ function bindEvents() {
       setCommandResult(error.message, true);
     }));
   }
+  if (els.envPlanBtn) {
+    els.envPlanBtn.addEventListener("click", () => planEnvironmentFromPanel().catch((error) => {
+      els.codexSessionStatus.textContent = `Error: ${error.message}`;
+      setCommandResult(error.message, true);
+    }));
+  }
   if (els.envLaunchBtn) {
     els.envLaunchBtn.addEventListener("click", () => launchEnvironmentFromPanel().catch((error) => {
       els.codexSessionStatus.textContent = `Error: ${error.message}`;
@@ -6151,6 +6683,86 @@ function bindEvents() {
   }
   if (els.envShutdownBtn) {
     els.envShutdownBtn.addEventListener("click", () => shutdownEnvironmentFromPanel().catch((error) => {
+      els.codexSessionStatus.textContent = `Error: ${error.message}`;
+      setCommandResult(error.message, true);
+    }));
+  }
+
+  if (els.agentProfileSelect) {
+    els.agentProfileSelect.addEventListener("change", () => {
+      fillAgentProfileFormFromSelection();
+    });
+  }
+  if (els.agentProfileName) {
+    els.agentProfileName.addEventListener("input", renderAgentProfileSummary);
+  }
+  if (els.agentProfileProject) {
+    els.agentProfileProject.addEventListener("input", () => {
+      if (!els.codexSessionProject.value) {
+        els.codexSessionProject.value = els.agentProfileProject.value.trim();
+      }
+      renderAgentProfileSummary();
+      renderEnvironmentSummary();
+    });
+  }
+  if (els.agentProfileModeSelect) {
+    els.agentProfileModeSelect.addEventListener("change", renderAgentProfileSummary);
+  }
+  if (els.agentProfileModel) {
+    els.agentProfileModel.addEventListener("input", renderAgentProfileSummary);
+  }
+  if (els.agentProfileCodexProfile) {
+    els.agentProfileCodexProfile.addEventListener("input", renderAgentProfileSummary);
+  }
+  if (els.agentProfileSessionName) {
+    els.agentProfileSessionName.addEventListener("input", renderAgentProfileSummary);
+  }
+  if (els.agentProfileRunPrepSelect) {
+    els.agentProfileRunPrepSelect.addEventListener("change", renderAgentProfileSummary);
+  }
+  if (els.agentProfileStartRelaySelect) {
+    els.agentProfileStartRelaySelect.addEventListener("change", renderAgentProfileSummary);
+  }
+  if (els.agentProfileMakeDefaultSelect) {
+    els.agentProfileMakeDefaultSelect.addEventListener("change", renderAgentProfileSummary);
+  }
+  if (els.agentProfileNotes) {
+    els.agentProfileNotes.addEventListener("input", renderAgentProfileSummary);
+  }
+  if (els.agentProfileRefreshBtn) {
+    els.agentProfileRefreshBtn.addEventListener("click", () => refreshAgentProfiles().then(() => {
+      els.codexSessionStatus.textContent = "Agent profiles refreshed.";
+    }).catch((error) => {
+      els.codexSessionStatus.textContent = `Error: ${error.message}`;
+      setCommandResult(error.message, true);
+    }));
+  }
+  if (els.agentProfileSaveBtn) {
+    els.agentProfileSaveBtn.addEventListener("click", () => saveAgentProfile().catch((error) => {
+      els.codexSessionStatus.textContent = `Error: ${error.message}`;
+      setCommandResult(error.message, true);
+    }));
+  }
+  if (els.agentProfileSetDefaultBtn) {
+    els.agentProfileSetDefaultBtn.addEventListener("click", () => setDefaultAgentProfile().catch((error) => {
+      els.codexSessionStatus.textContent = `Error: ${error.message}`;
+      setCommandResult(error.message, true);
+    }));
+  }
+  if (els.agentProfileRetireBtn) {
+    els.agentProfileRetireBtn.addEventListener("click", () => retireAgentProfile().catch((error) => {
+      els.codexSessionStatus.textContent = `Error: ${error.message}`;
+      setCommandResult(error.message, true);
+    }));
+  }
+  if (els.agentProfilePlanBtn) {
+    els.agentProfilePlanBtn.addEventListener("click", () => spawnAgentFromProfile({ dryRun: true }).catch((error) => {
+      els.codexSessionStatus.textContent = `Error: ${error.message}`;
+      setCommandResult(error.message, true);
+    }));
+  }
+  if (els.agentProfileSpawnBtn) {
+    els.agentProfileSpawnBtn.addEventListener("click", () => spawnAgentFromProfile({ dryRun: false }).catch((error) => {
       els.codexSessionStatus.textContent = `Error: ${error.message}`;
       setCommandResult(error.message, true);
     }));
@@ -6182,14 +6794,9 @@ function bindEvents() {
     renderTerminalExecResumeButton();
     renderChatRuntimeStrip();
   });
-  if (els.codexSessionModel) {
-    els.codexSessionModel.addEventListener("input", () => {
-      renderEnvironmentSummary();
-    });
-  }
   els.codexRefreshBtn.addEventListener("click", async () => {
     await refreshCodexSessions().then(() => {
-      els.codexSessionStatus.textContent = "Session registry refreshed.";
+      els.codexSessionStatus.textContent = "Session aliases refreshed.";
     }).catch((error) => {
       els.codexSessionStatus.textContent = `Error: ${error.message}`;
     });
@@ -6214,14 +6821,6 @@ function bindEvents() {
     els.codexSessionStatus.textContent = `Error: ${error.message}`;
     setCommandResult(error.message, true);
   }));
-  els.codexSpawnSuperQuickBtn.addEventListener("click", () => spawnSuperAgent("quick").catch((error) => {
-    els.codexSessionStatus.textContent = `Error: ${error.message}`;
-    setCommandResult(error.message, true);
-  }));
-  els.codexSpawnSuperFullBtn.addEventListener("click", () => spawnSuperAgent("full").catch((error) => {
-    els.codexSessionStatus.textContent = `Error: ${error.message}`;
-    setCommandResult(error.message, true);
-  }));
   els.relayStartBtn.addEventListener("click", () => startRelayWatcher().catch((error) => {
     els.codexSessionStatus.textContent = `Error: ${error.message}`;
     setCommandResult(error.message, true);
@@ -6237,6 +6836,18 @@ function bindEvents() {
     els.launchRunRefreshBtn.addEventListener("click", () => refreshLaunchRuns().then(() => {
       els.codexSessionStatus.textContent = "Launch runs refreshed.";
     }).catch((error) => {
+      els.codexSessionStatus.textContent = `Error: ${error.message}`;
+      setCommandResult(error.message, true);
+    }));
+  }
+  if (els.launchRunPlanBtn) {
+    els.launchRunPlanBtn.addEventListener("click", () => planSelectedRun().catch((error) => {
+      els.codexSessionStatus.textContent = `Error: ${error.message}`;
+      setCommandResult(error.message, true);
+    }));
+  }
+  if (els.launchRunRelaunchBtn) {
+    els.launchRunRelaunchBtn.addEventListener("click", () => relaunchSelectedRun().catch((error) => {
       els.codexSessionStatus.textContent = `Error: ${error.message}`;
       setCommandResult(error.message, true);
     }));
@@ -6296,7 +6907,9 @@ function bindEvents() {
     });
   });
   els.openTunnelUrlBtn.addEventListener("click", () => {
-    const url = String(state.activeTunnel?.url || state.connectionHelp?.tunnel?.url || "").trim();
+    const url = String(
+      state.activeTunnel?.publicUrl || state.activeTunnel?.url || state.connectionHelp?.tunnel?.publicUrl || state.connectionHelp?.tunnel?.url || ""
+    ).trim();
     if (!url) {
       els.connectionAdvice.textContent = "No active tunnel URL to open.";
       return;

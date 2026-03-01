@@ -3,6 +3,10 @@ import path from "node:path";
 import readline from "node:readline";
 import { spawn } from "node:child_process";
 import {
+  readAgentProfileRegistry,
+  resolveAgentProfile,
+} from "../remote/agent-profile-registry.mjs";
+import {
   DEFAULT_CODEX_SESSION_REGISTRY_FILE,
   normalizeSessionName,
   readCodexSessionRegistry,
@@ -37,13 +41,15 @@ function normalizeMode(value) {
 
 function parseArgs(argv) {
   const options = {
-    mode: "quick",
+    mode: "",
     project: "",
+    agentProfile: "",
+    codexProfile: "",
     name: "",
     model: "",
     notes: "",
-    runPrep: true,
-    makeDefault: true,
+    runPrep: null,
+    makeDefault: null,
     timeoutMs: 8 * 60 * 1000,
   };
 
@@ -86,6 +92,22 @@ function parseArgs(argv) {
 
     if (key === "project") {
       options.project = readValue(index, inlineValue).trim();
+      if (!inlineValue && argv[index + 1] && !String(argv[index + 1]).startsWith("-")) {
+        index += 1;
+      }
+      continue;
+    }
+
+    if (key === "agentprofile") {
+      options.agentProfile = readValue(index, inlineValue).trim();
+      if (!inlineValue && argv[index + 1] && !String(argv[index + 1]).startsWith("-")) {
+        index += 1;
+      }
+      continue;
+    }
+
+    if (key === "codexprofile" || key === "profile") {
+      options.codexProfile = readValue(index, inlineValue).trim();
       if (!inlineValue && argv[index + 1] && !String(argv[index + 1]).startsWith("-")) {
         index += 1;
       }
@@ -160,7 +182,6 @@ function parseArgs(argv) {
     }
   }
 
-  options.mode = normalizeMode(options.mode);
   return options;
 }
 
@@ -306,10 +327,13 @@ async function runNpmScript(script, scriptArgs = [], timeoutMs = 35 * 60 * 1000)
   });
 }
 
-async function runCodexCreate(prompt, model, timeoutMs) {
+async function runCodexCreate(prompt, model, codexProfile, timeoutMs) {
   const args = ["exec", "--json"];
   if (model) {
     args.push("--model", model);
+  }
+  if (codexProfile) {
+    args.push("--profile", codexProfile);
   }
   args.push("-");
   process.stdout.write(`>> codex ${args.join(" ")}\n`);
@@ -323,22 +347,41 @@ async function runCodexCreate(prompt, model, timeoutMs) {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const activeProject = await readAgencyActiveProject();
-  const project = String(options.project || process.env.npm_config_project || activeProject || "").trim();
+  const requestedProject = String(options.project || process.env.npm_config_project || activeProject || "").trim();
+  const agentProfileRegistry = await readAgentProfileRegistry().catch(() => null);
+  const resolvedAgentProfile = agentProfileRegistry
+    ? resolveAgentProfile(agentProfileRegistry, {
+        name: options.agentProfile,
+        project: requestedProject,
+      })
+    : null;
+  const project = String(requestedProject || resolvedAgentProfile?.project || "").trim();
   if (!validateProjectRef(project)) {
     throw new Error(`Invalid project value '${project}'.`);
   }
 
-  const name = options.name ? normalizeSessionName(options.name, "") : fallbackSessionName(project);
+  const mode = normalizeMode(options.mode || resolvedAgentProfile?.mode || "quick");
+  const model = String(options.model || resolvedAgentProfile?.model || "").trim();
+  const codexProfile = String(options.codexProfile || resolvedAgentProfile?.codexProfile || "").trim();
+  const runPrep = typeof options.runPrep === "boolean"
+    ? options.runPrep
+    : Boolean(resolvedAgentProfile?.runPrep ?? true);
+  const makeDefault = typeof options.makeDefault === "boolean"
+    ? options.makeDefault
+    : Boolean(resolvedAgentProfile?.makeDefaultSession ?? true);
+  const timeoutMs = Number.isFinite(Number(options.timeoutMs))
+    ? options.timeoutMs
+    : Number(resolvedAgentProfile?.timeoutMs || 8 * 60 * 1000);
+  const requestedName = String(options.name || resolvedAgentProfile?.sessionName || "").trim();
+  const name = requestedName ? normalizeSessionName(requestedName, "") : fallbackSessionName(project);
   if (!name) {
     throw new Error("Invalid session name.");
   }
-
-  const mode = normalizeMode(options.mode);
   const prepScript = mode === "full" ? "super:bootstrap:full" : "super:bootstrap";
   const prepArgs = project ? [`--project=${project}`] : [];
   let prepResult = null;
 
-  if (options.runPrep) {
+  if (runPrep) {
     prepResult = await runNpmScript(prepScript, prepArgs);
     if (!prepResult.ok) {
       throw new Error(`Bootstrap failed (exit ${prepResult.exitCode}).`);
@@ -349,7 +392,7 @@ async function main() {
     project,
     mode,
   });
-  const codexResult = await runCodexCreate(prompt, options.model, options.timeoutMs);
+  const codexResult = await runCodexCreate(prompt, model, codexProfile, timeoutMs);
   if (!codexResult.ok) {
     throw new Error(`Codex create failed (exit ${codexResult.exitCode}).`);
   }
@@ -364,10 +407,9 @@ async function main() {
     target: threadId,
     threadId,
     project,
-    model: options.model,
     notes: options.notes || `Super agent (${mode}) created via desktop CLI.`,
     source: "desktop-super-agent",
-    makeDefault: options.makeDefault,
+    makeDefault,
   });
   const persistedRegistry = await writeCodexSessionRegistry(updatedRegistry, DEFAULT_CODEX_SESSION_REGISTRY_FILE);
 
@@ -379,6 +421,9 @@ async function main() {
       threadId,
       project: project || "",
       mode,
+      agentProfileName: resolvedAgentProfile?.name || "",
+      model,
+      codexProfile,
     },
     prep: prepResult
       ? {
@@ -391,7 +436,17 @@ async function main() {
       exitCode: codexResult.exitCode,
       durationMs: codexResult.durationMs,
       outputTail: codexResult.outputLines.slice(-25),
+      profile: codexProfile,
     },
+    agentProfile: resolvedAgentProfile
+      ? {
+          name: resolvedAgentProfile.name,
+          project: resolvedAgentProfile.project,
+          mode: resolvedAgentProfile.mode,
+          model: resolvedAgentProfile.model,
+          codexProfile: resolvedAgentProfile.codexProfile,
+        }
+      : null,
     registry: {
       file: path.relative(ROOT, DEFAULT_CODEX_SESSION_REGISTRY_FILE).replace(/\\/g, "/"),
       defaultGlobal: persistedRegistry?.defaults?.global || "",

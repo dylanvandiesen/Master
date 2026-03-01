@@ -148,7 +148,8 @@ Status output:
 ## Recommended Daily Start
 
 1. `cmd /c npm run env -- --context=commander --project=csscroll`
-2. Open the Commander panel and use `Control Plane -> Environment / Agent Profiles / Runs`.
-3. Spawn from CLI only when you want a direct one-shot flow: `cmd /c npm run agent:spawn -- --project=csscroll`
-4. Use `cmd /c npm run env:status` whenever you need the current runtime snapshot.
-5. Read `wiki/super-agent-mcp-skills-strategy.md` for speed-first MCP + skills orchestration.
+2. Open the Commander panel and use `Control Plane -> Environment / Agent Profiles / Session Aliases / Runs`.
+3. Use `Plan Env`, `Plan Spawn`, or `Plan Run` when you want to inspect the exact launch request before mutating runtime state.
+4. Spawn from CLI only when you want a direct one-shot flow: `cmd /c npm run agent:spawn -- --project=csscroll`
+5. Use `cmd /c npm run env:status` whenever you need the current runtime snapshot.
+6. Read `wiki/super-agent-mcp-skills-strategy.md` for speed-first MCP + skills orchestration.

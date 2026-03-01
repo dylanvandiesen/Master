@@ -22,7 +22,16 @@ import {
   writeCodexSessionRegistry,
 } from "../scripts/remote/codex-session-registry.mjs";
 import {
+  listAgentProfiles,
+  readAgentProfileRegistry,
+  resolveAgentProfile,
+  retireAgentProfile,
+  setDefaultAgentProfile,
+  upsertAgentProfile,
+} from "../scripts/remote/agent-profile-registry.mjs";
+import {
   appendLaunchRun,
+  getLaunchRunById,
   mergeEnvRuntime,
   readEnvProfiles,
   readEnvRuntime,
@@ -31,6 +40,13 @@ import {
   setDefaultEnvProfile,
   upsertEnvProfile,
 } from "../scripts/env/lib/env-registry.mjs";
+import {
+  buildPublicUrl as buildManagedPublicUrl,
+  canManageRemoteRedirect,
+  resolvePublicHostAutomationConfig,
+  runRemoteRedirectUpdate,
+  verifyPublicHost,
+} from "../scripts/remote/commander-public-host.mjs";
 
 const ROOT = process.cwd();
 const PUBLIC_DIR = path.join(ROOT, "remote-console", "public");
@@ -112,6 +128,7 @@ const state = {
   activeRelay: null,
   activeRelays: new Map(),
   activeTunnel: null,
+  publicHostVerification: null,
   lastChatSignature: "",
 };
 
@@ -395,6 +412,7 @@ function buildPublicUrl(rawHost, protocol) {
 const legacyRequireHttps = parseBool(process.env.REMOTE_PANEL_REQUIRE_HTTPS, false);
 const defaultSecurityMode = legacyRequireHttps ? "on" : "off";
 const runtimeConfig = loadRuntimeConfigSync(PANEL_RUNTIME_CONFIG_FILE);
+const publicHostAutomation = resolvePublicHostAutomationConfig(process.env);
 const securityModeInput = parseArgValue("security") || runtimeConfig.securityMode || process.env.REMOTE_PANEL_SECURITY_MODE;
 const tunnelModeInput = parseArgValue("tunnel-mode") || runtimeConfig.tunnelMode || process.env.REMOTE_PANEL_TUNNEL_MODE;
 const settings = {
@@ -432,6 +450,15 @@ const settings = {
   ).trim(),
   cloudflaredConfig: String(parseArgValue("cloudflared-config") || process.env.REMOTE_PANEL_CLOUDFLARED_CONFIG || "").trim(),
   credentialsFile: PANEL_CREDENTIALS_FILE,
+  publicHostVerifyTimeoutMs: publicHostAutomation.publicHostVerifyTimeoutMs,
+  publicAuthUser: publicHostAutomation.publicAuthUser,
+  publicAuthPassword: publicHostAutomation.publicAuthPassword,
+  autoRemoteRedirect: publicHostAutomation.autoRemoteRedirect,
+  remoteRedirectHost: publicHostAutomation.remoteRedirectHost,
+  remoteRedirectUser: publicHostAutomation.remoteRedirectUser,
+  remoteRedirectKeyPath: publicHostAutomation.remoteRedirectKeyPath,
+  remoteRedirectSitePath: publicHostAutomation.remoteRedirectSitePath,
+  localCommanderSitePath: publicHostAutomation.localCommanderSitePath,
 };
 
 function withBasePath(pathname = "/") {
@@ -582,10 +609,14 @@ function buildConnectionHelpPayload() {
         return url.toString();
       })
     : [];
-  const publicUrl = buildPublicUrl(settings.publicHost, securityMode === "on" ? "https" : "http");
+  const publicUrl = buildManagedPublicUrl(settings.publicHost, securityMode === "on" ? "https" : "http", settings.basePath);
   const tunnel = publicTunnelState();
   const configuredTunnelMode = parseTunnelMode(settings.tunnelMode, "quick");
   const tunnelUrl = String(tunnel?.url || "").trim();
+  const stablePublicUrl = String(tunnel?.publicUrl || publicUrl || "").trim();
+  const publicVerification = state.publicHostVerification && typeof state.publicHostVerification === "object"
+    ? state.publicHostVerification
+    : null;
   const localUrlObject = new URL(`http://127.0.0.1:${settings.port}`);
   const bindUrlObject = new URL(`http://${settings.host}:${settings.port}`);
   if (settings.basePath) {
@@ -596,7 +627,9 @@ function buildConnectionHelpPayload() {
   const bindUrl = bindUrlObject.toString();
 
   let action = "";
-  if (tunnelUrl) {
+  if (publicVerification?.ok && stablePublicUrl) {
+    action = `Stable HTTPS host is verified at ${stablePublicUrl}.`;
+  } else if (tunnelUrl) {
     action = `External tunnel is live at ${tunnelUrl}. Use this URL outside your home network.`;
   } else if (tunnel?.mode && tunnel.mode !== "quick") {
     action =
@@ -612,11 +645,11 @@ function buildConnectionHelpPayload() {
     action = "Open one of the LAN URLs from your phone while connected to the same Wi-Fi.";
   }
 
-  if (publicUrl) {
-    action = `Use ${publicUrl} from your phone. ${action}`;
+  if (stablePublicUrl) {
+    action = `Use ${stablePublicUrl} from your phone. ${action}`;
   }
 
-  const recommendedMobileUrl = tunnelUrl || publicUrl || directLanUrls[0] || "";
+  const recommendedMobileUrl = (publicVerification?.ok ? stablePublicUrl : "") || tunnelUrl || stablePublicUrl || directLanUrls[0] || "";
 
   return {
     panel: {
@@ -652,14 +685,20 @@ function buildConnectionHelpPayload() {
       hasNamedConfig: Boolean(settings.cloudflaredTunnelName),
       hasConfigFile: Boolean(settings.cloudflaredConfig),
       url: tunnelUrl,
+      publicUrl: stablePublicUrl,
       pid: tunnel?.pid || 0,
       startedAt: tunnel?.startedAt || "",
+      verification: publicVerification,
+      automation: {
+        remoteRedirectAvailable: remoteRedirectAutomationAvailable(),
+        namedTunnelConfigured: hasNamedTunnelConfig(),
+      },
     },
     urls: {
       local: localUrl,
       bind: bindUrl,
       directLan: directLanUrls,
-      public: publicUrl,
+      public: stablePublicUrl,
     },
     guidance: {
       canDirectLan,
@@ -763,11 +802,81 @@ function publicTunnelState() {
   return {
     provider: state.activeTunnel.provider,
     mode: state.activeTunnel.mode,
+    requestedMode: state.activeTunnel.requestedMode || state.activeTunnel.mode,
     url: state.activeTunnel.url,
+    publicUrl: state.activeTunnel.publicUrl || "",
+    publicHost: state.activeTunnel.publicHost || "",
     targetUrl: state.activeTunnel.targetUrl,
     pid: state.activeTunnel.pid,
     startedAt: state.activeTunnel.startedAt,
+    verification: state.activeTunnel.verification || null,
   };
+}
+
+function hasNamedTunnelConfig() {
+  return Boolean(String(settings.cloudflaredTunnelName || "").trim());
+}
+
+function remoteRedirectAutomationAvailable() {
+  return canManageRemoteRedirect({
+    autoRemoteRedirect: settings.autoRemoteRedirect,
+    remoteRedirectHost: settings.remoteRedirectHost,
+    remoteRedirectUser: settings.remoteRedirectUser,
+    remoteRedirectKeyPath: settings.remoteRedirectKeyPath,
+  });
+}
+
+async function verifyAndMaybeManagePublicHost({
+  desiredMode = "off",
+  publicHost = "",
+  tunnelUrl = "",
+} = {}) {
+  const normalizedMode = normalizeEnvironmentRemoteMode(desiredMode, "off");
+  const normalizedPublicHost = normalizePublicHost(publicHost);
+  if (normalizedMode === "off" || !normalizedPublicHost) {
+    state.publicHostVerification = null;
+    return null;
+  }
+
+  let verification = await verifyPublicHost({
+    publicHost: normalizedPublicHost,
+    basePath: settings.basePath,
+    timeoutMs: settings.publicHostVerifyTimeoutMs,
+    authUser: settings.publicAuthUser,
+    authPassword: settings.publicAuthPassword,
+  });
+
+  if (
+    !verification.ok &&
+    tunnelUrl &&
+    remoteRedirectAutomationAvailable() &&
+    normalizedPublicHost.toLowerCase() === "local-commander.diesign.dev"
+  ) {
+    const redirectResult = await runRemoteRedirectUpdate({
+      tunnelUrl,
+      remoteRedirectHost: settings.remoteRedirectHost,
+      remoteRedirectUser: settings.remoteRedirectUser,
+      remoteRedirectKeyPath: settings.remoteRedirectKeyPath,
+      remoteRedirectSitePath: settings.remoteRedirectSitePath,
+      localCommanderSitePath: settings.localCommanderSitePath,
+    });
+    pushLog("system", `Updated remote Commander redirect for ${normalizedPublicHost}.`);
+    verification = await verifyPublicHost({
+      publicHost: normalizedPublicHost,
+      basePath: settings.basePath,
+      timeoutMs: settings.publicHostVerifyTimeoutMs,
+      authUser: settings.publicAuthUser,
+      authPassword: settings.publicAuthPassword,
+    });
+    verification = {
+      ...verification,
+      redirected: true,
+      redirectOutputTail: redirectResult.outputLines.slice(-10),
+    };
+  }
+
+  state.publicHostVerification = verification;
+  return verification;
 }
 
 function broadcastState() {
@@ -2276,10 +2385,18 @@ async function ensureTunnelStateForEnvironment({
     if (state.activeTunnel) {
       await stopTunnelProcess();
     }
+    state.publicHostVerification = null;
     return publicTunnelState();
   }
 
-  if (state.activeTunnel && String(state.activeTunnel.mode || "").trim() === normalizedRemoteMode) {
+  const effectiveMode = normalizedRemoteMode === "named" && !hasNamedTunnelConfig() && remoteRedirectAutomationAvailable()
+    ? "quick"
+    : normalizedRemoteMode;
+  if (
+    state.activeTunnel &&
+    String(state.activeTunnel.requestedMode || state.activeTunnel.mode || "").trim() === normalizedRemoteMode &&
+    String(state.activeTunnel.publicHost || "").trim() === settings.publicHost
+  ) {
     return publicTunnelState();
   }
 
@@ -2290,11 +2407,13 @@ async function ensureTunnelStateForEnvironment({
 
   return startTunnelProcess({
     provider: settings.tunnelProvider,
-    mode: normalizedRemoteMode,
+    mode: effectiveMode,
+    requestedMode: normalizedRemoteMode,
     targetUrl: `http://127.0.0.1:${settings.port}`,
     tunnelToken: settings.cloudflaredTunnelToken,
     tunnelName: settings.cloudflaredTunnelName,
     configFile: settings.cloudflaredConfig,
+    publicHost: settings.publicHost,
     timeoutMs: TUNNEL_DISCOVERY_TIMEOUT_MS,
   });
 }
@@ -2324,7 +2443,7 @@ async function runEnvironmentPrep({ prep = "quick", project = "" } = {}) {
   return result;
 }
 
-async function launchEnvironment(options = {}) {
+function buildEnvironmentLaunchPlan(options = {}) {
   const context = normalizeEnvironmentContext(options.context, "commander");
   const project = String(options.project || "").trim();
   const prep = normalizeEnvironmentPrep(options.prep, "quick");
@@ -2340,6 +2459,59 @@ async function launchEnvironment(options = {}) {
       : options.publicHost || settings.publicHost || (context === "commander" ? "local-commander.diesign.dev" : "")
   ).trim();
   const devPort = String(options.devPort || "").trim();
+  const effectiveTunnelMode = remoteMode === "named" && !hasNamedTunnelConfig() && remoteRedirectAutomationAvailable()
+    ? "quick"
+    : remoteMode;
+
+  return {
+    kind: "environment",
+    summary: summarizeEnvironmentRequest({
+      context,
+      project,
+      prep,
+      panelMode,
+      devMode,
+      relayEnabled,
+      remoteMode,
+    }),
+    request: {
+      context,
+      project,
+      prep,
+      devMode,
+      panelMode,
+      remoteMode,
+      relayEnabled,
+      sessionName,
+      publicHost,
+      devPort,
+      environmentProfileName,
+    },
+    tunnel: {
+      requestedMode: remoteMode,
+      effectiveMode: effectiveTunnelMode,
+      publicHost,
+      namedTunnelConfigured: hasNamedTunnelConfig(),
+      remoteRedirectAvailable: remoteRedirectAutomationAvailable(),
+    },
+  };
+}
+
+async function launchEnvironment(options = {}) {
+  const plan = buildEnvironmentLaunchPlan(options);
+  const {
+    context,
+    project,
+    prep,
+    devMode,
+    panelMode,
+    remoteMode,
+    relayEnabled,
+    sessionName,
+    publicHost,
+    devPort,
+    environmentProfileName,
+  } = plan.request;
 
   const prepResult = await runEnvironmentPrep({ prep, project });
   const dev = await ensureDevStateForEnvironment({ devMode, project, devPort });
@@ -2382,9 +2554,12 @@ async function launchEnvironment(options = {}) {
     prep,
     panelMode,
     remoteMode,
+    relayEnabled,
+    publicHost,
     sessionName,
     status: "ready",
     summary: state.activeEnvironment.summary,
+    request: plan.request,
     urls: {
       local: connection?.urls?.local || "",
       bind: connection?.urls?.bind || "",
@@ -2429,16 +2604,18 @@ async function stopEnvironment({ stopPanel = false } = {}) {
 }
 
 async function buildEnvironmentStatus() {
-  const [profiles, runs, runtime, artifacts] = await Promise.all([
+  const [profiles, runs, runtime, artifacts, agentProfiles] = await Promise.all([
     readEnvProfiles(),
     readLaunchRuns(),
     readEnvRuntime(),
     buildArtifactSnapshot(),
+    readAgentProfilesSnapshot().catch(() => null),
   ]);
   return {
     ok: true,
     environment: state.activeEnvironment || runtime.environment || null,
     profiles,
+    agentProfiles,
     runs: runs.runs.slice(0, 20),
     runtime,
     activeDev: publicDevState(),
@@ -2447,6 +2624,428 @@ async function buildEnvironmentStatus() {
     activeTunnel: publicTunnelState(),
     connection: buildConnectionHelpPayload(),
     artifacts,
+  };
+}
+
+async function readAgentProfilesSnapshot() {
+  const registry = await readAgentProfileRegistry();
+  return {
+    registry,
+    profiles: listAgentProfiles(registry, { includeRetired: true }),
+    resolvedDefault: resolveAgentProfile(registry, {}) || null,
+  };
+}
+
+async function resolveAgentLaunchProfile(input = {}) {
+  const snapshot = await readAgentProfilesSnapshot();
+  const project = String(input.project || "").trim();
+  const profile = resolveAgentProfile(snapshot.registry, {
+    name: input.agentProfileName,
+    project,
+  });
+  return {
+    ...snapshot,
+    profile,
+  };
+}
+
+async function createCodexSessionFromRequest(input = {}, { dryRun = false } = {}) {
+  const requestedName = String(input.name || "").trim();
+  const requestedProject = String(input.project || "").trim();
+  const requestedNotes = String(input.notes || "").trim().slice(0, 5000);
+  const requestedModel = String(input.model || "").trim();
+  const requestedCodexProfile = String(input.codexProfile || input.profile || "").trim();
+  const requestedMakeDefault = parseBool(input.makeDefault, false);
+  const timeoutMs = Math.max(20_000, Math.min(15 * 60 * 1000, Number.parseInt(String(input.timeoutMs || ""), 10) || 8 * 60 * 1000));
+  const agentProfileData = await resolveAgentLaunchProfile({
+    agentProfileName: input.agentProfileName,
+    project: requestedProject,
+  });
+  const agentProfile = agentProfileData.profile;
+
+  const name = requestedName;
+  const project = String(requestedProject || agentProfile?.project || "").trim();
+  const notes = requestedNotes || "";
+  const model = requestedModel || String(agentProfile?.model || "").trim();
+  const codexProfile = requestedCodexProfile || String(agentProfile?.codexProfile || "").trim();
+  const makeDefault = input.makeDefault !== undefined ? requestedMakeDefault : false;
+
+  if (!validateSessionName(name)) {
+    throw new Error("Invalid session name.");
+  }
+  if (!validateCodexProjectRef(project)) {
+    throw new Error("Invalid project value.");
+  }
+
+  const args = ["exec", "--json"];
+  if (model) {
+    args.push("--model", model);
+  }
+  if (codexProfile) {
+    args.push("--profile", codexProfile);
+  }
+  args.push("-");
+
+  const prompt =
+    String(input.prompt || "").trim() ||
+    `Create a new Codex relay session for project '${project || "workspace"}'. Reply exactly with READY.`;
+  const canonicalRequest = {
+    name,
+    project,
+    notes,
+    model,
+    codexProfile,
+    makeDefault,
+    timeoutMs,
+    prompt,
+    agentProfileName: agentProfile?.name || "",
+  };
+
+  if (dryRun) {
+    return {
+      ok: true,
+      dryRun: true,
+      kind: "session-create",
+      summary: `Plan session create: ${name}${project ? ` (${project})` : ""}`,
+      request: canonicalRequest,
+      codexArgs: args,
+      agentProfiles: agentProfileData,
+    };
+  }
+
+  const codexResult = await runCodexOneShot({
+    source: "codex:create",
+    args,
+    input: prompt,
+    timeoutMs,
+  });
+  if (!codexResult.ok) {
+    return {
+      ok: false,
+      error: `Codex create failed (exit ${codexResult.exitCode}).`,
+      result: codexResult,
+    };
+  }
+
+  const threadId = extractCodexThreadIdFromOutput(codexResult.outputLines);
+  if (!threadId) {
+    return {
+      ok: false,
+      error: "Codex create completed but no thread_id was found in output.",
+      result: codexResult,
+    };
+  }
+
+  const current = await readCodexRegistrySafe();
+  const updated = upsertCodexSession(current, {
+    name,
+    target: threadId,
+    threadId,
+    project,
+    notes,
+    source: "panel-create",
+    makeDefault,
+  });
+  const persisted = await writeCodexRegistrySafe(updated);
+  pushLog("codex-sessions", `Created session ${name} -> ${threadId}`);
+  await appendActivityEvent({
+    type: "session_create",
+    state: "working",
+    message: `Session created: ${name}`,
+    source: "panel-codex",
+    meta: {
+      name,
+      threadId,
+      project,
+      model,
+      codexProfile,
+      agentProfileName: agentProfile?.name || "",
+    },
+  }).catch(() => null);
+  const runs = await appendLaunchRun({
+    id: `${Date.now()}`,
+    kind: "session-create",
+    environmentProfileName: normalizeEnvironmentName(state.activeEnvironment?.environmentProfileName || "", ""),
+    agentProfileName: normalizeEnvironmentName(agentProfile?.name || "", ""),
+    context: state.activeEnvironment?.context || "project",
+    project,
+    prep: state.activeEnvironment?.prep || "quick",
+    panelMode: state.activeEnvironment?.panelMode || "remote",
+    remoteMode: state.activeEnvironment?.remoteMode || "off",
+    relayEnabled: Boolean(state.activeEnvironment?.relayEnabled),
+    publicHost: String(state.activeEnvironment?.publicHost || "").trim(),
+    sessionName: name,
+    threadId,
+    model,
+    codexProfile,
+    status: "session-created",
+    summary: `Session created: ${name}${project ? ` (${project})` : ""}`,
+    request: canonicalRequest,
+    urls: {
+      local: buildConnectionHelpPayload()?.urls?.local || "",
+      public: buildConnectionHelpPayload()?.guidance?.recommendedMobileUrl || "",
+    },
+    artifacts: await buildArtifactSnapshot(),
+  });
+  await persistEnvironmentRuntimeSnapshot({
+    environment: state.activeEnvironment,
+  });
+
+  return {
+    ok: true,
+    created: {
+      name,
+      target: threadId,
+      model,
+      codexProfile,
+      agentProfileName: agentProfile?.name || "",
+    },
+    registry: persisted,
+    runs: runs.runs.slice(0, 15),
+    agentProfiles: agentProfileData,
+    codex: {
+      exitCode: codexResult.exitCode,
+      durationMs: codexResult.durationMs,
+      outputTail: codexResult.outputLines.slice(-25),
+    },
+  };
+}
+
+async function spawnSuperAgentFromRequest(input = {}, { dryRun = false } = {}) {
+  const requestedProject = String(input.project || "").trim();
+  const agentProfileData = await resolveAgentLaunchProfile({
+    agentProfileName: input.agentProfileName,
+    project: requestedProject,
+  });
+  const agentProfile = agentProfileData.profile;
+  const agentKind = String(input.agentKind || agentProfile?.agentKind || "super").trim().toLowerCase();
+  if (agentKind !== "super") {
+    throw new Error(`Unsupported agent kind '${agentKind}'.`);
+  }
+
+  const project = String(requestedProject || agentProfile?.project || "").trim();
+  const mode = normalizeEnvironmentPrep(input.mode, normalizeEnvironmentPrep(agentProfile?.mode, "quick"));
+  const validMode = mode === "full" ? "full" : "quick";
+  const name = normalizeSessionName(
+    String(input.name || agentProfile?.sessionName || superAgentSessionName(project)).trim(),
+    ""
+  );
+  const model = String(input.model || agentProfile?.model || "").trim();
+  const codexProfile = String(input.codexProfile || input.profile || agentProfile?.codexProfile || "").trim();
+  const notes = String(input.notes || agentProfile?.notes || "").trim().slice(0, 5000);
+  const runPrep = input.runPrep !== undefined ? parseBool(input.runPrep, true) : Boolean(agentProfile?.runPrep ?? true);
+  const startRelay = input.startRelay !== undefined ? parseBool(input.startRelay, true) : Boolean(agentProfile?.startRelay ?? true);
+  const makeDefault = input.makeDefault !== undefined
+    ? parseBool(input.makeDefault, true)
+    : Boolean(agentProfile?.makeDefaultSession ?? true);
+  const timeoutMs = Math.max(
+    20_000,
+    Math.min(15 * 60 * 1000, Number.parseInt(String(input.timeoutMs || agentProfile?.timeoutMs || ""), 10) || 8 * 60 * 1000)
+  );
+
+  if (!validateSessionName(name)) {
+    throw new Error("Invalid session name.");
+  }
+  if (!validateCodexProjectRef(project)) {
+    throw new Error("Invalid project value.");
+  }
+
+  const prompt = buildSuperAgentInitPrompt({
+    project,
+    mode: validMode,
+  });
+  const canonicalRequest = {
+    agentKind: "super",
+    mode: validMode,
+    project,
+    name,
+    model,
+    codexProfile,
+    notes,
+    runPrep,
+    startRelay,
+    makeDefault,
+    timeoutMs,
+    agentProfileName: agentProfile?.name || "",
+  };
+
+  if (dryRun) {
+    return {
+      ok: true,
+      dryRun: true,
+      kind: "agent-spawn",
+      summary: `Plan super agent: ${name}${project ? ` (${project})` : ""}`,
+      request: canonicalRequest,
+      prompt,
+      agentProfiles: agentProfileData,
+    };
+  }
+
+  let prep = null;
+  if (runPrep) {
+    prep = await runOneShot({
+      source: validMode === "full" ? "super:bootstrap:full" : "super:bootstrap",
+      script: validMode === "full" ? "super:bootstrap:full" : "super:bootstrap",
+      args: project ? [`--project=${project}`] : [],
+      timeoutMs: validMode === "full" ? 40 * 60 * 1000 : 30 * 60 * 1000,
+    });
+    if (!prep.ok) {
+      return {
+        ok: false,
+        step: "prep",
+        error: `Bootstrap failed (exit ${prep.exitCode}).`,
+        prep,
+      };
+    }
+  }
+
+  const codexArgs = ["exec", "--json"];
+  if (model) {
+    codexArgs.push("--model", model);
+  }
+  if (codexProfile) {
+    codexArgs.push("--profile", codexProfile);
+  }
+  codexArgs.push("-");
+
+  const codexResult = await runCodexOneShot({
+    source: "super-agent:create",
+    args: codexArgs,
+    input: prompt,
+    timeoutMs,
+  });
+  if (!codexResult.ok) {
+    return {
+      ok: false,
+      step: "codex",
+      error: `Codex create failed (exit ${codexResult.exitCode}).`,
+      result: codexResult,
+      prep,
+    };
+  }
+
+  const threadId = extractCodexThreadIdFromOutput(codexResult.outputLines);
+  if (!threadId) {
+    return {
+      ok: false,
+      step: "thread-id",
+      error: "Codex create completed but no thread_id was found in output.",
+      result: codexResult,
+      prep,
+    };
+  }
+
+  const current = await readCodexRegistrySafe();
+  const updated = upsertCodexSession(current, {
+    name,
+    target: threadId,
+    threadId,
+    project,
+    notes: notes || `Super agent (${validMode}) created via commander panel.`,
+    source: "panel-super-agent",
+    makeDefault,
+  });
+  const persisted = await writeCodexRegistrySafe(updated);
+
+  let relay = null;
+  let relayError = "";
+  if (startRelay) {
+    const existingRelay = publicRelayStates().find((entry) => String(entry?.sessionName || "") === name);
+    if (existingRelay) {
+      relay = existingRelay;
+    } else {
+      try {
+        relay = await startRelayWatcher({
+          sessionName: name,
+          project,
+          useLast: false,
+          dryRun: false,
+          startFromLatest: true,
+          pollMs: 1200,
+          history: 16,
+        });
+      } catch (error) {
+        relayError = error instanceof Error ? error.message : "Failed to start relay watcher.";
+      }
+    }
+  }
+
+  const latestSession = runPrep ? await readLatestPreparedChatSession() : null;
+  pushLog("codex-sessions", `Spawned super agent ${name} -> ${threadId}`);
+  await appendActivityEvent({
+    type: "super_agent_spawn",
+    state: "working",
+    message: `Super agent spawned: ${name}${project ? ` (${project})` : ""}`,
+    source: "panel-codex",
+    meta: {
+      name,
+      threadId,
+      project,
+      mode: validMode,
+      model,
+      codexProfile,
+      agentProfileName: agentProfile?.name || "",
+      runPrep,
+      startRelay,
+      relayError,
+    },
+  }).catch(() => null);
+  const runs = await appendLaunchRun({
+    id: `${Date.now()}`,
+    kind: "agent-spawn",
+    environmentProfileName: normalizeEnvironmentName(state.activeEnvironment?.environmentProfileName || "", ""),
+    agentProfileName: normalizeEnvironmentName(agentProfile?.name || "", ""),
+    context: state.activeEnvironment?.context || "commander",
+    project,
+    prep: validMode,
+    panelMode: state.activeEnvironment?.panelMode || "remote",
+    remoteMode: state.activeEnvironment?.remoteMode || "off",
+    relayEnabled: startRelay,
+    publicHost: String(state.activeEnvironment?.publicHost || "").trim(),
+    sessionName: name,
+    threadId,
+    model,
+    codexProfile,
+    status: relayError ? "agent-ready-relay-warning" : "agent-ready",
+    summary: `Super agent ready: ${name}${project ? ` (${project})` : ""}`,
+    request: canonicalRequest,
+    urls: {
+      local: buildConnectionHelpPayload()?.urls?.local || "",
+      public: buildConnectionHelpPayload()?.guidance?.recommendedMobileUrl || "",
+    },
+    artifacts: await buildArtifactSnapshot(),
+  });
+  await persistEnvironmentRuntimeSnapshot({
+    environment: state.activeEnvironment,
+  });
+
+  return {
+    ok: true,
+    created: {
+      name,
+      target: threadId,
+      threadId,
+      project,
+      mode: validMode,
+      model,
+      codexProfile,
+      agentProfileName: agentProfile?.name || "",
+    },
+    registry: persisted,
+    prep,
+    latestSession,
+    runs: runs.runs.slice(0, 15),
+    agentProfiles: agentProfileData,
+    codex: {
+      exitCode: codexResult.exitCode,
+      durationMs: codexResult.durationMs,
+      outputTail: codexResult.outputLines.slice(-25),
+    },
+    relay: {
+      activeRelay: publicRelayState(),
+      activeRelays: publicRelayStates(),
+      error: relayError,
+    },
   };
 }
 
@@ -2709,7 +3308,7 @@ function extractHttpsUrlFromLine(line) {
 }
 
 function resolveTunnelPublicHintUrl() {
-  const hintFromHost = buildPublicUrl(settings.publicHost, "https");
+  const hintFromHost = buildManagedPublicUrl(settings.publicHost, "https", settings.basePath);
   return String(hintFromHost || "").trim();
 }
 
@@ -2777,10 +3376,12 @@ function buildCloudflaredTunnelArgs({
 async function startTunnelProcess({
   provider = "cloudflared",
   mode = "quick",
+  requestedMode = "",
   targetUrl = `http://127.0.0.1:${settings.port}`,
   tunnelToken = "",
   tunnelName = "",
   configFile = "",
+  publicHost = "",
   timeoutMs = TUNNEL_DISCOVERY_TIMEOUT_MS,
 } = {}) {
   if (state.activeTunnel) {
@@ -2802,6 +3403,8 @@ async function startTunnelProcess({
   });
   const args = tunnelSpec.args;
   const normalizedMode = tunnelSpec.mode;
+  const normalizedRequestedMode = parseTunnelMode(requestedMode, normalizedMode);
+  const normalizedPublicHost = normalizePublicHost(publicHost || settings.publicHost || "");
   const discoveredUrlHint = resolveTunnelPublicHintUrl();
   const child = spawn(tunnelBin, args, {
     cwd: ROOT,
@@ -2893,7 +3496,10 @@ async function startTunnelProcess({
   const tunnelState = {
     provider: normalizedProvider,
     mode: normalizedMode,
+    requestedMode: normalizedRequestedMode,
     url: discoveredUrl,
+    publicUrl: "",
+    publicHost: normalizedPublicHost,
     targetUrl,
     pid: child.pid,
     startedAt: timestamp(),
@@ -2901,21 +3507,41 @@ async function startTunnelProcess({
   };
 
   state.activeTunnel = tunnelState;
+  state.publicHostVerification = null;
   settings.securityMode = "on";
-  settings.tunnelMode = normalizedMode;
-  if (discoveredUrl) {
+  settings.tunnelMode = normalizedRequestedMode;
+  if (normalizedPublicHost) {
+    settings.publicHost = normalizedPublicHost;
+  } else if (discoveredUrl && normalizedRequestedMode === "quick") {
     settings.publicHost = discoveredUrl;
   }
   await persistRuntimeConfig().catch(() => null);
+  const verification = await verifyAndMaybeManagePublicHost({
+    desiredMode: normalizedRequestedMode,
+    publicHost: normalizedPublicHost || settings.publicHost,
+    tunnelUrl: discoveredUrl,
+  }).catch((error) => ({
+    ok: false,
+    url: buildManagedPublicUrl(normalizedPublicHost || settings.publicHost, "https", settings.basePath).replace(/\/$/, "") || "",
+    status: 0,
+    error: error instanceof Error ? error.message : "Failed to verify remote public host.",
+  }));
+  state.activeTunnel.verification = verification;
+  state.activeTunnel.publicUrl = verification?.ok
+    ? buildManagedPublicUrl(normalizedPublicHost || settings.publicHost, "https", settings.basePath)
+    : normalizedPublicHost
+      ? buildManagedPublicUrl(normalizedPublicHost, "https", settings.basePath)
+      : discoveredUrl;
   broadcastState();
 
   child.on("exit", async (code) => {
     pushLog("system", `Tunnel exited (pid=${child.pid}, exit=${code ?? -1})`);
-    if (state.activeTunnel && state.activeTunnel.pid === child.pid) {
-      state.activeTunnel = null;
-      if (normalizedMode === "quick" && settings.publicHost === discoveredUrl) {
-        settings.publicHost = "";
-      }
+      if (state.activeTunnel && state.activeTunnel.pid === child.pid) {
+        state.activeTunnel = null;
+        state.publicHostVerification = null;
+        if (normalizedMode === "quick" && settings.publicHost === discoveredUrl) {
+          settings.publicHost = "";
+        }
       await persistRuntimeConfig().catch(() => null);
     }
     broadcastState();
@@ -2923,22 +3549,25 @@ async function startTunnelProcess({
 
   child.on("error", async (error) => {
     pushLog("system", `Tunnel error: ${error.message}`);
-    if (state.activeTunnel && state.activeTunnel.pid === child.pid) {
-      state.activeTunnel = null;
-      if (normalizedMode === "quick" && settings.publicHost === discoveredUrl) {
-        settings.publicHost = "";
-      }
+      if (state.activeTunnel && state.activeTunnel.pid === child.pid) {
+        state.activeTunnel = null;
+        state.publicHostVerification = null;
+        if (normalizedMode === "quick" && settings.publicHost === discoveredUrl) {
+          settings.publicHost = "";
+        }
       await persistRuntimeConfig().catch(() => null);
     }
     broadcastState();
   });
 
-  if (discoveredUrl) {
-    pushLog("system", `External tunnel live (${normalizedMode}): ${discoveredUrl}`);
+  if (verification?.ok && state.activeTunnel.publicUrl) {
+    pushLog("system", `External tunnel ready (${normalizedRequestedMode}->${normalizedMode}): ${state.activeTunnel.publicUrl}`);
+  } else if (discoveredUrl) {
+    pushLog("system", `External tunnel live (${normalizedRequestedMode}->${normalizedMode}): ${discoveredUrl}`);
   } else {
     pushLog(
       "system",
-      `External tunnel running (${normalizedMode}) without detected URL. Set REMOTE_PANEL_PUBLIC_HOST for a clickable mobile URL.`
+      `External tunnel running (${normalizedRequestedMode}->${normalizedMode}) without detected URL. Set REMOTE_PANEL_PUBLIC_HOST for a clickable mobile URL.`
     );
   }
   return publicTunnelState();
@@ -3862,14 +4491,15 @@ async function handleApi(req, res, pathname, ip) {
     const context = normalizeEnvironmentContext(body.context, "commander");
     const project = String(body.project || "").trim();
     const prep = normalizeEnvironmentPrep(body.prep, "quick");
-    const devMode = normalizeEnvironmentDevMode(body.devMode, context === "system" ? "off" : "project");
-    const panelMode = normalizeEnvironmentPanelMode(body.panelMode, context === "commander" ? "remote" : "local");
-    const remoteMode = normalizeEnvironmentRemoteMode(body.remoteMode, context === "commander" ? "named" : "off");
-    const relayEnabled = parseBool(body.relayEnabled, context === "commander");
+    const devMode = normalizeEnvironmentDevMode(body.devMode ?? body.dev, context === "system" ? "off" : "project");
+    const panelMode = normalizeEnvironmentPanelMode(body.panelMode ?? body.panel, context === "commander" ? "remote" : "local");
+    const remoteMode = normalizeEnvironmentRemoteMode(body.remoteMode ?? body.remote, context === "commander" ? "named" : "off");
+    const relayEnabled = parseBool(body.relayEnabled ?? body.relay, context === "commander");
     const sessionName = normalizeEnvironmentName(body.sessionName || "codex-chat", "codex-chat");
     const publicHost = String(body.publicHost || "").trim();
     const devPort = String(body.devPort || "").trim();
-    const environmentProfileName = String(body.environmentProfileName || "").trim();
+    const environmentProfileName = String(body.environmentProfileName || body.envProfile || body.profileName || "").trim();
+    const dryRun = parseBool(body.dryRun, false);
 
     if (!validateProjectRef(project)) {
       badRequest(res, "Invalid project value.");
@@ -3885,6 +4515,28 @@ async function handleApi(req, res, pathname, ip) {
     }
 
     try {
+      const plan = buildEnvironmentLaunchPlan({
+        context,
+        project,
+        prep,
+        devMode,
+        panelMode,
+        remoteMode,
+        relayEnabled,
+        sessionName,
+        publicHost,
+        devPort,
+        environmentProfileName,
+      });
+      if (dryRun) {
+        json(res, 200, {
+          ok: true,
+          dryRun: true,
+          ...plan,
+          help: buildConnectionHelpPayload(),
+        });
+        return;
+      }
       const launched = await launchEnvironment({
         context,
         project,
@@ -4069,6 +4721,176 @@ async function handleApi(req, res, pathname, ip) {
       json(res, 500, {
         ok: false,
         error: error instanceof Error ? error.message : "Failed to read launch runs.",
+      });
+    }
+    return;
+  }
+
+  if (pathname === "/api/runs/relaunch" && req.method === "POST") {
+    let body = {};
+    try {
+      body = await readJsonBody(req);
+    } catch (error) {
+      badRequest(res, error.message);
+      return;
+    }
+
+    const runId = String(body.runId || body.id || "").trim();
+    const dryRun = parseBool(body.dryRun, false);
+    if (!runId) {
+      badRequest(res, "Run id is required.");
+      return;
+    }
+
+    try {
+      const run = await getLaunchRunById(runId);
+      if (!run) {
+        json(res, 404, { ok: false, error: "Launch run not found." });
+        return;
+      }
+      if (run.kind === "environment") {
+        if (dryRun) {
+          const plan = buildEnvironmentLaunchPlan(run.request || run);
+          json(res, 200, {
+            ok: true,
+            dryRun: true,
+            run,
+            ...plan,
+            help: buildConnectionHelpPayload(),
+          });
+          return;
+        }
+        const launched = await launchEnvironment(run.request || run);
+        json(res, 200, {
+          ok: true,
+          relaunched: true,
+          run,
+          ...launched,
+        });
+        return;
+      }
+      if (run.kind === "agent-spawn") {
+        const relaunched = await spawnSuperAgentFromRequest(run.request || run, {
+          dryRun,
+        });
+        json(res, relaunched.ok ? 200 : 500, {
+          ...relaunched,
+          run,
+        });
+        return;
+      }
+      if (run.kind === "session-create") {
+        const recreated = await createCodexSessionFromRequest(run.request || run, {
+          dryRun,
+        });
+        json(res, recreated.ok ? 200 : 500, {
+          ...recreated,
+          run,
+        });
+        return;
+      }
+      json(res, 409, {
+        ok: false,
+        error: `Unsupported run kind '${run.kind || "unknown"}'.`,
+      });
+    } catch (error) {
+      json(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to relaunch run.",
+      });
+    }
+    return;
+  }
+
+  if (pathname === "/api/agents/profiles" && req.method === "GET") {
+    try {
+      const snapshot = await readAgentProfilesSnapshot();
+      json(res, 200, {
+        ok: true,
+        ...snapshot,
+      });
+    } catch (error) {
+      json(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to read agent profiles.",
+      });
+    }
+    return;
+  }
+
+  if (pathname === "/api/agents/profiles/upsert" && req.method === "POST") {
+    let body = {};
+    try {
+      body = await readJsonBody(req);
+    } catch (error) {
+      badRequest(res, error.message);
+      return;
+    }
+
+    try {
+      const registry = await upsertAgentProfile(body);
+      json(res, 200, {
+        ok: true,
+        registry,
+        profiles: listAgentProfiles(registry, { includeRetired: true }),
+        resolvedDefault: resolveAgentProfile(registry, {}) || null,
+      });
+    } catch (error) {
+      json(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to save agent profile.",
+      });
+    }
+    return;
+  }
+
+  if (pathname === "/api/agents/profiles/default" && req.method === "POST") {
+    let body = {};
+    try {
+      body = await readJsonBody(req);
+    } catch (error) {
+      badRequest(res, error.message);
+      return;
+    }
+
+    try {
+      const registry = await setDefaultAgentProfile(body);
+      json(res, 200, {
+        ok: true,
+        registry,
+        profiles: listAgentProfiles(registry, { includeRetired: true }),
+        resolvedDefault: resolveAgentProfile(registry, {}) || null,
+      });
+    } catch (error) {
+      json(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to set default agent profile.",
+      });
+    }
+    return;
+  }
+
+  if (pathname === "/api/agents/profiles/retire" && req.method === "POST") {
+    let body = {};
+    try {
+      body = await readJsonBody(req);
+    } catch (error) {
+      badRequest(res, error.message);
+      return;
+    }
+
+    try {
+      const registry = await retireAgentProfile(body.name);
+      json(res, 200, {
+        ok: true,
+        registry,
+        profiles: listAgentProfiles(registry, { includeRetired: true }),
+        resolvedDefault: resolveAgentProfile(registry, {}) || null,
+      });
+    } catch (error) {
+      json(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to retire agent profile.",
       });
     }
     return;
@@ -4537,6 +5359,7 @@ async function handleApi(req, res, pathname, ip) {
     const tunnelToken = String(body.token || "").trim() || settings.cloudflaredTunnelToken;
     const tunnelName = String(body.tunnelName || body.name || "").trim() || settings.cloudflaredTunnelName;
     const configFile = String(body.configFile || "").trim() || settings.cloudflaredConfig;
+    const publicHost = String(body.publicHost || settings.publicHost || "").trim();
     const timeoutMsRaw = Number.parseInt(String(body.timeoutMs ?? ""), 10);
     const timeoutMs = Number.isFinite(timeoutMsRaw) ? Math.max(5000, Math.min(180000, timeoutMsRaw)) : TUNNEL_DISCOVERY_TIMEOUT_MS;
 
@@ -4552,10 +5375,12 @@ async function handleApi(req, res, pathname, ip) {
       const activeTunnel = await startTunnelProcess({
         provider,
         mode,
+        requestedMode: mode,
         targetUrl,
         tunnelToken,
         tunnelName,
         configFile,
+        publicHost,
         timeoutMs,
       });
       await appendActivityEvent({
@@ -4788,7 +5613,6 @@ async function handleApi(req, res, pathname, ip) {
     const target = String(body.target || "").trim();
     const project = String(body.project || "").trim();
     const notes = String(body.notes || "").trim().slice(0, 5000);
-    const model = String(body.model || "").trim();
     const makeDefault = Boolean(body.makeDefault);
 
     if (!validateSessionName(name)) {
@@ -4810,7 +5634,6 @@ async function handleApi(req, res, pathname, ip) {
         name,
         target,
         project,
-        model,
         notes,
         source: "panel-upsert",
         makeDefault,
@@ -4826,7 +5649,6 @@ async function handleApi(req, res, pathname, ip) {
           name,
           target,
           project,
-          model,
         },
       }).catch(() => null);
       json(res, 200, {
@@ -4944,124 +5766,17 @@ async function handleApi(req, res, pathname, ip) {
       return;
     }
 
-    const name = String(body.name || "").trim();
-    const project = String(body.project || "").trim();
-    const notes = String(body.notes || "").trim().slice(0, 5000);
-    const model = String(body.model || "").trim();
-    const makeDefault = Boolean(body.makeDefault);
-    const timeoutMs = Math.max(20_000, Math.min(15 * 60 * 1000, Number.parseInt(String(body.timeoutMs || ""), 10) || 8 * 60 * 1000));
-    const prompt =
-      String(body.prompt || "").trim() ||
-      `Create a new Codex relay session for project '${project || "workspace"}'. Reply exactly with READY.`;
-
-    if (!validateSessionName(name)) {
-      badRequest(res, "Invalid session name.");
-      return;
-    }
-    if (!validateCodexProjectRef(project)) {
-      badRequest(res, "Invalid project value.");
-      return;
-    }
-
-    const args = ["exec", "--json"];
-    if (model) {
-      args.push("--model", model);
-    }
-    args.push("-");
-
     try {
-      const codexResult = await runCodexOneShot({
-        source: "codex:create",
-        args,
-        input: prompt,
-        timeoutMs,
+      const result = await createCodexSessionFromRequest(body, {
+        dryRun: parseBool(body.dryRun, false),
       });
-      if (!codexResult.ok) {
-        json(res, 500, {
-          ok: false,
-          error: `Codex create failed (exit ${codexResult.exitCode}).`,
-          result: codexResult,
-        });
-        return;
-      }
-
-      const threadId = extractCodexThreadIdFromOutput(codexResult.outputLines);
-      if (!threadId) {
-        json(res, 500, {
-          ok: false,
-          error: "Codex create completed but no thread_id was found in output.",
-          result: codexResult,
-        });
-        return;
-      }
-
-      const current = await readCodexRegistrySafe();
-      const updated = upsertCodexSession(current, {
-        name,
-        target: threadId,
-        threadId,
-        project,
-        model,
-        notes,
-        source: "panel-create",
-        makeDefault,
-      });
-      const persisted = await writeCodexRegistrySafe(updated);
-      pushLog("codex-sessions", `Created session ${name} -> ${threadId}`);
-      await appendActivityEvent({
-        type: "session_create",
-        state: "working",
-        message: `Session created: ${name}`,
-        source: "panel-codex",
-        meta: {
-          name,
-          threadId,
-          project,
-          model,
-        },
-      }).catch(() => null);
-      const runs = await appendLaunchRun({
-        id: `${Date.now()}`,
-        environmentProfileName: normalizeEnvironmentName(state.activeEnvironment?.environmentProfileName || "", ""),
-        context: state.activeEnvironment?.context || "project",
-        project,
-        prep: state.activeEnvironment?.prep || "quick",
-        panelMode: state.activeEnvironment?.panelMode || "remote",
-        remoteMode: state.activeEnvironment?.remoteMode || "off",
-        sessionName: name,
-        threadId,
-        model,
-        status: "session-created",
-        summary: `Session created: ${name}${project ? ` (${project})` : ""}`,
-        urls: {
-          local: buildConnectionHelpPayload()?.urls?.local || "",
-          public: buildConnectionHelpPayload()?.guidance?.recommendedMobileUrl || "",
-        },
-        artifacts: await buildArtifactSnapshot(),
-      });
-      await persistEnvironmentRuntimeSnapshot({
-        environment: state.activeEnvironment,
-      });
-
-      json(res, 200, {
-        ok: true,
-        created: {
-          name,
-          target: threadId,
-          model,
-        },
-        registry: persisted,
-        runs: runs.runs.slice(0, 15),
-        codex: {
-          exitCode: codexResult.exitCode,
-          durationMs: codexResult.durationMs,
-          outputTail: codexResult.outputLines.slice(-25),
-        },
-      });
+      json(res, result.ok ? 200 : 500, result);
     } catch (error) {
-      json(res, 500, {
+      const message = error instanceof Error ? error.message : "Failed to create Codex session.";
+      const status = /^Invalid\b/i.test(message) ? 400 : 500;
+      json(res, status, {
         ok: false,
-        error: error instanceof Error ? error.message : "Failed to create Codex session.",
+        error: message,
       });
     }
     return;
@@ -5171,203 +5886,17 @@ async function handleApi(req, res, pathname, ip) {
       return;
     }
 
-    const project = String(body.project || "").trim();
-    const requestedName = String(body.name || "").trim();
-    const notes = String(body.notes || "").trim().slice(0, 5000);
-    const mode = String(body.mode || "quick").trim().toLowerCase();
-    const model = String(body.model || "").trim();
-    const makeDefault = body.makeDefault !== false;
-    const runPrep = body.runPrep !== false;
-    const startRelay = body.startRelay !== false;
-    const timeoutMs = Math.max(
-      20_000,
-      Math.min(15 * 60 * 1000, Number.parseInt(String(body.timeoutMs || ""), 10) || 8 * 60 * 1000)
-    );
-    const prompt =
-      String(body.prompt || "").trim() ||
-      buildSuperAgentInitPrompt({
-        project,
-        mode,
-      });
-
-    if (!validateCodexProjectRef(project)) {
-      badRequest(res, "Invalid project value.");
-      return;
-    }
-    if (requestedName && !validateSessionName(requestedName)) {
-      badRequest(res, "Invalid session name.");
-      return;
-    }
-    if (!["quick", "full"].includes(mode)) {
-      badRequest(res, "Mode must be 'quick' or 'full'.");
-      return;
-    }
-
-    const name = requestedName || superAgentSessionName(project);
-    const prepScript = mode === "full" ? "super:bootstrap:full" : "super:bootstrap";
-    const prepArgs = project ? [`--project=${project}`] : [];
-    const codexArgs = ["exec", "--json"];
-    if (model) {
-      codexArgs.push("--model", model);
-    }
-    codexArgs.push("-");
-
     try {
-      let prep = null;
-      if (runPrep) {
-        prep = await runOneShot({
-          source: prepScript,
-          script: prepScript,
-          args: prepArgs,
-          timeoutMs: 35 * 60 * 1000,
-        });
-        if (!prep.ok) {
-          json(res, 500, {
-            ok: false,
-            step: "super-bootstrap",
-            prep,
-          });
-          return;
-        }
-      }
-
-      const codexResult = await runCodexOneShot({
-        source: "codex:super-agent:create",
-        args: codexArgs,
-        input: prompt,
-        timeoutMs,
+      const result = await spawnSuperAgentFromRequest(body, {
+        dryRun: parseBool(body.dryRun, false),
       });
-      if (!codexResult.ok) {
-        json(res, 500, {
-          ok: false,
-          step: "codex-create",
-          error: `Codex super-agent create failed (exit ${codexResult.exitCode}).`,
-          result: codexResult,
-          prep,
-        });
-        return;
-      }
-
-      const threadId = extractCodexThreadIdFromOutput(codexResult.outputLines);
-      if (!threadId) {
-        json(res, 500, {
-          ok: false,
-          step: "thread-id",
-          error: "Codex create completed but no thread_id was found in output.",
-          result: codexResult,
-          prep,
-        });
-        return;
-      }
-
-      const current = await readCodexRegistrySafe();
-      const updated = upsertCodexSession(current, {
-        name,
-        target: threadId,
-        threadId,
-        project,
-        model,
-        notes: notes || `Super agent (${mode}) created via commander panel.`,
-        source: "panel-super-agent",
-        makeDefault,
-      });
-      const persisted = await writeCodexRegistrySafe(updated);
-
-      let relay = null;
-      let relayError = "";
-      if (startRelay) {
-        const existingRelay = publicRelayStates().find((entry) => String(entry?.sessionName || "") === name);
-        if (existingRelay) {
-          relay = existingRelay;
-        } else {
-          try {
-            relay = await startRelayWatcher({
-              sessionName: name,
-              project,
-              useLast: false,
-              dryRun: false,
-              startFromLatest: true,
-              pollMs: 1200,
-              history: 16,
-            });
-          } catch (error) {
-            relayError = error instanceof Error ? error.message : "Failed to start relay watcher.";
-          }
-        }
-      }
-
-      const latestSession = runPrep ? await readLatestPreparedChatSession() : null;
-      pushLog("codex-sessions", `Spawned super agent ${name} -> ${threadId}`);
-      await appendActivityEvent({
-        type: "super_agent_spawn",
-        state: "working",
-        message: `Super agent spawned: ${name}${project ? ` (${project})` : ""}`,
-        source: "panel-codex",
-        meta: {
-          name,
-          threadId,
-          project,
-          mode,
-          model,
-          runPrep,
-          startRelay,
-          relayError,
-        },
-      }).catch(() => null);
-      const runs = await appendLaunchRun({
-        id: `${Date.now()}`,
-        environmentProfileName: normalizeEnvironmentName(state.activeEnvironment?.environmentProfileName || "", ""),
-        context: state.activeEnvironment?.context || "commander",
-        project,
-        prep: mode,
-        panelMode: state.activeEnvironment?.panelMode || "remote",
-        remoteMode: state.activeEnvironment?.remoteMode || "off",
-        sessionName: name,
-        threadId,
-        model,
-        status: relayError ? "agent-ready-relay-warning" : "agent-ready",
-        summary: `Super agent ready: ${name}${project ? ` (${project})` : ""}`,
-        urls: {
-          local: buildConnectionHelpPayload()?.urls?.local || "",
-          public: buildConnectionHelpPayload()?.guidance?.recommendedMobileUrl || "",
-        },
-        artifacts: await buildArtifactSnapshot(),
-      });
-      await persistEnvironmentRuntimeSnapshot({
-        environment: state.activeEnvironment,
-      });
-
-      json(res, 200, {
-        ok: true,
-        created: {
-          name,
-          target: threadId,
-          threadId,
-          project,
-          mode,
-          model,
-        },
-        registry: persisted,
-        prep,
-        latestSession,
-        runs: runs.runs.slice(0, 15),
-        codex: {
-          exitCode: codexResult.exitCode,
-          durationMs: codexResult.durationMs,
-          outputTail: codexResult.outputLines.slice(-25),
-        },
-        relay: {
-          started: Boolean(relay),
-          relay,
-          error: relayError,
-          activeRelay: publicRelayState(),
-          activeRelays: publicRelayStates(),
-        },
-      });
+      json(res, result.ok ? 200 : 500, result);
     } catch (error) {
-      json(res, 500, {
+      const message = error instanceof Error ? error.message : "Failed to spawn super agent.";
+      const status = /^Invalid\b|^Unsupported\b/i.test(message) ? 400 : 500;
+      json(res, status, {
         ok: false,
-        error: error instanceof Error ? error.message : "Failed to spawn super agent.",
+        error: message,
       });
     }
     return;

@@ -216,20 +216,32 @@ function createDefaultLaunchRuns() {
 
 function normalizeLaunchRun(raw = {}) {
   const now = nowIso();
+  const inferredKind = asString(raw.kind)
+    || (asString(raw.threadId)
+      ? String(asString(raw.status)).startsWith("agent-")
+        ? "agent-spawn"
+        : "session-create"
+      : "environment");
   return {
     id: asString(raw.id) || `${Date.now()}`,
+    kind: inferredKind,
     environmentProfileName: normalizeProfileName(raw.environmentProfileName, ""),
+    agentProfileName: normalizeProfileName(raw.agentProfileName, ""),
     context: normalizeContext(raw.context, "commander"),
     project: asString(raw.project),
     prep: normalizePrep(raw.prep, "quick"),
     panelMode: normalizePanelMode(raw.panelMode, "remote"),
     remoteMode: normalizeRemoteMode(raw.remoteMode, "named"),
+    relayEnabled: asBoolean(raw.relayEnabled, false),
+    publicHost: asString(raw.publicHost),
     sessionName: asString(raw.sessionName),
     threadId: asString(raw.threadId),
     model: asString(raw.model),
+    codexProfile: asString(raw.codexProfile),
     status: asString(raw.status) || "ready",
     summary: asString(raw.summary),
     urls: raw.urls && typeof raw.urls === "object" ? raw.urls : {},
+    request: raw.request && typeof raw.request === "object" ? raw.request : {},
     artifacts: raw.artifacts && typeof raw.artifacts === "object" ? raw.artifacts : {},
     createdAt: asString(raw.createdAt) || now,
     updatedAt: asString(raw.updatedAt) || now,
@@ -383,6 +395,15 @@ export async function appendLaunchRun(run, filePath = DEFAULT_LAUNCH_RUN_FILE) {
       updatedAt: nowIso(),
     })
   );
+}
+
+export async function getLaunchRunById(id, filePath = DEFAULT_LAUNCH_RUN_FILE) {
+  const current = await readLaunchRuns(filePath);
+  const normalizedId = asString(id);
+  if (!normalizedId) {
+    return null;
+  }
+  return current.runs.find((entry) => entry.id === normalizedId) || null;
 }
 
 export async function readEnvRuntime(filePath = DEFAULT_ENV_RUNTIME_FILE) {

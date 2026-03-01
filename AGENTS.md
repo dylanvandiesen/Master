@@ -82,7 +82,8 @@ This repository uses a root-controlled agency build system for all playground pr
 - `npm run commander:start:remote`: legacy remote stack launcher (panel + dev + relay watcher).
 - `npm run commander -- --port=<port>`: override panel port at runtime.
 - Preferred remote hostname: `https://local-commander.diesign.dev` when named HTTPS tunnel mode is configured.
-- Control Plane panel supports environment launch, environment profiles, agent profile management, run history, relay control, and super-agent spawning.
+- Agent launch profiles live in `.agency/remote/agent-profiles.json`; session aliases remain in `.agency/remote/codex-sessions.json`.
+- Control Plane panel supports environment launch, environment profiles, agent profile management, session alias management, run history, dry-run planning, relaunch, relay control, and super-agent spawning.
 - Canonical runbook: `wiki/remote-control-panel.md`.
 
 ## Remote Control Panel Security Guardrails
