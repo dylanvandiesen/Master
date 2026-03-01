@@ -22,8 +22,9 @@ Optimize for speed and reliability while preserving strict boundaries around exc
 ## System Workflow
 
 1. Preflight:
-   - `cmd /c npm run super:bootstrap -- --project=<slug>`
+   - `cmd /c npm run env -- --context=system --project=<slug>`
    - fallback manual path:
+     - `cmd /c npm run env:status`
      - `cmd /c npm run chat:new:quick -- --project=<slug>`
      - `cmd /c npm run mcp:prep`
      - `cmd /c npm run chat:briefing:system`
@@ -70,3 +71,5 @@ Optimize for speed and reliability while preserving strict boundaries around exc
   Generate JSON + markdown context bundle for command surface, MCP state, skills, boundaries, and artifacts.
 - `scripts/chat/super-agent-bootstrap.ps1`:
   One-command quick/full bootstrap that refreshes MCP status, briefings, and super-context outputs.
+- `scripts/env/run-env.mjs`:
+  Preferred public launcher for environment-first system startup and runtime inspection.

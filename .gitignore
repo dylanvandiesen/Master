@@ -24,6 +24,7 @@ Thumbs.db
 .vscode/*.code-workspace
 .lh/
 .codex-home/
+.tmp/
 
 # Local memory/state (can contain sensitive conversation data)
 mcp/data/memory.jsonl

@@ -8,8 +8,14 @@ It combines four things in one interface:
 
 - realtime Codex chat (inbox/outbox relay)
 - dev preview controls
-- Codex session + prep controls
+- environment + agent control plane
 - remote/tunnel + security controls
+
+Preferred operating model:
+
+1. Bring the environment up once with `npm run env`.
+2. Use the panel Control Plane to launch environments, save profiles, spawn agents, and inspect run history.
+3. Keep `local-commander.diesign.dev` as the stable HTTPS Commander hostname when named tunnel mode is configured.
 
 Primary implementation files:
 
@@ -72,6 +78,9 @@ Chat and relay state:
 - `.agency/remote/agent-status.json`
 - `.agency/remote/activity.jsonl`
 - `.agency/remote/codex-sessions.json`
+- `.agency/remote/env-profiles.json`
+- `.agency/remote/launch-runs.json`
+- `.agency/remote/env-runtime.json`
 
 Panel runtime/auth state:
 
@@ -163,9 +172,16 @@ If `REMOTE_PANEL_PASSWORD` or `REMOTE_PANEL_SESSION_SECRET` is missing, the serv
 From repo root:
 
 ```powershell
+cmd /c npm run env -- --context=commander --project=csscroll
+cmd /c npm run env:status
+cmd /c npm run env:down
+cmd /c npm run panel
+cmd /c npm run panel:remote
+cmd /c npm run panel:lan
 cmd /c npm run commander
 cmd /c npm run commander:local
 cmd /c npm run commander:remote
+cmd /c npm run commander:lan
 cmd /c npm run commander:start
 cmd /c npm run commander:start:remote
 cmd /c npm run commander:start:remote:full
@@ -180,7 +196,17 @@ cmd /c npm run commander:agent:status -- --state=working --message="Investigatin
 cmd /c npm run commander:agent:reply -- --message="Implemented fix"
 ```
 
-Stack presets:
+Recommended presets:
+
+- `env -- --context=commander --project=csscroll`
+  - preferred single launch point
+  - prepares the repo, starts the panel-oriented operating surface, and keeps agent spawning separate
+- `env -- --env-profile=commander-remote --project=csscroll`
+  - launch from saved environment profile
+- `panel:remote`
+  - panel-only startup in LAN/adaptive mode
+
+Legacy stack presets:
 
 - `commander:start`: panel (local profile) + dev + relay watcher
 - `commander:start:remote`: panel (LAN/adaptive profile) + dev + relay watcher
@@ -207,18 +233,32 @@ Quick replies:
 - numeric chips appear for explicit assistant choice prompts (for example `1. 2. 3.`)
 - selecting a chip sends that value directly
 
-### Sessions & Prep
+### Control Plane
 
-- manage registered Codex session aliases
-- set defaults by project/global
-- run quick/full prep from panel
-- spawn super-agent sessions directly from panel:
+The old Sessions/Prep area is now organized as a control plane:
+
+- `Environment`
+  - choose context, project, prep level, panel mode, dev mode, relay mode, remote mode, public host, and default session alias
+  - save reusable environment profiles
+  - set default environment profiles per context
+  - launch or shut down environment services
+  - inspect local URL, remote URL, runtime snapshot, and refreshed artifacts
+- `Agent Profiles`
+  - manage registered Codex session aliases
+  - store target thread, model override, notes, and defaults by project/global
+  - create threads directly from panel
+  - run quick/full prep from panel
+  - spawn super-agent sessions directly from panel:
   - `Spawn Super`: quick bootstrap + thread create + registry upsert + relay start
   - `Spawn Super Full`: full bootstrap + thread create + registry upsert + relay start
-- start/stop relay watcher
-- relay watchers support multiple unique session names in parallel
-- `Start Relay` acts on the selected/typed session alias
-- `Stop Relay` targets the selected running alias (or the active relay when no alias match)
+- `Runs`
+  - inspect recent environment launches, thread creation, and super-agent launches
+  - view environment profile, model, thread, prep mode, and URLs used for each run
+- `Live Controls`
+  - start/stop relay watcher
+  - relay watchers support multiple unique session names in parallel
+  - `Start Relay` acts on the selected/typed session alias
+  - `Stop Relay` targets the selected running alias (or the active relay when no alias match)
 
 ### Remote Access
 
@@ -227,6 +267,8 @@ Quick replies:
 - select tunnel mode (`Quick` / `Token` / `Named`)
 - start/stop tunnel
 - set security mode (`Enable HTTPS` or `Use Adaptive`)
+- preferred stable remote hostname: `https://local-commander.diesign.dev`
+- local direct access remains valid through `127.0.0.1`, `localhost`, or the LAN IP when bound remotely
 
 ### Preview
 
@@ -281,6 +323,14 @@ Tunnel:
 
 Workspace:
 
+- `GET /api/env/status`
+- `POST /api/env/up`
+- `POST /api/env/down`
+- `GET /api/env/profiles`
+- `POST /api/env/profiles/upsert`
+- `POST /api/env/profiles/default`
+- `POST /api/env/profiles/retire`
+- `GET /api/runs`
 - `GET /api/projects`
 - `GET /api/manifests`
 - `GET /api/logs`
@@ -334,7 +384,7 @@ Terminal channel behavior:
 ### Local only (default)
 
 ```powershell
-cmd /c npm run commander
+cmd /c npm run panel
 ```
 
 Open:
@@ -344,17 +394,17 @@ Open:
 ### Phone on same network
 
 ```powershell
-cmd /c npm run commander:start:remote -- --project=csscroll
+cmd /c npm run env -- --context=commander --project=csscroll --panel=remote --remote=off
 ```
 
 Then use panel-provided Mobile URL.
 
 ### Outside home network (preferred)
 
-1. Run panel local or remote profile.
+1. Run `cmd /c npm run env -- --context=commander --project=csscroll`.
 2. Set security mode to `on` (or use tunnel start which enforces it).
-3. Start tunnel from Remote Access panel.
-4. Use tunnel URL + identity controls.
+3. Start a named tunnel from Remote Access panel.
+4. Use `https://local-commander.diesign.dev` + identity controls.
 
 Do not expose raw router port forwarding directly to panel.
 

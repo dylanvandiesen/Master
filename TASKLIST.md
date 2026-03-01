@@ -16,6 +16,7 @@ Shared, persistent task board for this repository.
 - [ ] Add rate-limit and account lockout metrics dashboard for remote panel auth endpoints.
 
 ## Archived
+- [x] Consolidated launcher/control-plane flow into environment-first startup and Commander session management (`package.json`, `scripts/env/**`, `remote-console/**`, docs).
 - [x] Added `browser_eyes_local` Playwright MCP wiring, prep checks, and smoke validation for browser vision access.
 - [x] Replaced commander’s mobile terminal path with a DomTerm-first renderer and focus-stable keyboard dock behavior (DomTerm asset serving, live DomTerm init, touch toolbar refocus hardening, selectable output fallback).
 - [x] Finalized remote panel runbook/docs cleanup and startup ergonomics (`wiki/remote-control-panel.md`, `wiki/README.md`, `wiki/chat-session-bootstrap.md`, `scripts/chat/run-prepare-chat-instance.mjs`, `package.json`).

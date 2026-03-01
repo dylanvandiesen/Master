@@ -364,6 +364,7 @@ async function main() {
     target: threadId,
     threadId,
     project,
+    model: options.model,
     notes: options.notes || `Super agent (${mode}) created via desktop CLI.`,
     source: "desktop-super-agent",
     makeDefault: options.makeDefault,

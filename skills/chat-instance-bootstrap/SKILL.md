@@ -9,11 +9,19 @@ Use this skill to establish a repeatable startup baseline before doing feature w
 
 ## Bootstrap Sequence
 1. Confirm workspace and project inventory.
-2. Run chat bootstrap commands.
-3. Run MCP prep checks.
+2. Start the preferred environment-first launcher when session work is expected.
+3. Run MCP prep checks when bootstrap compatibility commands are needed.
 4. Generate a briefing artifact for handoff continuity.
 
 Run:
+
+```powershell
+Set-Location C:\Users\SKIKK\Documents\websites\Playground
+cmd /c npm run env -- --context=project --project=csscroll
+cmd /c npm run env:status
+```
+
+Compatibility prep path:
 
 ```powershell
 Set-Location C:\Users\SKIKK\Documents\websites\Playground

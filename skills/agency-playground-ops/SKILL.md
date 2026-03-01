@@ -18,10 +18,10 @@ Use this sequence:
 
 ```powershell
 Set-Location C:\Users\SKIKK\Documents\websites\Playground
-cmd /c npm run scaffold
-cmd /c npm run list:projects
-cmd /c npm run build -- --project=<name-or-slug>
-cmd /c npm run dev -- --project=<name-or-slug> --port=<port>
+cmd /c npm run projects:scaffold
+cmd /c npm run projects:list
+cmd /c npm run projects:build -- --project=<name-or-slug>
+cmd /c npm run projects:dev -- --project=<name-or-slug> --port=<port>
 ```
 
 ## Root Contracts
@@ -50,5 +50,6 @@ cmd /c npm run dev -- --project=<name-or-slug> --port=<port>
 
 ## Fast Troubleshooting
 - Use `cmd /c npm run ...` when PowerShell blocks `npm.ps1`.
+- Prefer `projects:*` commands in docs and operator guidance; keep legacy `build/dev/scaffold/list:projects` only as compatibility aliases.
 - Re-run `scaffold` after adding or renaming a project folder.
 - If project not found, pass explicit `--project=<slug>`.

@@ -1,8 +1,28 @@
 # Chat Session Bootstrap
 
-Use this workflow to fully prepare a fresh chat instance for agency + MCP work.
+Use this workflow to prepare the repo once, then launch or manage agents from either CLI or the Commander panel.
 
-## One-Command Modes
+## Preferred Control Flow
+
+Environment-first is now the recommended startup model:
+
+1. Start an environment:
+   - `cmd /c npm run env -- --context=project --project=csscroll`
+   - `cmd /c npm run env -- --context=system`
+   - `cmd /c npm run env -- --context=commander --project=csscroll`
+2. Check current runtime state:
+   - `cmd /c npm run env:status`
+3. Spawn or manage agents after the environment is already up:
+   - from CLI with `cmd /c npm run agent:spawn -- --project=csscroll`
+   - from the Commander panel Control Plane
+
+Saved environment profiles can be launched from CLI too:
+
+- `cmd /c npm run env -- --env-profile=commander-remote --project=csscroll`
+
+## Compatibility Bootstrap Commands
+
+The older bootstrap surface still works and is still useful for focused prep-only flows:
 
 - Standard prep:
   - `cmd /c npm run chat:new`
@@ -10,10 +30,8 @@ Use this workflow to fully prepare a fresh chat instance for agency + MCP work.
   - `cmd /c npm run chat:new:full`
 - Fast prep (skip build):
   - `cmd /c npm run chat:new:quick`
-
 - Super-agent quick bootstrap (chat prep + MCP refresh + briefings + super context):
   - `cmd /c npm run super:bootstrap -- --project=csscroll`
-
 - Super-agent full bootstrap (installs deps first):
   - `cmd /c npm run super:bootstrap:full -- --project=csscroll`
 
@@ -51,10 +69,12 @@ Use this workflow to fully prepare a fresh chat instance for agency + MCP work.
 ## Super-Agent Spawn (Desktop CLI)
 
 - Quick spawn (runs quick bootstrap unless disabled):
-  - `cmd /c npm run super:agent -- --project=csscroll`
+  - `cmd /c npm run agent:spawn -- --project=csscroll`
+  - compatibility: `cmd /c npm run super:agent -- --project=csscroll`
 
 - Full spawn (runs full bootstrap unless disabled):
-  - `cmd /c npm run super:agent:full -- --project=csscroll`
+  - `cmd /c npm run agent:spawn:full -- --project=csscroll`
+  - compatibility: `cmd /c npm run super:agent:full -- --project=csscroll`
 
 - Common flags:
   - `--name=<session-name>`
@@ -127,9 +147,8 @@ Status output:
 
 ## Recommended Daily Start
 
-1. `cmd /c npm run chat:new:quick`
-2. `cmd /c npm run super:context`
-3. `cmd /c npm run dev -- --project csscroll`
-4. `cmd /c npm run commander:local -- --port=8787` (stable local panel URL)
-5. Spawn from desktop CLI: `cmd /c npm run super:agent -- --project=csscroll`
-6. Read `wiki/super-agent-mcp-skills-strategy.md` for speed-first MCP + skills orchestration.
+1. `cmd /c npm run env -- --context=commander --project=csscroll`
+2. Open the Commander panel and use `Control Plane -> Environment / Agent Profiles / Runs`.
+3. Spawn from CLI only when you want a direct one-shot flow: `cmd /c npm run agent:spawn -- --project=csscroll`
+4. Use `cmd /c npm run env:status` whenever you need the current runtime snapshot.
+5. Read `wiki/super-agent-mcp-skills-strategy.md` for speed-first MCP + skills orchestration.

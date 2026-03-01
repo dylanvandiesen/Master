@@ -53,6 +53,16 @@ This repository uses a root-controlled agency build system for all playground pr
 - Legacy flat folders (`scss`, `js`, `images`, `fonts`, `docs`, `favicons`) are migrated into `src/` when possible.
 
 ## Primary Commands
+- `npm run env -- --context=<project|system|commander>` launches the prepared environment control plane.
+- `npm run env -- --env-profile=<name>` launches using a saved environment profile.
+- `npm run env:status` prints current environment/runtime state.
+- `npm run env:down` stops environment services and shuts down the managed panel.
+- `npm run projects:list` lists discovered projects.
+- `npm run projects:scaffold` creates/mends project structure.
+- `npm run projects:build` builds the active project.
+- `npm run projects:build:all` builds all projects.
+- `npm run projects:dev` watches one active project.
+- `npm run projects:dev:all` watches all projects.
 - `npm run list:projects` lists discovered projects.
 - `npm run scaffold` creates/mends project structure.
 - `npm run build` builds the active project.
@@ -61,13 +71,18 @@ This repository uses a root-controlled agency build system for all playground pr
 - `npm run dev:all` watches all projects.
 
 ## Remote Control Panel Commands
-- `npm run commander`: start secure remote control web panel on localhost.
-- `npm run commander:remote`: start panel in LAN/adaptive mode (`--host=0.0.0.0`, `--security=auto`).
-- `npm run commander:lan`: alias for LAN/adaptive panel mode.
-- `npm run commander:start`: start panel (local profile) + dev + relay watcher.
-- `npm run commander:start:remote`: start panel (remote profile) + dev + relay watcher.
+- `npm run env -- --context=commander --project=<slug>` is the preferred launcher for panel-first work.
+- `npm run panel`: start secure remote control web panel on localhost.
+- `npm run panel:lan`: start panel in LAN/adaptive mode (`--host=0.0.0.0`, `--security=auto`).
+- `npm run panel:remote`: start panel in LAN/adaptive mode (`--host=0.0.0.0`, `--security=auto`).
+- `npm run commander`: compatibility alias for local panel startup.
+- `npm run commander:lan`: compatibility alias for LAN/adaptive panel startup.
+- `npm run commander:remote`: compatibility alias for remote panel startup.
+- `npm run commander:start`: legacy stack launcher (panel + dev + relay watcher).
+- `npm run commander:start:remote`: legacy remote stack launcher (panel + dev + relay watcher).
 - `npm run commander -- --port=<port>`: override panel port at runtime.
-- Sessions panel supports super-agent spawning with `Spawn Super` (quick) and `Spawn Super Full` (full), backed by `POST /api/codex/sessions/super-agent/spawn`.
+- Preferred remote hostname: `https://local-commander.diesign.dev` when named HTTPS tunnel mode is configured.
+- Control Plane panel supports environment launch, environment profiles, agent profile management, run history, relay control, and super-agent spawning.
 - Canonical runbook: `wiki/remote-control-panel.md`.
 
 ## Remote Control Panel Security Guardrails
@@ -82,6 +97,10 @@ This repository uses a root-controlled agency build system for all playground pr
 - Keep secrets in environment variables, not in repo files. Rotate session secrets and tunnel credentials on schedule.
 
 ## New Chat Bootstrap Commands
+- `npm run env -- --context=system --project=<slug>`: preferred environment-first bootstrap for agency/system work.
+- `npm run env -- --context=commander --project=<slug>`: preferred environment-first bootstrap for Commander work.
+- `npm run agent:spawn -- --project=<slug>`: preferred quick desktop super-agent spawn from the new public command surface.
+- `npm run agent:spawn:full -- --project=<slug>`: preferred full desktop super-agent spawn from the new public command surface.
 - `npm run chat:new`: standard session prep + MCP prep.
 - `npm run chat:new:quick`: faster prep without build.
 - `npm run chat:new:full`: install deps + prep + MCP.

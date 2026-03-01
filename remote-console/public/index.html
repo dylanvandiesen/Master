@@ -434,9 +434,104 @@
             </article>
 
             <article class="panel codex-panel utility-card" data-panel-id="sessions" hidden>
-              <h3>Sessions & Prep</h3>
+              <h3>Control Plane</h3>
+
+              <h4>Environment</h4>
               <div class="field-grid">
-                <label for="codexSessionSelect">Registered Session</label>
+                <label for="envProfileSelect">Environment Profile</label>
+                <select id="envProfileSelect"></select>
+
+                <label for="envProfileName">Profile Name</label>
+                <input id="envProfileName" type="text" placeholder="commander-remote" />
+
+                <label for="envContextSelect">Context</label>
+                <select id="envContextSelect">
+                  <option value="commander">commander</option>
+                  <option value="project">project</option>
+                  <option value="system">system</option>
+                </select>
+
+                <label for="envProject">Project</label>
+                <input id="envProject" type="text" placeholder="csscroll (optional)" />
+
+                <label for="envPrepSelect">Prep</label>
+                <select id="envPrepSelect">
+                  <option value="quick">quick</option>
+                  <option value="standard">standard</option>
+                  <option value="full">full</option>
+                  <option value="none">none</option>
+                </select>
+
+                <label for="envPanelModeSelect">Panel</label>
+                <select id="envPanelModeSelect">
+                  <option value="remote">remote</option>
+                  <option value="local">local</option>
+                  <option value="off">off</option>
+                </select>
+
+                <label for="envDevModeSelect">Dev</label>
+                <select id="envDevModeSelect">
+                  <option value="project">project</option>
+                  <option value="all">all</option>
+                  <option value="off">off</option>
+                </select>
+
+                <label for="envRemoteModeSelect">Remote Access</label>
+                <select id="envRemoteModeSelect">
+                  <option value="named">named</option>
+                  <option value="quick">quick</option>
+                  <option value="token">token</option>
+                  <option value="off">off</option>
+                </select>
+
+                <label for="envPublicHost">Public Host</label>
+                <input id="envPublicHost" type="text" placeholder="local-commander.diesign.dev" />
+
+                <label for="envRelaySelect">Relay</label>
+                <select id="envRelaySelect">
+                  <option value="on">on</option>
+                  <option value="off">off</option>
+                </select>
+
+                <label for="envSessionName">Session Name</label>
+                <input id="envSessionName" type="text" placeholder="codex-chat" />
+
+                <label for="envStatusText">Environment Status</label>
+                <input id="envStatusText" type="text" readonly placeholder="environment not launched" />
+
+                <label for="envLocalUrlText">Local URL</label>
+                <input id="envLocalUrlText" type="text" readonly placeholder="http://127.0.0.1:8787/" />
+
+                <label for="envRemoteUrlText">Remote URL</label>
+                <input id="envRemoteUrlText" type="text" readonly placeholder="https://local-commander.diesign.dev" />
+              </div>
+              <div class="button-row">
+                <button id="envRefreshBtn" type="button">
+                  <i class="icon-arrows-cw" aria-hidden="true"></i>
+                  <span>Refresh Env</span>
+                </button>
+                <button id="envSaveProfileBtn" type="button">
+                  <i class="icon-doc-text" aria-hidden="true"></i>
+                  <span>Save Profile</span>
+                </button>
+                <button id="envSetDefaultBtn" type="button">
+                  <i class="icon-star" aria-hidden="true"></i>
+                  <span>Set Default</span>
+                </button>
+                <button id="envLaunchBtn" type="button" class="accent">
+                  <i class="icon-play-circled2" aria-hidden="true"></i>
+                  <span>Launch Env</span>
+                </button>
+                <button id="envShutdownBtn" type="button" class="danger-lite">
+                  <i class="icon-stop" aria-hidden="true"></i>
+                  <span>Shutdown Env</span>
+                </button>
+              </div>
+              <textarea id="envPreview" rows="6" readonly placeholder="Environment status and launch summary."></textarea>
+
+              <h4>Agent Profiles</h4>
+              <div class="field-grid">
+                <label for="codexSessionSelect">Agent Profile</label>
                 <select id="codexSessionSelect"></select>
 
                 <label for="codexSessionName">Session Name</label>
@@ -448,21 +543,24 @@
                 <label for="codexSessionProject">Project</label>
                 <input id="codexSessionProject" type="text" placeholder="csscroll (optional)" />
 
+                <label for="codexSessionModel">Model</label>
+                <input id="codexSessionModel" type="text" placeholder="optional model override" />
+
                 <label for="codexSessionNotes">Notes</label>
                 <textarea id="codexSessionNotes" rows="2" placeholder="optional notes"></textarea>
               </div>
               <div class="button-row">
                 <button id="codexRefreshBtn" type="button">
                   <i class="icon-arrows-cw" aria-hidden="true"></i>
-                  <span>Refresh</span>
+                  <span>Refresh Profiles</span>
                 </button>
                 <button id="codexUpsertBtn" type="button">
                   <i class="icon-doc-text" aria-hidden="true"></i>
-                  <span>Save</span>
+                  <span>Save Profile</span>
                 </button>
                 <button id="codexCreateBtn" type="button">
                   <i class="icon-plus-circled" aria-hidden="true"></i>
-                  <span>Create</span>
+                  <span>Create Thread</span>
                 </button>
                 <button id="codexSetDefaultBtn" type="button">
                   <i class="icon-star" aria-hidden="true"></i>
@@ -489,6 +587,24 @@
                   <span>Spawn Super Full</span>
                 </button>
               </div>
+
+              <h4>Runs</h4>
+              <div class="field-grid">
+                <label for="launchRunSelect">Recent Run</label>
+                <select id="launchRunSelect"></select>
+
+                <label for="launchRunStatus">Run Status</label>
+                <input id="launchRunStatus" type="text" readonly placeholder="no runs loaded" />
+              </div>
+              <div class="button-row">
+                <button id="launchRunRefreshBtn" type="button">
+                  <i class="icon-arrows-cw" aria-hidden="true"></i>
+                  <span>Refresh Runs</span>
+                </button>
+              </div>
+              <textarea id="launchRunPreview" rows="6" readonly placeholder="Environment and agent launch history."></textarea>
+
+              <h4>Live Controls</h4>
               <div class="button-row">
                 <button id="relayStartBtn" type="button" class="accent">
                   <i class="icon-play-circled2" aria-hidden="true"></i>
@@ -506,7 +622,7 @@
               <label for="relayStatusText">Relay Watcher</label>
               <input id="relayStatusText" type="text" readonly placeholder="not running" />
               <p id="codexSessionStatus" class="muted"></p>
-              <textarea id="codexSessionPreview" rows="6" readonly placeholder="Session registry summary."></textarea>
+              <textarea id="codexSessionPreview" rows="6" readonly placeholder="Agent profile registry summary."></textarea>
             </article>
 
             <article class="panel connection-panel utility-card" data-panel-id="connection" hidden>

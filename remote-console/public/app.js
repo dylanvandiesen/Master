@@ -14,6 +14,10 @@ const state = {
   chatUsage: null,
   agentStatus: null,
   activityEvents: [],
+  activeEnvironment: null,
+  envProfiles: null,
+  launchRuns: [],
+  envRuntime: null,
   codexRegistry: null,
   codexSessions: [],
   connectionHelp: null,
@@ -176,10 +180,32 @@ const els = {
   activityStatus: document.getElementById("activityStatus"),
   activityFeed: document.getElementById("activityFeed"),
 
+  envProfileSelect: document.getElementById("envProfileSelect"),
+  envProfileName: document.getElementById("envProfileName"),
+  envContextSelect: document.getElementById("envContextSelect"),
+  envProject: document.getElementById("envProject"),
+  envPrepSelect: document.getElementById("envPrepSelect"),
+  envPanelModeSelect: document.getElementById("envPanelModeSelect"),
+  envDevModeSelect: document.getElementById("envDevModeSelect"),
+  envRemoteModeSelect: document.getElementById("envRemoteModeSelect"),
+  envPublicHost: document.getElementById("envPublicHost"),
+  envRelaySelect: document.getElementById("envRelaySelect"),
+  envSessionName: document.getElementById("envSessionName"),
+  envStatusText: document.getElementById("envStatusText"),
+  envLocalUrlText: document.getElementById("envLocalUrlText"),
+  envRemoteUrlText: document.getElementById("envRemoteUrlText"),
+  envRefreshBtn: document.getElementById("envRefreshBtn"),
+  envSaveProfileBtn: document.getElementById("envSaveProfileBtn"),
+  envSetDefaultBtn: document.getElementById("envSetDefaultBtn"),
+  envLaunchBtn: document.getElementById("envLaunchBtn"),
+  envShutdownBtn: document.getElementById("envShutdownBtn"),
+  envPreview: document.getElementById("envPreview"),
+
   codexSessionSelect: document.getElementById("codexSessionSelect"),
   codexSessionName: document.getElementById("codexSessionName"),
   codexSessionTarget: document.getElementById("codexSessionTarget"),
   codexSessionProject: document.getElementById("codexSessionProject"),
+  codexSessionModel: document.getElementById("codexSessionModel"),
   codexSessionNotes: document.getElementById("codexSessionNotes"),
   codexRefreshBtn: document.getElementById("codexRefreshBtn"),
   codexUpsertBtn: document.getElementById("codexUpsertBtn"),
@@ -196,6 +222,10 @@ const els = {
   relayStatusText: document.getElementById("relayStatusText"),
   codexSessionStatus: document.getElementById("codexSessionStatus"),
   codexSessionPreview: document.getElementById("codexSessionPreview"),
+  launchRunSelect: document.getElementById("launchRunSelect"),
+  launchRunStatus: document.getElementById("launchRunStatus"),
+  launchRunRefreshBtn: document.getElementById("launchRunRefreshBtn"),
+  launchRunPreview: document.getElementById("launchRunPreview"),
 
   connectionMode: document.getElementById("connectionMode"),
   mobileUrlText: document.getElementById("mobileUrlText"),
@@ -351,10 +381,31 @@ const TOOLTIP_TEXTS = {
   agentStatusText: "Current agent status text from relay/runtime.",
   activityStatus: "Last activity refresh timestamp.",
   activityFeed: "Recent Codex activity events and transitions.",
+  envProfileSelect: "Choose a saved environment profile.",
+  envProfileName: "Name of the reusable environment profile.",
+  envContextSelect: "Select whether this environment targets project, system, or commander workflows.",
+  envProject: "Optional project slug used by prep, dev, and launch defaults.",
+  envPrepSelect: "Choose how much preparation the environment should run before services start.",
+  envPanelModeSelect: "Choose whether the commander panel should bind locally or for LAN/remote access.",
+  envDevModeSelect: "Choose whether to start project dev, all-project dev, or no dev watcher.",
+  envRemoteModeSelect: "Choose how remote HTTPS access is provisioned for commander.",
+  envPublicHost: "Hostname advertised for remote HTTPS commander access.",
+  envRelaySelect: "Choose whether environment launch also starts relay management.",
+  envSessionName: "Relay/session alias the environment should target by default.",
+  envStatusText: "Current environment runtime state.",
+  envLocalUrlText: "Local panel URL for this environment.",
+  envRemoteUrlText: "Remote HTTPS URL for this environment when available.",
+  envRefreshBtn: "Refresh environment status, profiles, and current runtime summary.",
+  envSaveProfileBtn: "Save the current environment settings as a reusable profile.",
+  envSetDefaultBtn: "Set the selected environment profile as the default for its context.",
+  envLaunchBtn: "Run prep and start the selected environment services.",
+  envShutdownBtn: "Stop environment services and optionally shut down the panel.",
+  envPreview: "Resolved environment summary, artifacts, and URLs.",
   codexSessionSelect: "Choose a registered Codex session profile.",
   codexSessionName: "Session alias name used by relay tooling.",
   codexSessionTarget: "Target thread/session ID or alias.",
   codexSessionProject: "Optional project slug for scoped relay context.",
+  codexSessionModel: "Optional model override when creating or spawning a session.",
   codexSessionNotes: "Optional notes saved with this session profile.",
   codexRefreshBtn: "Reload session registry from disk.",
   codexUpsertBtn: "Save or update the current session profile.",
@@ -371,6 +422,10 @@ const TOOLTIP_TEXTS = {
   relayStatusText: "Current relay watcher status.",
   codexSessionStatus: "Latest session/relay action result.",
   codexSessionPreview: "Registry summary for sessions and defaults.",
+  launchRunSelect: "Select a recent environment or agent launch run.",
+  launchRunStatus: "Current selected run status summary.",
+  launchRunRefreshBtn: "Refresh recorded environment and agent runs.",
+  launchRunPreview: "Recent environment and agent launch history.",
   connectionMode: "Network bind mode and security mode summary.",
   mobileUrlText: "Best URL to open this panel from mobile.",
   tunnelModeQuickBtn: "Use quick tunnel mode (ephemeral public URL).",
@@ -4633,8 +4688,12 @@ async function openPreviewFullscreen() {
   window.open(previewUrlFor(state.activePreviewId), "_blank", "noopener,noreferrer");
 }
 
+function selectedEnvironmentProject() {
+  return els.envProject?.value.trim() || state.activeProject || "";
+}
+
 function selectedCodexProject() {
-  return els.codexSessionProject.value.trim() || state.activeProject || "";
+  return els.codexSessionProject.value.trim() || selectedEnvironmentProject() || "";
 }
 
 function suggestedSuperAgentSessionName(project = "") {
@@ -4645,6 +4704,337 @@ function suggestedSuperAgentSessionName(project = "") {
     .replace(/^-+|-+$/g, "");
   const stamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
   return `super-${scope || "workspace"}-${stamp}`;
+}
+
+function environmentProfilesForLookup() {
+  return Array.isArray(state.envProfiles?.profiles) ? state.envProfiles.profiles : [];
+}
+
+function selectedEnvironmentProfileName() {
+  return String(els.envProfileName?.value || els.envProfileSelect?.value || "").trim();
+}
+
+function renderEnvironmentSummary() {
+  const lines = [];
+  const active = state.activeEnvironment;
+  const runtime = state.envRuntime;
+  const selectedProfile = selectedEnvironmentProfileName() || state.activeEnvironment?.environmentProfileName || "(none)";
+  const localUrl = String(els.envLocalUrlText?.value || "").trim();
+  const remoteUrl = String(els.envRemoteUrlText?.value || "").trim();
+
+  lines.push(`Profile: ${selectedProfile}`);
+  if (active) {
+    lines.push(`Active environment: ${active.summary || active.context || "ready"}`);
+    if (active.startedAt) {
+      lines.push(`Started: ${active.startedAt}`);
+    }
+    if (active.sessionName) {
+      lines.push(`Session: ${active.sessionName}`);
+    }
+  } else {
+    lines.push("Active environment: (none)");
+    lines.push(`Configured context: ${els.envContextSelect?.value || "commander"}`);
+    lines.push(`Configured project: ${selectedEnvironmentProject() || "(default)"}`);
+    lines.push(`Configured prep: ${els.envPrepSelect?.value || "quick"}`);
+    lines.push(`Configured relay: ${els.envRelaySelect?.value || "off"}`);
+    lines.push(`Configured session: ${els.envSessionName?.value.trim() || "codex-chat"}`);
+  }
+
+  if (runtime?.services) {
+    lines.push(`Dev: ${runtime.services.dev ? runtime.services.dev.mode || "running" : "off"}`);
+    lines.push(`Relay: ${runtime.services.relay ? runtime.services.relay.sessionName || "running" : "off"}`);
+    lines.push(`Tunnel: ${runtime.services.tunnel ? runtime.services.tunnel.mode || "running" : "off"}`);
+  }
+
+  if (localUrl) {
+    lines.push(`Local URL: ${localUrl}`);
+  }
+  if (remoteUrl) {
+    lines.push(`Remote URL: ${remoteUrl}`);
+  }
+
+  const artifacts = runtime?.artifacts || {};
+  const artifactKeys = Object.keys(artifacts);
+  if (artifactKeys.length) {
+    lines.push("");
+    lines.push("Artifacts:");
+    for (const key of artifactKeys) {
+      const item = artifacts[key];
+      if (!item || typeof item !== "object") {
+        continue;
+      }
+      const label = item.path || key;
+      const stamp = item.updatedAt ? ` (${item.updatedAt})` : "";
+      lines.push(`- ${label}${item.exists === false ? " [missing]" : ""}${stamp}`);
+    }
+  }
+
+  if (els.envPreview) {
+    els.envPreview.value = lines.join("\n");
+  }
+}
+
+function fillEnvironmentFormFromSelection() {
+  const selectedName = String(els.envProfileSelect?.value || "").trim();
+  const selected = environmentProfilesForLookup().find((entry) => entry.name === selectedName);
+  if (!selected) {
+    renderEnvironmentSummary();
+    return;
+  }
+  if (els.envProfileName) {
+    els.envProfileName.value = selected.name || "";
+  }
+  if (els.envContextSelect) {
+    els.envContextSelect.value = selected.context || "commander";
+  }
+  if (els.envProject) {
+    els.envProject.value = selected.project || "";
+  }
+  if (els.envPrepSelect) {
+    els.envPrepSelect.value = selected.prep || "quick";
+  }
+  if (els.envPanelModeSelect) {
+    els.envPanelModeSelect.value = selected.panelMode || "remote";
+  }
+  if (els.envDevModeSelect) {
+    els.envDevModeSelect.value = selected.devMode || "project";
+  }
+  if (els.envRemoteModeSelect) {
+    els.envRemoteModeSelect.value = selected.remoteMode || "named";
+  }
+  if (els.envPublicHost) {
+    els.envPublicHost.value = selected.publicHost || "";
+  }
+  if (els.envRelaySelect) {
+    els.envRelaySelect.value = selected.relayEnabled ? "on" : "off";
+  }
+  if (els.envSessionName) {
+    els.envSessionName.value = selected.sessionName || "codex-chat";
+  }
+  renderEnvironmentSummary();
+}
+
+function renderEnvironmentProfileSelect() {
+  if (!els.envProfileSelect) {
+    return;
+  }
+  const profiles = environmentProfilesForLookup();
+  const previous = String(els.envProfileSelect.value || "").trim();
+  els.envProfileSelect.innerHTML = "";
+  if (!profiles.length) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No environment profiles";
+    els.envProfileSelect.appendChild(option);
+    renderEnvironmentSummary();
+    return;
+  }
+  for (const profile of profiles) {
+    const option = document.createElement("option");
+    option.value = profile.name;
+    option.textContent = `${profile.name}${profile.retired ? " (retired)" : ""}`;
+    els.envProfileSelect.appendChild(option);
+  }
+  const preferred = previous && profiles.some((entry) => entry.name === previous)
+    ? previous
+    : state.envProfiles?.defaults?.perContext?.[els.envContextSelect?.value || "commander"] || state.envProfiles?.defaults?.global || profiles[0].name;
+  els.envProfileSelect.value = preferred;
+  fillEnvironmentFormFromSelection();
+}
+
+function renderLaunchRuns() {
+  if (!els.launchRunSelect || !els.launchRunPreview || !els.launchRunStatus) {
+    return;
+  }
+  const previous = String(els.launchRunSelect.value || "").trim();
+  els.launchRunSelect.innerHTML = "";
+
+  if (!Array.isArray(state.launchRuns) || !state.launchRuns.length) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No runs";
+    els.launchRunSelect.appendChild(option);
+    els.launchRunStatus.value = "No runs loaded.";
+    els.launchRunPreview.value = "No environment or agent runs recorded yet.";
+    return;
+  }
+
+  for (const run of state.launchRuns) {
+    const option = document.createElement("option");
+    option.value = run.id;
+    option.textContent = `${run.status || "ready"} | ${run.summary || run.sessionName || run.id}`;
+    els.launchRunSelect.appendChild(option);
+  }
+
+  const selectedId = previous && state.launchRuns.some((entry) => entry.id === previous) ? previous : state.launchRuns[0].id;
+  els.launchRunSelect.value = selectedId;
+  const selected = state.launchRuns.find((entry) => entry.id === selectedId) || state.launchRuns[0];
+  els.launchRunStatus.value = selected?.status || "ready";
+
+  const lines = [
+    `Summary: ${selected?.summary || "(none)"}`,
+    `Environment Profile: ${selected?.environmentProfileName || "(none)"}`,
+    `Context: ${selected?.context || "(none)"}`,
+    `Project: ${selected?.project || "(default)"}`,
+    `Prep: ${selected?.prep || "(none)"}`,
+    `Panel: ${selected?.panelMode || "(none)"}`,
+    `Remote: ${selected?.remoteMode || "(none)"}`,
+    `Session: ${selected?.sessionName || "(none)"}`,
+    `Thread: ${selected?.threadId || "(none)"}`,
+  ];
+  if (selected?.model) {
+    lines.push(`Model: ${selected.model}`);
+  }
+  const urls = selected?.urls && typeof selected.urls === "object" ? selected.urls : {};
+  if (urls.local) {
+    lines.push(`Local URL: ${urls.local}`);
+  }
+  if (urls.public) {
+    lines.push(`Remote URL: ${urls.public}`);
+  }
+  els.launchRunPreview.value = lines.join("\n");
+}
+
+function applyEnvironmentStatusPayload(payload) {
+  state.activeEnvironment = payload?.environment || null;
+  state.envProfiles = payload?.profiles || state.envProfiles || null;
+  state.launchRuns = Array.isArray(payload?.runs) ? payload.runs : state.launchRuns;
+  state.envRuntime = payload?.runtime || state.envRuntime || null;
+  if (payload?.activeDev !== undefined) {
+    state.activeDev = payload.activeDev || null;
+  }
+  if (payload?.activeRelay || payload?.activeRelays) {
+    setRelayState(payload.activeRelay || null, payload.activeRelays || []);
+  }
+  if (payload?.activeTunnel !== undefined) {
+    state.activeTunnel = payload.activeTunnel || null;
+  }
+  if (payload?.connection) {
+    state.connectionHelp = payload.connection;
+  }
+
+  if (!els.envProject.value) {
+    els.envProject.value = state.activeProject || "";
+  }
+  if (els.envStatusText) {
+    els.envStatusText.value = state.activeEnvironment?.summary || "environment idle";
+  }
+
+  const localUrl = String(payload?.connection?.urls?.local || payload?.runtime?.urls?.local || "").trim();
+  const remoteUrl = String(
+    payload?.connection?.guidance?.recommendedMobileUrl || payload?.runtime?.urls?.recommendedMobileUrl || payload?.connection?.urls?.public || ""
+  ).trim();
+  if (els.envLocalUrlText) {
+    els.envLocalUrlText.value = localUrl;
+  }
+  if (els.envRemoteUrlText) {
+    els.envRemoteUrlText.value = remoteUrl;
+  }
+  if (els.envSessionName && state.activeEnvironment?.sessionName) {
+    els.envSessionName.value = state.activeEnvironment.sessionName;
+  }
+  if (els.envRelaySelect && state.activeEnvironment) {
+    els.envRelaySelect.value = state.activeEnvironment.relayEnabled ? "on" : "off";
+  }
+
+  renderEnvironmentProfileSelect();
+  renderLaunchRuns();
+  renderConnectionHelp();
+  renderEnvironmentSummary();
+}
+
+async function refreshEnvironmentStatus() {
+  const payload = await api("/api/env/status");
+  applyEnvironmentStatusPayload(payload);
+  return payload;
+}
+
+async function refreshLaunchRuns() {
+  const payload = await api("/api/runs");
+  state.launchRuns = Array.isArray(payload?.runs) ? payload.runs : [];
+  renderLaunchRuns();
+  return payload;
+}
+
+async function saveEnvironmentProfile() {
+  const payload = await api("/api/env/profiles/upsert", {
+    method: "POST",
+    body: {
+      name: selectedEnvironmentProfileName(),
+      context: els.envContextSelect.value,
+      project: selectedEnvironmentProject(),
+      prep: els.envPrepSelect.value,
+      panelMode: els.envPanelModeSelect.value,
+      devMode: els.envDevModeSelect.value,
+      relayEnabled: els.envRelaySelect?.value !== "off",
+      remoteMode: els.envRemoteModeSelect.value,
+      publicHost: els.envPublicHost.value.trim(),
+      sessionName: els.envSessionName?.value.trim() || "codex-chat",
+      notes: "",
+    },
+  });
+  state.envProfiles = payload?.profiles || state.envProfiles;
+  renderEnvironmentProfileSelect();
+  els.codexSessionStatus.textContent = `Saved environment profile ${selectedEnvironmentProfileName()}.`;
+}
+
+async function setDefaultEnvironmentProfile() {
+  const profileName = selectedEnvironmentProfileName() || els.envProfileSelect.value.trim();
+  if (!profileName) {
+    els.codexSessionStatus.textContent = "Environment profile name is required.";
+    return;
+  }
+  const payload = await api("/api/env/profiles/default", {
+    method: "POST",
+    body: {
+      context: els.envContextSelect.value,
+      name: profileName,
+    },
+  });
+  state.envProfiles = payload?.profiles || state.envProfiles;
+  renderEnvironmentProfileSelect();
+  els.codexSessionStatus.textContent = `Default environment profile set to ${profileName}.`;
+}
+
+async function launchEnvironmentFromPanel() {
+  const payload = await api("/api/env/up", {
+    method: "POST",
+    body: {
+      environmentProfileName: selectedEnvironmentProfileName(),
+      context: els.envContextSelect.value,
+      project: selectedEnvironmentProject(),
+      prep: els.envPrepSelect.value,
+      panelMode: els.envPanelModeSelect.value,
+      devMode: els.envDevModeSelect.value,
+      relayEnabled: els.envRelaySelect?.value !== "off",
+      remoteMode: els.envRemoteModeSelect.value,
+      publicHost: els.envPublicHost.value.trim(),
+      sessionName: els.envSessionName?.value.trim() || "codex-chat",
+    },
+  });
+  applyEnvironmentStatusPayload(payload);
+  els.codexSessionStatus.textContent = `Environment launched: ${payload?.environment?.summary || els.envContextSelect.value}.`;
+  setCommandResult(JSON.stringify(payload, null, 2));
+}
+
+async function shutdownEnvironmentFromPanel() {
+  const payload = await api("/api/env/down", {
+    method: "POST",
+    body: {
+      stopPanel: false,
+    },
+  });
+  state.activeEnvironment = null;
+  state.activeDev = null;
+  setRelayState(null, []);
+  state.activeTunnel = null;
+  state.envRuntime = payload?.runtime || state.envRuntime;
+  renderEnvironmentSummary();
+  renderRelayStatus();
+  renderTunnelStatus();
+  renderTopStatus();
+  els.codexSessionStatus.textContent = "Environment services stopped.";
+  setCommandResult(JSON.stringify(payload, null, 2));
 }
 
 function renderCodexRegistrySummary() {
@@ -4667,9 +5057,10 @@ function renderCodexRegistrySummary() {
     lines.push("Per-project defaults: (none)");
   }
   lines.push("");
-  lines.push("Sessions:");
+  lines.push("Agent Profiles:");
   for (const session of state.codexSessions) {
-    lines.push(`- ${session.name} -> ${session.target}${session.retired ? " [retired]" : ""}`);
+    const model = session.model ? ` [model=${session.model}]` : "";
+    lines.push(`- ${session.name} -> ${session.target}${model}${session.retired ? " [retired]" : ""}`);
   }
   els.codexSessionPreview.value = lines.join("\n");
 }
@@ -4682,6 +5073,9 @@ function fillCodexFormFromSelection() {
   els.codexSessionTarget.value = selected.target || "";
   if (!els.codexSessionProject.value && Array.isArray(selected.projectHints) && selected.projectHints.length) {
     els.codexSessionProject.value = selected.projectHints[0];
+  }
+  if (els.codexSessionModel) {
+    els.codexSessionModel.value = selected.model || "";
   }
   els.codexSessionNotes.value = selected.notes || "";
   renderChatRuntimeStrip();
@@ -4783,6 +5177,7 @@ async function upsertCodexSession() {
       name,
       target,
       project: selectedCodexProject(),
+      model: els.codexSessionModel?.value.trim() || "",
       notes: els.codexSessionNotes.value.trim(),
     },
   });
@@ -4806,10 +5201,15 @@ async function createCodexSession() {
     body: {
       name,
       project: selectedCodexProject(),
+      model: els.codexSessionModel?.value.trim() || "",
       notes: els.codexSessionNotes.value.trim(),
     },
   });
   applyCodexSessionsPayload(payload);
+  if (Array.isArray(payload?.runs)) {
+    state.launchRuns = payload.runs;
+    renderLaunchRuns();
+  }
   if (els.codexSessionSelect && state.codexSessions.some((entry) => entry.name === name)) {
     els.codexSessionSelect.value = name;
     fillCodexFormFromSelection();
@@ -4897,6 +5297,7 @@ async function spawnSuperAgent(mode) {
       mode,
       project,
       name: sessionName,
+      model: els.codexSessionModel?.value.trim() || "",
       notes: els.codexSessionNotes.value.trim(),
       makeDefault: true,
       runPrep: true,
@@ -4905,6 +5306,10 @@ async function spawnSuperAgent(mode) {
   });
 
   applyCodexSessionsPayload(payload);
+  if (Array.isArray(payload?.runs)) {
+    state.launchRuns = payload.runs;
+    renderLaunchRuns();
+  }
   if (payload?.created?.name) {
     els.codexSessionName.value = payload.created.name;
     els.codexSessionTarget.value = payload.created.target || payload.created.threadId || "";
@@ -5033,6 +5438,12 @@ function renderConnectionHelp() {
   els.connectionMode.title = `Connection mode: ${els.connectionMode.textContent}`;
   els.mobileUrlText.value = mobile;
   els.mobileUrlText.title = `Recommended mobile URL: ${mobile}`;
+  if (els.envLocalUrlText) {
+    els.envLocalUrlText.value = String(help?.urls?.local || "").trim();
+  }
+  if (els.envRemoteUrlText) {
+    els.envRemoteUrlText.value = mobile.startsWith("(") ? "" : mobile;
+  }
   els.connectionAdvice.textContent = activeTunnelUrl
     ? `External tunnel live: ${activeTunnelUrl}`
     : String(help?.guidance?.action || "");
@@ -5040,6 +5451,7 @@ function renderConnectionHelp() {
   els.enableHttpsBtn.disabled = securityMode === "on";
   els.useAdaptiveSecurityBtn.disabled = securityMode === "auto";
   renderTunnelStatus();
+  renderEnvironmentSummary();
   renderChatRuntimeStrip();
 }
 
@@ -5262,11 +5674,15 @@ async function refreshSessionMeta() {
     state.panelBootToken = nextBootToken;
   }
   state.csrfToken = session.csrfToken;
+  state.activeEnvironment = session.activeEnvironment || state.activeEnvironment || null;
   state.commandRunning = Boolean(session.commandRunning);
   state.activeDev = session.activeDev || null;
   setRelayState(session.activeRelay || null, session.activeRelays || []);
   state.activeTunnel = session.activeTunnel || null;
   state.previewRefreshMs = session.previewRefreshMs || 3000;
+  if (els.envStatusText) {
+    els.envStatusText.value = state.activeEnvironment?.summary || "environment idle";
+  }
   renderRelayStatus();
   renderTunnelStatus();
   renderTopStatus();
@@ -5296,14 +5712,19 @@ async function refreshSessionData() {
   }
 
   if (!els.codexSessionProject.value) {
-    els.codexSessionProject.value = state.activeProject || "";
+    els.codexSessionProject.value = selectedEnvironmentProject() || state.activeProject || "";
+  }
+  if (!els.envProject.value) {
+    els.envProject.value = state.activeProject || "";
   }
   if (!els.refreshMsInput.value) {
     els.refreshMsInput.value = String(state.previewRefreshMs);
   }
 
   await refreshConnectionHelp().catch(() => null);
+  await refreshEnvironmentStatus().catch(() => null);
   await refreshCodexSessions().catch(() => null);
+  await refreshLaunchRuns().catch(() => null);
   await refreshChatHistory().catch(() => null);
   await refreshActivityFeed().catch(() => null);
   await refreshTerminalStatus({ silent: true }).catch(() => null);
@@ -5442,6 +5863,10 @@ async function onLogout() {
   clearTerminalFitTimer();
   state.terminalAutoReconnect = false;
   state.terminalStatus = null;
+  state.activeEnvironment = null;
+  state.envProfiles = null;
+  state.envRuntime = null;
+  state.launchRuns = [];
   setRelayState(null, []);
   stopPolling();
   if (state.autoRefreshTimer) {
@@ -5658,6 +6083,79 @@ function bindEvents() {
     });
   });
 
+  if (els.envProfileSelect) {
+    els.envProfileSelect.addEventListener("change", () => {
+      fillEnvironmentFormFromSelection();
+    });
+  }
+  if (els.envContextSelect) {
+    els.envContextSelect.addEventListener("change", () => {
+      renderEnvironmentProfileSelect();
+      renderEnvironmentSummary();
+    });
+  }
+  if (els.envProject) {
+    els.envProject.addEventListener("input", () => {
+      renderEnvironmentSummary();
+      if (!els.codexSessionProject.value) {
+        els.codexSessionProject.value = els.envProject.value.trim();
+      }
+    });
+  }
+  if (els.envPrepSelect) {
+    els.envPrepSelect.addEventListener("change", renderEnvironmentSummary);
+  }
+  if (els.envPanelModeSelect) {
+    els.envPanelModeSelect.addEventListener("change", renderEnvironmentSummary);
+  }
+  if (els.envDevModeSelect) {
+    els.envDevModeSelect.addEventListener("change", renderEnvironmentSummary);
+  }
+  if (els.envRemoteModeSelect) {
+    els.envRemoteModeSelect.addEventListener("change", renderEnvironmentSummary);
+  }
+  if (els.envPublicHost) {
+    els.envPublicHost.addEventListener("input", renderEnvironmentSummary);
+  }
+  if (els.envRelaySelect) {
+    els.envRelaySelect.addEventListener("change", renderEnvironmentSummary);
+  }
+  if (els.envSessionName) {
+    els.envSessionName.addEventListener("input", renderEnvironmentSummary);
+  }
+  if (els.envRefreshBtn) {
+    els.envRefreshBtn.addEventListener("click", () => refreshEnvironmentStatus().then(() => {
+      els.codexSessionStatus.textContent = "Environment status refreshed.";
+    }).catch((error) => {
+      els.codexSessionStatus.textContent = `Error: ${error.message}`;
+      setCommandResult(error.message, true);
+    }));
+  }
+  if (els.envSaveProfileBtn) {
+    els.envSaveProfileBtn.addEventListener("click", () => saveEnvironmentProfile().catch((error) => {
+      els.codexSessionStatus.textContent = `Error: ${error.message}`;
+      setCommandResult(error.message, true);
+    }));
+  }
+  if (els.envSetDefaultBtn) {
+    els.envSetDefaultBtn.addEventListener("click", () => setDefaultEnvironmentProfile().catch((error) => {
+      els.codexSessionStatus.textContent = `Error: ${error.message}`;
+      setCommandResult(error.message, true);
+    }));
+  }
+  if (els.envLaunchBtn) {
+    els.envLaunchBtn.addEventListener("click", () => launchEnvironmentFromPanel().catch((error) => {
+      els.codexSessionStatus.textContent = `Error: ${error.message}`;
+      setCommandResult(error.message, true);
+    }));
+  }
+  if (els.envShutdownBtn) {
+    els.envShutdownBtn.addEventListener("click", () => shutdownEnvironmentFromPanel().catch((error) => {
+      els.codexSessionStatus.textContent = `Error: ${error.message}`;
+      setCommandResult(error.message, true);
+    }));
+  }
+
   els.codexSessionSelect.addEventListener("change", () => {
     fillCodexFormFromSelection();
     renderRelayStatus();
@@ -5684,6 +6182,11 @@ function bindEvents() {
     renderTerminalExecResumeButton();
     renderChatRuntimeStrip();
   });
+  if (els.codexSessionModel) {
+    els.codexSessionModel.addEventListener("input", () => {
+      renderEnvironmentSummary();
+    });
+  }
   els.codexRefreshBtn.addEventListener("click", async () => {
     await refreshCodexSessions().then(() => {
       els.codexSessionStatus.textContent = "Session registry refreshed.";
@@ -5730,6 +6233,19 @@ function bindEvents() {
   els.relayRefreshBtn.addEventListener("click", () => refreshRelayStatus().catch((error) => {
     els.codexSessionStatus.textContent = `Error: ${error.message}`;
   }));
+  if (els.launchRunRefreshBtn) {
+    els.launchRunRefreshBtn.addEventListener("click", () => refreshLaunchRuns().then(() => {
+      els.codexSessionStatus.textContent = "Launch runs refreshed.";
+    }).catch((error) => {
+      els.codexSessionStatus.textContent = `Error: ${error.message}`;
+      setCommandResult(error.message, true);
+    }));
+  }
+  if (els.launchRunSelect) {
+    els.launchRunSelect.addEventListener("change", () => {
+      renderLaunchRuns();
+    });
+  }
 
   els.refreshConnectionHelpBtn.addEventListener("click", () => {
     refreshConnectionHelp().catch((error) => {

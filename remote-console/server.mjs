@@ -21,6 +21,16 @@ import {
   validateProjectRef as validateCodexProjectRef,
   writeCodexSessionRegistry,
 } from "../scripts/remote/codex-session-registry.mjs";
+import {
+  appendLaunchRun,
+  mergeEnvRuntime,
+  readEnvProfiles,
+  readEnvRuntime,
+  readLaunchRuns,
+  retireEnvProfile,
+  setDefaultEnvProfile,
+  upsertEnvProfile,
+} from "../scripts/env/lib/env-registry.mjs";
 
 const ROOT = process.cwd();
 const PUBLIC_DIR = path.join(ROOT, "remote-console", "public");
@@ -97,6 +107,7 @@ const state = {
   terminalWsSessionBySocket: new Map(),
   terminalSessions: new Map(),
   commandRunning: false,
+  activeEnvironment: null,
   activeDev: null,
   activeRelay: null,
   activeRelays: new Map(),
@@ -762,6 +773,7 @@ function publicTunnelState() {
 function broadcastState() {
   const payload = {
     time: timestamp(),
+    activeEnvironment: state.activeEnvironment,
     commandRunning: state.commandRunning,
     activeDev: publicDevState(),
     activeRelay: publicRelayState(),
@@ -772,6 +784,7 @@ function broadcastState() {
   for (const res of state.sseClients) {
     res.write(body);
   }
+  persistEnvironmentRuntimeSnapshot().catch(() => null);
 }
 
 function parseCookies(req) {
@@ -2050,6 +2063,391 @@ async function readCodexRegistrySafe() {
 
 async function writeCodexRegistrySafe(registry) {
   return writeCodexSessionRegistry(registry, DEFAULT_CODEX_SESSION_REGISTRY_FILE);
+}
+
+function normalizeEnvironmentContext(value, fallback = "commander") {
+  const normalized = String(value || "").trim().toLowerCase();
+  return ["project", "system", "commander"].includes(normalized) ? normalized : fallback;
+}
+
+function normalizeEnvironmentPrep(value, fallback = "quick") {
+  const normalized = String(value || "").trim().toLowerCase();
+  return ["none", "quick", "standard", "full"].includes(normalized) ? normalized : fallback;
+}
+
+function normalizeEnvironmentPanelMode(value, fallback = "remote") {
+  const normalized = String(value || "").trim().toLowerCase();
+  return ["off", "local", "remote"].includes(normalized) ? normalized : fallback;
+}
+
+function normalizeEnvironmentDevMode(value, fallback = "project") {
+  const normalized = String(value || "").trim().toLowerCase();
+  return ["off", "project", "all"].includes(normalized) ? normalized : fallback;
+}
+
+function normalizeEnvironmentRemoteMode(value, fallback = "named") {
+  const normalized = String(value || "").trim().toLowerCase();
+  return ["off", "quick", "named", "token"].includes(normalized) ? normalized : fallback;
+}
+
+function normalizeEnvironmentName(value, fallback = "environment") {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+  return normalized || fallback;
+}
+
+function summarizeEnvironmentRequest(options = {}) {
+  const parts = [
+    `context=${options.context || "commander"}`,
+    options.project ? `project=${options.project}` : "project=(default)",
+    `prep=${options.prep || "quick"}`,
+    `panel=${options.panelMode || "remote"}`,
+    `dev=${options.devMode || "project"}`,
+    `relay=${options.relayEnabled ? "on" : "off"}`,
+    `remote=${options.remoteMode || "named"}`,
+  ];
+  return parts.join(" ");
+}
+
+async function readJsonFileSafe(filePath, fallback = null) {
+  try {
+    const raw = await fsp.readFile(filePath, "utf8");
+    return JSON.parse(raw.replace(/^\uFEFF/, ""));
+  } catch {
+    return fallback;
+  }
+}
+
+async function buildArtifactSnapshot() {
+  const entries = [
+    [".agency/chat/latest-briefing.md", "projectBriefing"],
+    [".agency/chat/latest-system-briefing.md", "systemBriefing"],
+    [".agency/chat/latest-commander-briefing.md", "commanderBriefing"],
+    [".agency/chat/latest-super-context.json", "superContextJson"],
+    [".agency/chat/latest-super-context.md", "superContextMarkdown"],
+    [".agency/chat/mcp-status.json", "mcpStatus"],
+  ];
+
+  const result = {};
+  for (const [relativePath, key] of entries) {
+    const absolutePath = path.join(ROOT, relativePath);
+    try {
+      const stats = await fsp.stat(absolutePath);
+      result[key] = {
+        path: relativePath,
+        exists: true,
+        updatedAt: stats.mtime.toISOString(),
+      };
+    } catch {
+      result[key] = {
+        path: relativePath,
+        exists: false,
+        updatedAt: "",
+      };
+    }
+  }
+
+  const latestSession = await readLatestPreparedChatSession().catch(() => null);
+  result.latestSession = latestSession || null;
+  result.mcp = (await readJsonFileSafe(path.join(ROOT, ".agency", "chat", "mcp-status.json"), null)) || null;
+  return result;
+}
+
+async function persistEnvironmentRuntimeSnapshot(partial = {}) {
+  const connection = buildConnectionHelpPayload();
+  const artifacts = await buildArtifactSnapshot();
+  return mergeEnvRuntime({
+    environment: partial.environment !== undefined ? partial.environment : state.activeEnvironment,
+    panel: {
+      host: settings.host,
+      port: settings.port,
+      securityMode: settings.securityMode,
+      effectiveSecurityMode: effectiveSecurityModeForIp("127.0.0.1"),
+      publicHost: settings.publicHost || "",
+      basePath: settings.basePath || "",
+      startedAt: PANEL_BOOT_ISO,
+    },
+    services: {
+      dev: publicDevState(),
+      relay: publicRelayState(),
+      relays: publicRelayStates(),
+      tunnel: publicTunnelState(),
+    },
+    urls: {
+      local: connection?.urls?.local || "",
+      bind: connection?.urls?.bind || "",
+      directLan: connection?.urls?.directLan || [],
+      public: connection?.urls?.public || "",
+      recommendedMobileUrl: connection?.guidance?.recommendedMobileUrl || "",
+    },
+    artifacts,
+    ...partial,
+  });
+}
+
+async function ensureDevStateForEnvironment({ devMode = "off", project = "", devPort = "" } = {}) {
+  const normalizedDevMode = normalizeEnvironmentDevMode(devMode, "off");
+  const normalizedProject = String(project || "").trim();
+  const normalizedPort = String(devPort || "").trim();
+
+  if (normalizedDevMode === "off") {
+    if (state.activeDev) {
+      await stopDevProcess();
+    }
+    return null;
+  }
+
+  const desiredMode = normalizedDevMode === "all" ? "all" : "single";
+  const current = publicDevState();
+  const currentMode = current?.mode === "all" ? "all" : current?.mode === "single" ? "single" : "";
+  const currentProject = String(current?.project || "").trim();
+  const currentPort = String(current?.port || "").trim();
+
+  if (
+    current &&
+    currentMode === desiredMode &&
+    currentProject === (desiredMode === "single" ? normalizedProject : "") &&
+    currentPort === normalizedPort
+  ) {
+    return current;
+  }
+
+  if (state.activeDev) {
+    await stopDevProcess();
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  return startDevProcess(desiredMode, desiredMode === "single" ? normalizedProject : "", normalizedPort);
+}
+
+async function ensureRelayStateForEnvironment({
+  relayEnabled = false,
+  sessionName = "codex-chat",
+  project = "",
+} = {}) {
+  const normalizedSessionName = String(sessionName || "codex-chat").trim() || "codex-chat";
+  const normalizedProject = String(project || "").trim();
+
+  if (!relayEnabled) {
+    if (publicRelayStates().length > 0) {
+      await stopRelayWatcher({ all: true });
+    }
+    return [];
+  }
+
+  const currentRelays = publicRelayStates();
+  const existing = currentRelays.find((entry) => String(entry?.sessionName || "").trim() === normalizedSessionName);
+  if (existing) {
+    return currentRelays;
+  }
+
+  await startRelayWatcher({
+    sessionName: normalizedSessionName,
+    project: normalizedProject,
+    useLast: false,
+    dryRun: false,
+    startFromLatest: true,
+    pollMs: 1200,
+    history: 16,
+  });
+
+  return publicRelayStates();
+}
+
+async function ensureTunnelStateForEnvironment({
+  panelMode = "remote",
+  remoteMode = "off",
+  publicHost = "",
+} = {}) {
+  const normalizedPanelMode = normalizeEnvironmentPanelMode(panelMode, "remote");
+  const normalizedRemoteMode = normalizeEnvironmentRemoteMode(remoteMode, "off");
+  const normalizedPublicHost = String(publicHost || "").trim();
+
+  settings.publicHost = normalizedRemoteMode === "off" ? "" : normalizedPublicHost || settings.publicHost || "";
+  settings.tunnelMode = normalizedRemoteMode === "off" ? settings.tunnelMode : normalizedRemoteMode;
+  settings.securityMode = normalizedRemoteMode !== "off" ? "on" : normalizedPanelMode === "remote" ? "auto" : "off";
+  await persistRuntimeConfig();
+
+  if (normalizedRemoteMode === "off") {
+    if (state.activeTunnel) {
+      await stopTunnelProcess();
+    }
+    return publicTunnelState();
+  }
+
+  if (state.activeTunnel && String(state.activeTunnel.mode || "").trim() === normalizedRemoteMode) {
+    return publicTunnelState();
+  }
+
+  if (state.activeTunnel) {
+    await stopTunnelProcess();
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  return startTunnelProcess({
+    provider: settings.tunnelProvider,
+    mode: normalizedRemoteMode,
+    targetUrl: `http://127.0.0.1:${settings.port}`,
+    tunnelToken: settings.cloudflaredTunnelToken,
+    tunnelName: settings.cloudflaredTunnelName,
+    configFile: settings.cloudflaredConfig,
+    timeoutMs: TUNNEL_DISCOVERY_TIMEOUT_MS,
+  });
+}
+
+async function runEnvironmentPrep({ prep = "quick", project = "" } = {}) {
+  const normalizedPrep = normalizeEnvironmentPrep(prep, "quick");
+  if (normalizedPrep === "none") {
+    return null;
+  }
+
+  const scriptByPrep = {
+    quick: "super:bootstrap",
+    standard: "super:bootstrap:standard",
+    full: "super:bootstrap:full",
+  };
+  const script = scriptByPrep[normalizedPrep] || "super:bootstrap";
+  const args = project ? [`--project=${project}`] : [];
+  const result = await runOneShot({
+    source: script,
+    script,
+    args,
+    timeoutMs: normalizedPrep === "full" ? 40 * 60 * 1000 : 30 * 60 * 1000,
+  });
+  if (!result.ok) {
+    throw new Error(`${script} failed (exit ${result.exitCode}).`);
+  }
+  return result;
+}
+
+async function launchEnvironment(options = {}) {
+  const context = normalizeEnvironmentContext(options.context, "commander");
+  const project = String(options.project || "").trim();
+  const prep = normalizeEnvironmentPrep(options.prep, "quick");
+  const devMode = normalizeEnvironmentDevMode(options.devMode, context === "system" ? "off" : "project");
+  const panelMode = normalizeEnvironmentPanelMode(options.panelMode, context === "commander" ? "remote" : "local");
+  const remoteMode = normalizeEnvironmentRemoteMode(options.remoteMode, context === "commander" ? "named" : "off");
+  const relayEnabled = parseBool(options.relayEnabled, context === "commander");
+  const sessionName = normalizeEnvironmentName(options.sessionName || "codex-chat", "codex-chat");
+  const environmentProfileName = normalizeEnvironmentName(options.environmentProfileName || "", "");
+  const publicHost = String(
+    remoteMode === "off"
+      ? ""
+      : options.publicHost || settings.publicHost || (context === "commander" ? "local-commander.diesign.dev" : "")
+  ).trim();
+  const devPort = String(options.devPort || "").trim();
+
+  const prepResult = await runEnvironmentPrep({ prep, project });
+  const dev = await ensureDevStateForEnvironment({ devMode, project, devPort });
+  const relays = await ensureRelayStateForEnvironment({ relayEnabled, sessionName, project });
+  const tunnel = await ensureTunnelStateForEnvironment({ panelMode, remoteMode, publicHost });
+
+  const runId = `${Date.now()}`;
+  state.activeEnvironment = {
+    id: runId,
+    context,
+    project,
+    prep,
+    devMode,
+    environmentProfileName,
+    panelMode,
+    remoteMode,
+    relayEnabled,
+    sessionName,
+    publicHost,
+    startedAt: timestamp(),
+    summary: summarizeEnvironmentRequest({
+      context,
+      project,
+      prep,
+      panelMode,
+      devMode,
+      relayEnabled,
+      remoteMode,
+    }),
+  };
+
+  const artifacts = await buildArtifactSnapshot();
+  const connection = buildConnectionHelpPayload();
+  const runtime = await persistEnvironmentRuntimeSnapshot();
+  const runs = await appendLaunchRun({
+    id: runId,
+    environmentProfileName,
+    context,
+    project,
+    prep,
+    panelMode,
+    remoteMode,
+    sessionName,
+    status: "ready",
+    summary: state.activeEnvironment.summary,
+    urls: {
+      local: connection?.urls?.local || "",
+      bind: connection?.urls?.bind || "",
+      directLan: connection?.urls?.directLan || [],
+      public: connection?.urls?.public || "",
+      recommendedMobileUrl: connection?.guidance?.recommendedMobileUrl || "",
+    },
+    artifacts,
+  });
+
+  return {
+    environment: state.activeEnvironment,
+    prep: prepResult,
+    activeDev: dev,
+    activeRelay: publicRelayState(),
+    activeRelays: relays,
+    activeTunnel: tunnel,
+    connection,
+    artifacts,
+    runtime,
+    runs: runs.runs.slice(0, 15),
+  };
+}
+
+async function stopEnvironment({ stopPanel = false } = {}) {
+  const relayResult = await stopRelayWatcher({ all: true });
+  const tunnelStopped = await stopTunnelProcess().catch(() => false);
+  const devStopped = await stopDevProcess().catch(() => false);
+
+  state.activeEnvironment = null;
+  const runtime = await persistEnvironmentRuntimeSnapshot({
+    environment: null,
+  });
+
+  return {
+    relay: relayResult,
+    tunnelStopped,
+    devStopped,
+    stopPanel: Boolean(stopPanel),
+    runtime,
+  };
+}
+
+async function buildEnvironmentStatus() {
+  const [profiles, runs, runtime, artifacts] = await Promise.all([
+    readEnvProfiles(),
+    readLaunchRuns(),
+    readEnvRuntime(),
+    buildArtifactSnapshot(),
+  ]);
+  return {
+    ok: true,
+    environment: state.activeEnvironment || runtime.environment || null,
+    profiles,
+    runs: runs.runs.slice(0, 20),
+    runtime,
+    activeDev: publicDevState(),
+    activeRelay: publicRelayState(),
+    activeRelays: publicRelayStates(),
+    activeTunnel: publicTunnelState(),
+    connection: buildConnectionHelpPayload(),
+    artifacts,
+  };
 }
 
 async function terminateProcessTree(pid) {
@@ -3349,6 +3747,7 @@ async function handleApi(req, res, pathname, ip) {
         securityMode: settings.securityMode,
         effectiveSecurityMode: effectiveSecurityModeForIp(ip),
       },
+      activeEnvironment: state.activeEnvironment,
       activeDev: publicDevState(),
       activeRelay: publicRelayState(),
       activeRelays: publicRelayStates(),
@@ -3421,6 +3820,7 @@ async function handleApi(req, res, pathname, ip) {
       panelStartedAt: PANEL_BOOT_ISO,
       csrfToken: session.csrfToken,
       expiresAt: new Date(session.expiresAt).toISOString(),
+      activeEnvironment: state.activeEnvironment,
       commandRunning: state.commandRunning,
       activeDev: publicDevState(),
       activeRelay: publicRelayState(),
@@ -3434,6 +3834,243 @@ async function handleApi(req, res, pathname, ip) {
       persistSessions: settings.persistSessions,
       sharedTerminal: settings.sharedTerminal,
     });
+    return;
+  }
+
+  if (pathname === "/api/env/status" && req.method === "GET") {
+    try {
+      const status = await buildEnvironmentStatus();
+      json(res, 200, status);
+    } catch (error) {
+      json(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to read environment status.",
+      });
+    }
+    return;
+  }
+
+  if (pathname === "/api/env/up" && req.method === "POST") {
+    let body = {};
+    try {
+      body = await readJsonBody(req);
+    } catch (error) {
+      badRequest(res, error.message);
+      return;
+    }
+
+    const context = normalizeEnvironmentContext(body.context, "commander");
+    const project = String(body.project || "").trim();
+    const prep = normalizeEnvironmentPrep(body.prep, "quick");
+    const devMode = normalizeEnvironmentDevMode(body.devMode, context === "system" ? "off" : "project");
+    const panelMode = normalizeEnvironmentPanelMode(body.panelMode, context === "commander" ? "remote" : "local");
+    const remoteMode = normalizeEnvironmentRemoteMode(body.remoteMode, context === "commander" ? "named" : "off");
+    const relayEnabled = parseBool(body.relayEnabled, context === "commander");
+    const sessionName = normalizeEnvironmentName(body.sessionName || "codex-chat", "codex-chat");
+    const publicHost = String(body.publicHost || "").trim();
+    const devPort = String(body.devPort || "").trim();
+    const environmentProfileName = String(body.environmentProfileName || "").trim();
+
+    if (!validateProjectRef(project)) {
+      badRequest(res, "Invalid project value.");
+      return;
+    }
+    if (!validateSessionName(sessionName)) {
+      badRequest(res, "Invalid session name.");
+      return;
+    }
+    if (!validatePort(devPort)) {
+      badRequest(res, "Port must be between 1024 and 65535.");
+      return;
+    }
+
+    try {
+      const launched = await launchEnvironment({
+        context,
+        project,
+        prep,
+        devMode,
+        panelMode,
+        remoteMode,
+        relayEnabled,
+        sessionName,
+        publicHost,
+        devPort,
+        environmentProfileName,
+      });
+      pushLog("environment", `Environment up -> ${launched.environment?.summary || summarizeEnvironmentRequest({ context, project, prep, panelMode, devMode, relayEnabled, remoteMode })}`);
+      await appendActivityEvent({
+        type: "environment_up",
+        state: "working",
+        message: `Environment ready (${context})${project ? ` for ${project}` : ""}`,
+        source: "panel-environment",
+        meta: {
+          context,
+          project,
+          prep,
+          panelMode,
+          devMode,
+          remoteMode,
+          relayEnabled,
+          sessionName,
+        },
+      }).catch(() => null);
+      json(res, 200, {
+        ok: true,
+        ...launched,
+      });
+    } catch (error) {
+      json(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to start environment.",
+      });
+    }
+    return;
+  }
+
+  if (pathname === "/api/env/down" && req.method === "POST") {
+    let body = {};
+    try {
+      body = await readJsonBody(req);
+    } catch (error) {
+      badRequest(res, error.message);
+      return;
+    }
+
+    const stopPanel = parseBool(body.stopPanel, false);
+    try {
+      const stopped = await stopEnvironment({
+        stopPanel,
+      });
+      pushLog("environment", `Environment down${stopPanel ? " (panel shutdown requested)" : ""}`);
+      await appendActivityEvent({
+        type: "environment_down",
+        state: "idle",
+        message: stopPanel ? "Environment shutdown requested." : "Environment services stopped.",
+        source: "panel-environment",
+        meta: {
+          stopPanel,
+        },
+      }).catch(() => null);
+      json(res, 200, {
+        ok: true,
+        ...stopped,
+      });
+      if (stopPanel) {
+        setTimeout(() => {
+          shutdown().catch(() => null);
+        }, 100);
+      }
+    } catch (error) {
+      json(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to stop environment.",
+      });
+    }
+    return;
+  }
+
+  if (pathname === "/api/env/profiles" && req.method === "GET") {
+    try {
+      const profiles = await readEnvProfiles();
+      json(res, 200, {
+        ok: true,
+        profiles,
+      });
+    } catch (error) {
+      json(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to read environment profiles.",
+      });
+    }
+    return;
+  }
+
+  if (pathname === "/api/env/profiles/upsert" && req.method === "POST") {
+    let body = {};
+    try {
+      body = await readJsonBody(req);
+    } catch (error) {
+      badRequest(res, error.message);
+      return;
+    }
+
+    try {
+      const profiles = await upsertEnvProfile(body);
+      json(res, 200, {
+        ok: true,
+        profiles,
+      });
+    } catch (error) {
+      json(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to save environment profile.",
+      });
+    }
+    return;
+  }
+
+  if (pathname === "/api/env/profiles/default" && req.method === "POST") {
+    let body = {};
+    try {
+      body = await readJsonBody(req);
+    } catch (error) {
+      badRequest(res, error.message);
+      return;
+    }
+
+    try {
+      const profiles = await setDefaultEnvProfile(body.context, body.name);
+      json(res, 200, {
+        ok: true,
+        profiles,
+      });
+    } catch (error) {
+      json(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to set default environment profile.",
+      });
+    }
+    return;
+  }
+
+  if (pathname === "/api/env/profiles/retire" && req.method === "POST") {
+    let body = {};
+    try {
+      body = await readJsonBody(req);
+    } catch (error) {
+      badRequest(res, error.message);
+      return;
+    }
+
+    try {
+      const profiles = await retireEnvProfile(body.name);
+      json(res, 200, {
+        ok: true,
+        profiles,
+      });
+    } catch (error) {
+      json(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to retire environment profile.",
+      });
+    }
+    return;
+  }
+
+  if (pathname === "/api/runs" && req.method === "GET") {
+    try {
+      const runs = await readLaunchRuns();
+      json(res, 200, {
+        ok: true,
+        runs: runs.runs,
+      });
+    } catch (error) {
+      json(res, 500, {
+        ok: false,
+        error: error instanceof Error ? error.message : "Failed to read launch runs.",
+      });
+    }
     return;
   }
 
@@ -3738,6 +4375,7 @@ async function handleApi(req, res, pathname, ip) {
     });
     res.write(
       `event: state\ndata: ${JSON.stringify({
+        activeEnvironment: state.activeEnvironment,
         commandRunning: state.commandRunning,
         activeDev: publicDevState(),
         activeRelay: publicRelayState(),
@@ -4150,6 +4788,7 @@ async function handleApi(req, res, pathname, ip) {
     const target = String(body.target || "").trim();
     const project = String(body.project || "").trim();
     const notes = String(body.notes || "").trim().slice(0, 5000);
+    const model = String(body.model || "").trim();
     const makeDefault = Boolean(body.makeDefault);
 
     if (!validateSessionName(name)) {
@@ -4171,6 +4810,7 @@ async function handleApi(req, res, pathname, ip) {
         name,
         target,
         project,
+        model,
         notes,
         source: "panel-upsert",
         makeDefault,
@@ -4186,6 +4826,7 @@ async function handleApi(req, res, pathname, ip) {
           name,
           target,
           project,
+          model,
         },
       }).catch(() => null);
       json(res, 200, {
@@ -4360,6 +5001,7 @@ async function handleApi(req, res, pathname, ip) {
         target: threadId,
         threadId,
         project,
+        model,
         notes,
         source: "panel-create",
         makeDefault,
@@ -4375,16 +5017,41 @@ async function handleApi(req, res, pathname, ip) {
           name,
           threadId,
           project,
+          model,
         },
       }).catch(() => null);
+      const runs = await appendLaunchRun({
+        id: `${Date.now()}`,
+        environmentProfileName: normalizeEnvironmentName(state.activeEnvironment?.environmentProfileName || "", ""),
+        context: state.activeEnvironment?.context || "project",
+        project,
+        prep: state.activeEnvironment?.prep || "quick",
+        panelMode: state.activeEnvironment?.panelMode || "remote",
+        remoteMode: state.activeEnvironment?.remoteMode || "off",
+        sessionName: name,
+        threadId,
+        model,
+        status: "session-created",
+        summary: `Session created: ${name}${project ? ` (${project})` : ""}`,
+        urls: {
+          local: buildConnectionHelpPayload()?.urls?.local || "",
+          public: buildConnectionHelpPayload()?.guidance?.recommendedMobileUrl || "",
+        },
+        artifacts: await buildArtifactSnapshot(),
+      });
+      await persistEnvironmentRuntimeSnapshot({
+        environment: state.activeEnvironment,
+      });
 
       json(res, 200, {
         ok: true,
         created: {
           name,
           target: threadId,
+          model,
         },
         registry: persisted,
+        runs: runs.runs.slice(0, 15),
         codex: {
           exitCode: codexResult.exitCode,
           durationMs: codexResult.durationMs,
@@ -4599,6 +5266,7 @@ async function handleApi(req, res, pathname, ip) {
         target: threadId,
         threadId,
         project,
+        model,
         notes: notes || `Super agent (${mode}) created via commander panel.`,
         source: "panel-super-agent",
         makeDefault,
@@ -4640,11 +5308,34 @@ async function handleApi(req, res, pathname, ip) {
           threadId,
           project,
           mode,
+          model,
           runPrep,
           startRelay,
           relayError,
         },
       }).catch(() => null);
+      const runs = await appendLaunchRun({
+        id: `${Date.now()}`,
+        environmentProfileName: normalizeEnvironmentName(state.activeEnvironment?.environmentProfileName || "", ""),
+        context: state.activeEnvironment?.context || "commander",
+        project,
+        prep: mode,
+        panelMode: state.activeEnvironment?.panelMode || "remote",
+        remoteMode: state.activeEnvironment?.remoteMode || "off",
+        sessionName: name,
+        threadId,
+        model,
+        status: relayError ? "agent-ready-relay-warning" : "agent-ready",
+        summary: `Super agent ready: ${name}${project ? ` (${project})` : ""}`,
+        urls: {
+          local: buildConnectionHelpPayload()?.urls?.local || "",
+          public: buildConnectionHelpPayload()?.guidance?.recommendedMobileUrl || "",
+        },
+        artifacts: await buildArtifactSnapshot(),
+      });
+      await persistEnvironmentRuntimeSnapshot({
+        environment: state.activeEnvironment,
+      });
 
       json(res, 200, {
         ok: true,
@@ -4654,10 +5345,12 @@ async function handleApi(req, res, pathname, ip) {
           threadId,
           project,
           mode,
+          model,
         },
         registry: persisted,
         prep,
         latestSession,
+        runs: runs.runs.slice(0, 15),
         codex: {
           exitCode: codexResult.exitCode,
           durationMs: codexResult.durationMs,
