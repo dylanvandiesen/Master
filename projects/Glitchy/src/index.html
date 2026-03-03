@@ -6,6 +6,13 @@
   <title>Glitchy — Controlled Signal Loss</title>
   <style>
     :root {
+      --bg-a: #11192a;
+      --bg-b: #090e18;
+      --bg-c: #03060b;
+      --ink: #d7f4ff;
+      --accent: #48e3ff;
+      --accent-soft: rgba(72, 227, 255, 0.2);
+
       --signal: 1;
       --tear-x: 0px;
       --tear-y: 0px;
@@ -32,15 +39,12 @@
       margin: 0;
       height: 100%;
       overflow: hidden;
-      color: #d7f4ff;
+      color: var(--ink);
       font-family: "IBM Plex Mono", "Consolas", "Menlo", monospace;
-      background: radial-gradient(circle at 50% 40%, #11192a 0%, #090e18 45%, #03060b 100%);
+      background: radial-gradient(circle at 50% 40%, var(--bg-a) 0%, var(--bg-b) 45%, var(--bg-c) 100%);
     }
 
-    body {
-      display: grid;
-      place-items: center;
-    }
+    body { display: grid; place-items: center; }
 
     .stage {
       position: fixed;
@@ -51,7 +55,7 @@
       transform: translate3d(var(--tear-x), var(--tear-y), 0);
       animation: field-jitter 4s infinite steps(1, end);
       opacity: var(--screen-opacity);
-      transition: opacity 70ms steps(1, end);
+      transition: opacity 160ms ease, filter 160ms ease;
     }
 
     body.no-jitter .stage { animation: none; }
@@ -62,17 +66,17 @@
       width: min(1100px, 92vw);
       height: min(72vh, 700px);
       border-radius: 16px;
-      border: 1px solid rgba(157, 216, 255, 0.28);
+      border: 1px solid color-mix(in oklab, var(--ink) 26%, transparent);
       overflow: hidden;
       isolation: isolate;
       background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)),
-        radial-gradient(circle at 50% 8%, rgba(72, 227, 255, 0.2), transparent 55%),
+        radial-gradient(circle at 50% 8%, var(--accent-soft), transparent 55%),
         #050914;
       box-shadow:
-        inset 0 0 120px rgba(100, 220, 255, 0.1),
+        inset 0 0 120px color-mix(in oklab, var(--accent) 24%, transparent),
         0 12px 40px rgba(0, 0, 0, 0.65),
-        0 0 38px rgba(87, 198, 255, 0.16);
+        0 0 38px color-mix(in oklab, var(--accent) 20%, transparent);
     }
 
     .panel::before,
@@ -86,16 +90,15 @@
     .panel::before {
       background: repeating-linear-gradient(
         to bottom,
-        rgba(180, 255, 230, 0.08) 0px,
-        rgba(180, 255, 230, 0.08) 1px,
+        color-mix(in oklab, var(--ink) 16%, transparent) 0px,
+        color-mix(in oklab, var(--ink) 16%, transparent) 1px,
         transparent 1px,
         transparent var(--scanline-spacing)
       );
       mix-blend-mode: screen;
       opacity: calc(var(--scanline-opacity) * var(--signal));
-      animation:
-        scan-drift var(--scanline-speed) linear infinite,
-        scan-wobble var(--scanline-wobble) ease-in-out infinite;
+      animation: scan-drift var(--scanline-speed) linear infinite, scan-wobble var(--scanline-wobble) ease-in-out infinite;
+      transition: opacity 180ms ease;
     }
 
     body.no-scanlines .panel::before { display: none; }
@@ -106,6 +109,12 @@
       opacity: 0.92;
     }
 
+    .pixel-grid,
+    .tear-bars,
+    .noise,
+    .sync-bars,
+    .dropout { transition: opacity 160ms ease; }
+
     .pixel-grid {
       position: fixed;
       inset: 0;
@@ -114,8 +123,8 @@
       opacity: var(--pixel-opacity);
       mix-blend-mode: overlay;
       background-image:
-        linear-gradient(rgba(135, 222, 255, 0.22) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(135, 222, 255, 0.2) 1px, transparent 1px);
+        linear-gradient(color-mix(in oklab, var(--ink) 30%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in oklab, var(--ink) 28%, transparent) 1px, transparent 1px);
       background-size: var(--pixel-size) var(--pixel-size), var(--pixel-size) var(--pixel-size);
       animation: pixel-wander 220ms steps(2, end) infinite;
     }
@@ -128,14 +137,13 @@
       z-index: 5;
       pointer-events: none;
       opacity: 0;
-      background:
-        repeating-linear-gradient(
-          to bottom,
-          transparent 0 18px,
-          rgba(186, 233, 255, 0.22) 18px 20px,
-          rgba(9, 18, 31, 0.26) 20px 34px,
-          transparent 34px 50px
-        );
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0 18px,
+        color-mix(in oklab, var(--ink) 26%, transparent) 18px 20px,
+        rgba(9, 18, 31, 0.26) 20px 34px,
+        transparent 34px 50px
+      );
       mix-blend-mode: screen;
     }
 
@@ -163,7 +171,7 @@
       letter-spacing: 0.12em;
       text-transform: uppercase;
       opacity: 0.9;
-      text-shadow: 0 0 12px rgba(160, 249, 255, 0.35);
+      text-shadow: 0 0 12px color-mix(in oklab, var(--ink) 40%, transparent);
     }
 
     .telemetry {
@@ -187,8 +195,8 @@
       line-height: 0.92;
       letter-spacing: 0.04em;
       text-transform: uppercase;
-      color: #e1f8ff;
-      text-shadow: 0 0 14px rgba(149, 236, 255, 0.5), 0 0 48px rgba(57, 200, 255, 0.25);
+      color: color-mix(in oklab, var(--ink) 90%, white);
+      text-shadow: 0 0 14px color-mix(in oklab, var(--ink) 45%, transparent), 0 0 48px color-mix(in oklab, var(--accent) 26%, transparent);
       animation: chroma-split 3.6s infinite steps(1, end);
     }
 
@@ -210,7 +218,7 @@
     }
 
     h1::after {
-      color: rgba(35, 198, 255, 0.62);
+      color: color-mix(in oklab, var(--accent) 82%, #23c6ff);
       transform: translateX(var(--rgb-shift));
       mix-blend-mode: screen;
     }
@@ -250,7 +258,7 @@
       height: var(--bar-thickness);
       border-radius: 999px;
       opacity: 0;
-      background: linear-gradient(90deg, transparent, rgba(185, 252, 255, 0.95), transparent);
+      background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--ink) 95%, white), transparent);
       filter: blur(0.35px);
       animation: sync-sweep var(--sync-speed) linear infinite;
       animation-delay: var(--bar-delay, 0s);
@@ -264,17 +272,21 @@
       z-index: 7;
       pointer-events: none;
       opacity: 0;
-      background: repeating-linear-gradient(
-        to bottom,
-        rgba(0, 0, 0, 0.82) 0px,
-        rgba(0, 0, 0, 0.82) 2px,
-        transparent 3px,
-        transparent 7px
-      );
+      background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.82) 0px, rgba(0, 0, 0, 0.82) 2px, transparent 3px, transparent 7px);
     }
 
     body.glitch-burst .dropout { animation: dropout 0.2s steps(2, end) 2; }
     body.no-dropout .dropout { display: none; }
+
+    body.connection-calm .stage { filter: none !important; }
+    body.connection-calm .panel::before,
+    body.connection-calm .pixel-grid,
+    body.connection-calm .tear-bars,
+    body.connection-calm .noise,
+    body.connection-calm .sync-bars,
+    body.connection-calm .dropout { opacity: 0 !important; }
+    body.connection-calm h1::before,
+    body.connection-calm h1::after { opacity: 0 !important; }
 
     .control-toggle {
       position: fixed;
@@ -295,7 +307,7 @@
       top: 52px;
       right: 12px;
       z-index: 10;
-      width: min(360px, 94vw);
+      width: min(390px, 95vw);
       max-height: 86vh;
       overflow: auto;
       border-radius: 12px;
@@ -313,7 +325,9 @@
     .controls label { display: grid; gap: 0.2rem; }
     .controls .row { display: flex; gap: 0.55rem; align-items: center; flex-wrap: wrap; }
     .controls input[type='range'] { width: 100%; }
-    .controls button {
+    .controls button,
+    .controls select,
+    .controls input[type='color'] {
       background: #0f2437;
       border: 1px solid rgba(153, 231, 255, 0.3);
       color: #d7f4ff;
@@ -323,63 +337,17 @@
       font: inherit;
     }
 
-    @keyframes scan-drift {
-      from { background-position: 0 0; }
-      to { background-position: 0 var(--scan-drift); }
-    }
-
-    @keyframes scan-wobble {
-      0%, 100% { transform: translateX(0px); }
-      25% { transform: translateX(0.35px); }
-      50% { transform: translateX(-0.5px); }
-      75% { transform: translateX(0.25px); }
-    }
-
-    @keyframes sync-sweep {
-      0%, 75%, 100% { transform: translateY(-12vh); opacity: 0; }
-      77% { opacity: var(--sync-opacity); }
-      92% { transform: translateY(115vh); opacity: 0.35; }
-    }
-
-    @keyframes field-jitter {
-      0%, 79%, 100% { transform: translate3d(var(--tear-x), var(--tear-y), 0); }
-      80% { transform: translate3d(calc(var(--tear-x) + 0.6px), calc(var(--tear-y) - 0.8px), 0); }
-      81% { transform: translate3d(calc(var(--tear-x) - 1px), calc(var(--tear-y) + 1.5px), 0); }
-      82% { transform: translate3d(calc(var(--tear-x) + 0.4px), var(--tear-y), 0); }
-    }
-
-    @keyframes chroma-split {
-      0%, 72%, 100% { filter: saturate(1) contrast(1); }
-      73% { transform: translateX(1px); }
-      74% { transform: translateX(-1px) skewX(1deg); }
-      75% { filter: saturate(1.2) contrast(1.16); }
-      76% { transform: translateX(0); }
-    }
-
-    @keyframes dropout {
-      0% { opacity: 0; }
-      16% { opacity: 0.2; }
-      55% { opacity: 0.68; }
-      100% { opacity: 0; }
-    }
-
-    @keyframes pixel-wander {
-      0%, 100% { transform: translate(0, 0); }
-      50% { transform: translate(-0.8px, 0.6px); }
-    }
-
-    @keyframes tear-shift {
-      0%, 100% { transform: translateX(-2px); }
-      50% { transform: translateX(3px); }
-    }
+    @keyframes scan-drift { from { background-position: 0 0; } to { background-position: 0 var(--scan-drift); } }
+    @keyframes scan-wobble { 0%, 100% { transform: translateX(0px); } 25% { transform: translateX(0.35px); } 50% { transform: translateX(-0.5px); } 75% { transform: translateX(0.25px); } }
+    @keyframes sync-sweep { 0%, 75%, 100% { transform: translateY(-12vh); opacity: 0; } 77% { opacity: var(--sync-opacity); } 92% { transform: translateY(115vh); opacity: 0.35; } }
+    @keyframes field-jitter { 0%, 79%, 100% { transform: translate3d(var(--tear-x), var(--tear-y), 0); } 80% { transform: translate3d(calc(var(--tear-x) + 0.6px), calc(var(--tear-y) - 0.8px), 0); } 81% { transform: translate3d(calc(var(--tear-x) - 1px), calc(var(--tear-y) + 1.5px), 0); } 82% { transform: translate3d(calc(var(--tear-x) + 0.4px), var(--tear-y), 0); } }
+    @keyframes chroma-split { 0%, 72%, 100% { filter: saturate(1) contrast(1); } 73% { transform: translateX(1px); } 74% { transform: translateX(-1px) skewX(1deg); } 75% { filter: saturate(1.2) contrast(1.16); } 76% { transform: translateX(0); } }
+    @keyframes dropout { 0% { opacity: 0; } 16% { opacity: 0.2; } 55% { opacity: 0.68; } 100% { opacity: 0; } }
+    @keyframes pixel-wander { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-0.8px, 0.6px); } }
+    @keyframes tear-shift { 0%, 100% { transform: translateX(-2px); } 50% { transform: translateX(3px); } }
 
     @media (prefers-reduced-motion: reduce) {
-      .stage,
-      .panel::before,
-      .sync-bar,
-      h1,
-      .pixel-grid,
-      .tear-bars { animation: none !important; }
+      .stage, .panel::before, .sync-bar, h1, .pixel-grid, .tear-bars { animation: none !important; }
     }
   </style>
 </head>
@@ -407,7 +375,7 @@
         </div>
         <div class="title-wrap">
           <h1 data-text="Signal Lost">Signal Lost</h1>
-          <p class="subtitle">Expanded controls: blackout signal-loss mode, pixelated distortion, multi sync bars, and triggerable runtime API.</p>
+          <p class="subtitle">Added calm→glitch pulse mode, color controls, and export of full configured single-file HTML.</p>
         </div>
         <div class="telemetry">
           <span>CH 04-A // RF: -92 dBm</span>
@@ -428,23 +396,22 @@
 
   <script>
     (() => {
+      const BOOT_CONFIG = window.__GLITCHY_BOOT_CONFIG || {};
       const DEFAULT_CONFIG = {
         showControls: true,
         debugKeybinds: true,
         autoMode: true,
         enabled: true,
         intensity: 1,
-        timing: { baseIntervalMs: 1200, intervalJitterMs: 850, burstMinMs: 140, burstMaxMs: 340, cooldownMs: 170 },
-        probability: { burstChance: 0.64, signalLossChance: 0.14, dropoutChance: 0.45, blackoutChance: 0.12 },
+        timing: { baseIntervalMs: 2200, intervalJitterMs: 1200, burstMinMs: 120, burstMaxMs: 300, cooldownMs: 250 },
+        probability: { burstChance: 0.42, signalLossChance: 0.12, dropoutChance: 0.3, blackoutChance: 0.08 },
+        connectionPulse: { enabled: false, quietMinMs: 4000, quietMaxMs: 12000, glitchMinMs: 220, glitchMaxMs: 900 },
+        theme: {
+          bgA: '#11192a', bgB: '#090e18', bgC: '#03060b', ink: '#d7f4ff', accent: '#48e3ff'
+        },
         distortion: {
-          enabled: true,
-          baseFrequencyX: 0.004,
-          baseFrequencyY: 0.018,
-          burstFrequencyX: 0.02,
-          burstFrequencyY: 0.08,
-          displacementMin: 8,
-          displacementMax: 70,
-          blockiness: 0.55
+          enabled: true, baseFrequencyX: 0.004, baseFrequencyY: 0.018, burstFrequencyX: 0.02, burstFrequencyY: 0.08,
+          displacementMin: 8, displacementMax: 70, blockiness: 0.55
         },
         blackout: { enabled: true, minMs: 80, maxMs: 360, opacityWhenLost: 0, reappearFlash: true },
         noise: { enabled: true, opacity: 0.14, fps: 24, grainStrength: 1.2 },
@@ -457,33 +424,11 @@
       };
 
       const PROFILES = {
-        subtle: {
-          intensity: 0.62,
-          timing: { baseIntervalMs: 1700, intervalJitterMs: 700 },
-          probability: { burstChance: 0.45, signalLossChance: 0.07, blackoutChance: 0.04 },
-          distortion: { displacementMax: 28, blockiness: 0.25 },
-          noise: { opacity: 0.08 },
-          scanlines: { opacity: 0.24 },
-          pixelate: { opacity: 0.08 }
-        },
+        subtle: { intensity: 0.62, probability: { burstChance: 0.2, signalLossChance: 0.04, blackoutChance: 0.02 }, pixelate: { opacity: 0.08 }, distortion: { blockiness: 0.2, displacementMax: 24 } },
         broadcast: {},
-        signalLoss: {
-          intensity: 1.25,
-          timing: { baseIntervalMs: 860, intervalJitterMs: 450 },
-          probability: { burstChance: 0.75, signalLossChance: 0.42, dropoutChance: 0.72, blackoutChance: 0.28 },
-          distortion: { displacementMin: 20, displacementMax: 98, blockiness: 0.75 },
-          blackout: { minMs: 140, maxMs: 650 },
-          noise: { opacity: 0.22 }
-        },
-        aggressive: {
-          intensity: 1.45,
-          timing: { baseIntervalMs: 760, intervalJitterMs: 420 },
-          probability: { burstChance: 0.85, signalLossChance: 0.44, dropoutChance: 0.8, blackoutChance: 0.35 },
-          distortion: { burstFrequencyX: 0.026, burstFrequencyY: 0.11, displacementMin: 26, displacementMax: 120, blockiness: 0.9 },
-          scanlines: { speed: 2.6, wobbleAmount: 1.6, driftPx: 14 },
-          chroma: { shiftPx: 3.8 },
-          syncBar: { count: 5, thickness: 3 }
-        }
+        signalLoss: { intensity: 1.2, probability: { burstChance: 0.75, signalLossChance: 0.4, dropoutChance: 0.72, blackoutChance: 0.28 }, blackout: { minMs: 140, maxMs: 650 }, distortion: { displacementMin: 20, displacementMax: 98, blockiness: 0.75 } },
+        pulse: { connectionPulse: { enabled: true, quietMinMs: 5000, quietMaxMs: 10000, glitchMinMs: 240, glitchMaxMs: 850 }, autoMode: true, probability: { burstChance: 0.15, signalLossChance: 0.07, blackoutChance: 0.03 } },
+        aggressive: { intensity: 1.45, timing: { baseIntervalMs: 760, intervalJitterMs: 420 }, probability: { burstChance: 0.85, signalLossChance: 0.44, dropoutChance: 0.8, blackoutChance: 0.35 }, distortion: { burstFrequencyX: 0.026, burstFrequencyY: 0.11, displacementMin: 26, displacementMax: 120, blockiness: 0.9 }, syncBar: { count: 5, thickness: 3 } }
       };
       PROFILES.broadcast = {};
 
@@ -503,7 +448,7 @@
       const ctx = elements.noise.getContext('2d', { alpha: true });
 
       const state = {
-        config: sanitizeConfig(structuredClone(DEFAULT_CONFIG)),
+        config: null,
         running: false,
         paused: false,
         timer: 0,
@@ -512,21 +457,18 @@
         burstUntil: 0,
         signalLossUntil: 0,
         hiddenPause: false,
-        blackoutUntil: 0
+        blackoutUntil: 0,
+        pulseTimer: 0,
+        pulseActive: false
       };
 
-      function clamp(v, min, max) {
-        return Math.min(max, Math.max(min, Number(v)));
-      }
-
+      function clamp(v, min, max) { return Math.min(max, Math.max(min, Number(v))); }
       function deepMerge(base, patch) {
         if (!patch || typeof patch !== 'object') return base;
         const out = Array.isArray(base) ? [...base] : { ...base };
         for (const [k, v] of Object.entries(patch)) {
           const cur = out[k];
-          out[k] = v && typeof v === 'object' && !Array.isArray(v) && cur && typeof cur === 'object'
-            ? deepMerge(cur, v)
-            : v;
+          out[k] = v && typeof v === 'object' && !Array.isArray(v) && cur && typeof cur === 'object' ? deepMerge(cur, v) : v;
         }
         return out;
       }
@@ -543,6 +485,11 @@
         config.probability.signalLossChance = clamp(config.probability.signalLossChance, 0, 1);
         config.probability.dropoutChance = clamp(config.probability.dropoutChance, 0, 1);
         config.probability.blackoutChance = clamp(config.probability.blackoutChance, 0, 1);
+
+        config.connectionPulse.quietMinMs = clamp(config.connectionPulse.quietMinMs, 500, 30000);
+        config.connectionPulse.quietMaxMs = clamp(config.connectionPulse.quietMaxMs, config.connectionPulse.quietMinMs, 45000);
+        config.connectionPulse.glitchMinMs = clamp(config.connectionPulse.glitchMinMs, 80, 6000);
+        config.connectionPulse.glitchMaxMs = clamp(config.connectionPulse.glitchMaxMs, config.connectionPulse.glitchMinMs, 10000);
 
         config.distortion.baseFrequencyX = clamp(config.distortion.baseFrequencyX, 0, 0.04);
         config.distortion.baseFrequencyY = clamp(config.distortion.baseFrequencyY, 0, 0.16);
@@ -581,14 +528,10 @@
         config.jitter.xPx = clamp(config.jitter.xPx, 0, 16);
         config.jitter.yPx = clamp(config.jitter.yPx, 0, 16);
         config.jitter.vHoldChance = clamp(config.jitter.vHoldChance, 0, 1);
-
         return config;
       }
 
-      function setCssVar(name, value) {
-        document.documentElement.style.setProperty(name, String(value));
-      }
-
+      function setCssVar(name, value) { document.documentElement.style.setProperty(name, String(value)); }
       function renderSyncBars() {
         const c = state.config.syncBar;
         elements.syncBars.innerHTML = '';
@@ -600,8 +543,19 @@
         }
       }
 
+      function applyTheme() {
+        const t = state.config.theme;
+        setCssVar('--bg-a', t.bgA);
+        setCssVar('--bg-b', t.bgB);
+        setCssVar('--bg-c', t.bgC);
+        setCssVar('--ink', t.ink);
+        setCssVar('--accent', t.accent);
+        setCssVar('--accent-soft', `${t.accent}33`);
+      }
+
       function applyConfigToUI() {
         const c = state.config;
+        applyTheme();
         setCssVar('--noise-alpha', c.noise.opacity.toFixed(3));
         setCssVar('--scanline-opacity', c.scanlines.opacity.toFixed(3));
         setCssVar('--scanline-spacing', `${c.scanlines.spacing}px`);
@@ -628,7 +582,6 @@
 
         if (!c.enabled || !c.distortion.enabled) elements.displacement.setAttribute('scale', '0');
         if (!c.enabled) elements.state.textContent = 'Transmission: paused';
-
         elements.toggleControls.style.display = c.showControls ? 'block' : 'none';
         renderSyncBars();
       }
@@ -643,23 +596,16 @@
 
       function drawNoiseFrame(now) {
         const c = state.config;
-        if (!(c.enabled && c.noise.enabled)) {
-          state.raf = requestAnimationFrame(drawNoiseFrame);
-          return;
+        if (!(c.enabled && c.noise.enabled) || elements.body.classList.contains('connection-calm')) {
+          state.raf = requestAnimationFrame(drawNoiseFrame); return;
         }
-
         const msPerFrame = 1000 / c.noise.fps;
-        if (now < state.noiseNextAt) {
-          state.raf = requestAnimationFrame(drawNoiseFrame);
-          return;
-        }
+        if (now < state.noiseNextAt) { state.raf = requestAnimationFrame(drawNoiseFrame); return; }
         state.noiseNextAt = now + msPerFrame;
 
-        const w = elements.noise.width;
-        const h = elements.noise.height;
+        const w = elements.noise.width, h = elements.noise.height;
         const image = ctx.createImageData(w, h);
         const heavy = now < state.burstUntil;
-
         for (let i = 0; i < image.data.length; i += 4) {
           const grain = Math.random() * 255 * c.noise.grainStrength;
           const stripe = (i / 4 / w + now * 0.05) % 11 < (heavy ? 5 : 2) ? 35 : 0;
@@ -668,54 +614,41 @@
           image.data[i + 2] = Math.min(255, grain + stripe * 0.45);
           image.data[i + 3] = heavy ? 125 : 78;
         }
-
         ctx.putImageData(image, 0, 0);
         state.raf = requestAnimationFrame(drawNoiseFrame);
       }
 
       function formatTimecode() {
-        const d = new Date();
-        const pad = (v) => String(v).padStart(2, '0');
+        const d = new Date(); const pad = (v) => String(v).padStart(2, '0');
         return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
       }
-
       function updateTelemetry(signalLoss) {
         const link = Math.max(8, Math.min(99, Math.round(90 - Math.random() * (signalLoss ? 76 : 36))));
         elements.quality.textContent = `Link quality: ${link}%`;
         elements.timecode.textContent = formatTimecode();
       }
 
-      function setDistortion(scale, freqX, freqY, blockiness = 0.5) {
-        elements.turbulence.setAttribute('baseFrequency', `${freqX.toFixed(4)} ${freqY.toFixed(4)}`);
+      function setDistortion(scale, fx, fy, block = 0.5) {
+        elements.turbulence.setAttribute('baseFrequency', `${fx.toFixed(4)} ${fy.toFixed(4)}`);
         elements.displacement.setAttribute('scale', String(scale.toFixed(2)));
-        const lift = 1 + blockiness * 0.35;
-        elements.posterize.setAttribute(
-          'values',
-          `${lift.toFixed(2)} 0 0 0 0  0 ${(1 + blockiness * 0.2).toFixed(2)} 0 0 0  0 0 ${(1 + blockiness * 0.4).toFixed(2)} 0 0  0 0 0 1 0`
-        );
+        const lift = 1 + block * 0.35;
+        elements.posterize.setAttribute('values', `${lift.toFixed(2)} 0 0 0 0  0 ${(1 + block * 0.2).toFixed(2)} 0 0 0  0 0 ${(1 + block * 0.4).toFixed(2)} 0 0  0 0 0 1 0`);
       }
-
-      function randomSigned(maxAbs) {
-        return (Math.random() * 2 - 1) * maxAbs;
-      }
+      function randomSigned(maxAbs) { return (Math.random() * 2 - 1) * maxAbs; }
 
       function triggerBurst(options = {}) {
         const c = state.config;
         if (!c.enabled) return;
         const intensity = clamp(options.intensity ?? c.intensity, 0, 3);
-        const duration = clamp(
-          options.durationMs ?? (c.timing.burstMinMs + Math.random() * (c.timing.burstMaxMs - c.timing.burstMinMs)),
-          40,
-          5000
-        );
+        const duration = clamp(options.durationMs ?? (c.timing.burstMinMs + Math.random() * (c.timing.burstMaxMs - c.timing.burstMinMs)), 40, 5000);
         state.burstUntil = performance.now() + duration;
         elements.body.classList.add('glitch-burst');
 
         if (c.distortion.enabled) {
-          const freqX = c.distortion.baseFrequencyX + Math.random() * c.distortion.burstFrequencyX * intensity;
-          const freqY = c.distortion.baseFrequencyY + Math.random() * c.distortion.burstFrequencyY * intensity;
+          const fx = c.distortion.baseFrequencyX + Math.random() * c.distortion.burstFrequencyX * intensity;
+          const fy = c.distortion.baseFrequencyY + Math.random() * c.distortion.burstFrequencyY * intensity;
           const scale = c.distortion.displacementMin + Math.random() * (c.distortion.displacementMax - c.distortion.displacementMin) * intensity;
-          setDistortion(scale, freqX, freqY, c.distortion.blockiness);
+          setDistortion(scale, fx, fy, c.distortion.blockiness);
         }
 
         if (c.jitter.enabled) {
@@ -727,29 +660,21 @@
           elements.body.classList.remove('glitch-burst');
           setCssVar('--tear-x', '0px');
           setCssVar('--tear-y', '0px');
-          if (c.distortion.enabled) {
-            setDistortion(0, c.distortion.baseFrequencyX, c.distortion.baseFrequencyY, c.distortion.blockiness);
-          }
+          if (c.distortion.enabled) setDistortion(0, c.distortion.baseFrequencyX, c.distortion.baseFrequencyY, c.distortion.blockiness);
         }, duration);
       }
 
       function triggerBlackout(options = {}) {
         const c = state.config;
         if (!(c.enabled && c.blackout.enabled)) return;
-        const duration = clamp(
-          options.durationMs ?? (c.blackout.minMs + Math.random() * (c.blackout.maxMs - c.blackout.minMs)),
-          20,
-          8000
-        );
+        const duration = clamp(options.durationMs ?? (c.blackout.minMs + Math.random() * (c.blackout.maxMs - c.blackout.minMs)), 20, 8000);
         state.blackoutUntil = performance.now() + duration;
         setCssVar('--screen-opacity', c.blackout.opacityWhenLost.toFixed(3));
         elements.state.textContent = 'Transmission: blackout';
         setTimeout(() => {
           setCssVar('--screen-opacity', '1');
           elements.state.textContent = 'Transmission: unstable';
-          if (c.blackout.reappearFlash) {
-            triggerBurst({ durationMs: 90, intensity: 1.8 });
-          }
+          if (c.blackout.reappearFlash) triggerBurst({ durationMs: 90, intensity: 1.8 });
         }, duration);
       }
 
@@ -764,9 +689,7 @@
         if (c.blackout.enabled && Math.random() < c.probability.blackoutChance) triggerBlackout();
         setTimeout(() => {
           setCssVar('--signal', '1');
-          if (performance.now() > state.blackoutUntil) {
-            elements.state.textContent = 'Transmission: unstable';
-          }
+          if (performance.now() > state.blackoutUntil) elements.state.textContent = 'Transmission: unstable';
         }, duration);
       }
 
@@ -774,6 +697,37 @@
         if (!(state.config.enabled && state.config.dropout.enabled)) return;
         elements.body.classList.add('glitch-burst');
         setTimeout(() => elements.body.classList.remove('glitch-burst'), 220);
+      }
+
+      function setConnectionCalm(on) {
+        elements.body.classList.toggle('connection-calm', on);
+        state.pulseActive = !on;
+        if (on) {
+          setCssVar('--signal', '1');
+          setCssVar('--screen-opacity', '1');
+          elements.state.textContent = 'Transmission: stable';
+        } else {
+          elements.state.textContent = 'Transmission: unstable';
+        }
+      }
+
+      function schedulePulseCycle() {
+        window.clearTimeout(state.pulseTimer);
+        const c = state.config;
+        if (!(c.enabled && c.connectionPulse.enabled)) {
+          setConnectionCalm(false);
+          return;
+        }
+
+        const quiet = c.connectionPulse.quietMinMs + Math.random() * (c.connectionPulse.quietMaxMs - c.connectionPulse.quietMinMs);
+        setConnectionCalm(true);
+        state.pulseTimer = window.setTimeout(() => {
+          setConnectionCalm(false);
+          triggerBurst({ intensity: 1.1 });
+          if (Math.random() < 0.45) triggerSignalLoss({ durationMs: 180 + Math.random() * 420 });
+          const active = c.connectionPulse.glitchMinMs + Math.random() * (c.connectionPulse.glitchMaxMs - c.connectionPulse.glitchMinMs);
+          state.pulseTimer = window.setTimeout(schedulePulseCycle, active);
+        }, quiet);
       }
 
       function triggerSequence(sequence = []) {
@@ -798,8 +752,7 @@
       function schedulerTick() {
         if (!state.running || state.paused) return;
         const c = state.config;
-
-        if (c.enabled && c.autoMode) {
+        if (c.enabled && c.autoMode && !c.connectionPulse.enabled) {
           if (Math.random() < c.probability.burstChance) triggerBurst();
           const doLoss = Math.random() < c.probability.signalLossChance;
           if (doLoss) triggerSignalLoss();
@@ -814,86 +767,54 @@
         state.timer = window.setTimeout(schedulerTick, delay);
       }
 
-      function start() {
-        if (state.running) return;
-        state.running = true;
-        state.paused = false;
-        state.timer = window.setTimeout(schedulerTick, computeNextDelay());
-      }
-
-      function stop() {
-        state.running = false;
-        state.paused = false;
-        window.clearTimeout(state.timer);
-        state.timer = 0;
-      }
-
-      function pause() {
-        state.paused = true;
-        window.clearTimeout(state.timer);
-      }
-
-      function resume() {
-        if (!state.running) start();
-        state.paused = false;
-        window.clearTimeout(state.timer);
-        state.timer = window.setTimeout(schedulerTick, computeNextDelay());
-      }
+      function start() { if (state.running) return; state.running = true; state.paused = false; state.timer = window.setTimeout(schedulerTick, computeNextDelay()); schedulePulseCycle(); }
+      function stop() { state.running = false; state.paused = false; window.clearTimeout(state.timer); window.clearTimeout(state.pulseTimer); state.timer = 0; state.pulseTimer = 0; }
+      function pause() { state.paused = true; window.clearTimeout(state.timer); window.clearTimeout(state.pulseTimer); }
+      function resume() { if (!state.running) start(); state.paused = false; window.clearTimeout(state.timer); state.timer = window.setTimeout(schedulerTick, computeNextDelay()); schedulePulseCycle(); }
 
       function setConfig(partial) {
         state.config = sanitizeConfig(deepMerge(state.config, partial));
         applyConfigToUI();
+        schedulePulseCycle();
         renderControls();
       }
-
-      function setEnabled(enabled) {
-        setConfig({ enabled: Boolean(enabled) });
-      }
+      function setEnabled(enabled) { setConfig({ enabled: Boolean(enabled) }); }
 
       function setEffectEnabled(effectName, isEnabled) {
         const map = {
-          noise: ['noise', 'enabled'],
-          scanlines: ['scanlines', 'enabled'],
-          distortion: ['distortion', 'enabled'],
-          chroma: ['chroma', 'enabled'],
-          jitter: ['jitter', 'enabled'],
-          syncBar: ['syncBar', 'enabled'],
-          dropout: ['dropout', 'enabled'],
-          pixelate: ['pixelate', 'enabled'],
-          blackout: ['blackout', 'enabled']
+          noise: ['noise', 'enabled'], scanlines: ['scanlines', 'enabled'], distortion: ['distortion', 'enabled'], chroma: ['chroma', 'enabled'],
+          jitter: ['jitter', 'enabled'], syncBar: ['syncBar', 'enabled'], dropout: ['dropout', 'enabled'], pixelate: ['pixelate', 'enabled'], blackout: ['blackout', 'enabled']
         };
-        const target = map[effectName];
-        if (!target) return;
-        const [group, key] = target;
-        setConfig({ [group]: { [key]: Boolean(isEnabled) } });
+        const target = map[effectName]; if (!target) return;
+        const [group, key] = target; setConfig({ [group]: { [key]: Boolean(isEnabled) } });
       }
 
-      function applyProfile(name) {
-        const profile = PROFILES[name];
-        if (!profile) return false;
-        setConfig(profile);
-        return true;
-      }
+      function applyProfile(name) { const p = PROFILES[name]; if (!p) return false; setConfig(p); return true; }
+      function getConfig() { return structuredClone(state.config); }
+      function resetConfig() { state.config = sanitizeConfig(deepMerge(structuredClone(DEFAULT_CONFIG), BOOT_CONFIG)); applyConfigToUI(); schedulePulseCycle(); renderControls(); }
 
-      function getConfig() {
-        return structuredClone(state.config);
-      }
-
-      function resetConfig() {
-        state.config = sanitizeConfig(structuredClone(DEFAULT_CONFIG));
-        applyConfigToUI();
-        renderControls();
+      function exportConfiguredHtml() {
+        const cfg = JSON.stringify(getConfig(), null, 2);
+        let html = `<!doctype html>\n${document.documentElement.outerHTML}`;
+        const inject = `<script>window.__GLITCHY_BOOT_CONFIG = ${cfg};<\/script>`;
+        if (html.includes('window.__GLITCHY_BOOT_CONFIG')) {
+          html = html.replace(/window\.__GLITCHY_BOOT_CONFIG\s*=\s*[^;]+;/, `window.__GLITCHY_BOOT_CONFIG = ${cfg};`);
+        } else {
+          html = html.replace('<script>', `${inject}\n  <script>`);
+        }
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'glitchy-export.html';
+        a.click();
+        URL.revokeObjectURL(url);
       }
 
       function bindVisibility() {
         document.addEventListener('visibilitychange', () => {
-          if (document.hidden && state.running) {
-            state.hiddenPause = true;
-            pause();
-          } else if (!document.hidden && state.hiddenPause) {
-            state.hiddenPause = false;
-            resume();
-          }
+          if (document.hidden && state.running) { state.hiddenPause = true; pause(); }
+          else if (!document.hidden && state.hiddenPause) { state.hiddenPause = false; resume(); }
         });
       }
 
@@ -912,38 +833,34 @@
           });
         }
 
-        elements.toggleControls.addEventListener('click', () => {
-          elements.controls.hidden = !elements.controls.hidden;
-        });
+        elements.toggleControls.addEventListener('click', () => { elements.controls.hidden = !elements.controls.hidden; });
       }
 
       function addRangeField(parent, label, min, max, step, value, onInput) {
         const wrapper = document.createElement('label');
         wrapper.textContent = `${label}: ${value}`;
         const input = document.createElement('input');
-        input.type = 'range';
-        input.min = String(min);
-        input.max = String(max);
-        input.step = String(step);
-        input.value = String(value);
-        input.addEventListener('input', () => {
-          wrapper.firstChild.textContent = `${label}: ${input.value}`;
-          onInput(Number(input.value));
-        });
-        wrapper.appendChild(input);
-        parent.appendChild(wrapper);
+        input.type = 'range'; input.min = String(min); input.max = String(max); input.step = String(step); input.value = String(value);
+        input.addEventListener('input', () => { wrapper.firstChild.textContent = `${label}: ${input.value}`; onInput(Number(input.value)); });
+        wrapper.appendChild(input); parent.appendChild(wrapper);
       }
 
       function addToggleField(parent, label, checked, onChange) {
-        const row = document.createElement('label');
-        row.className = 'row';
-        const input = document.createElement('input');
-        input.type = 'checkbox';
-        input.checked = checked;
+        const row = document.createElement('label'); row.className = 'row';
+        const input = document.createElement('input'); input.type = 'checkbox'; input.checked = checked;
         input.addEventListener('change', () => onChange(input.checked));
-        const txt = document.createElement('span');
-        txt.textContent = label;
-        row.append(input, txt);
+        const txt = document.createElement('span'); txt.textContent = label;
+        row.append(input, txt); parent.appendChild(row);
+      }
+
+      function addColorField(parent, label, value, onInput) {
+        const row = document.createElement('label');
+        row.textContent = label;
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.value = value;
+        input.addEventListener('input', () => onInput(input.value));
+        row.appendChild(input);
         parent.appendChild(row);
       }
 
@@ -954,8 +871,13 @@
 
         addToggleField(root, 'Master enabled', c.enabled, (v) => setEnabled(v));
         addToggleField(root, 'Auto mode', c.autoMode, (v) => setConfig({ autoMode: v }));
+        addToggleField(root, 'Connection pulse mode (calm -> short glitch)', c.connectionPulse.enabled, (v) => setConfig({ connectionPulse: { enabled: v } }));
+        addRangeField(root, 'Pulse quiet min ms', 500, 30000, 100, c.connectionPulse.quietMinMs, (v) => setConfig({ connectionPulse: { quietMinMs: v } }));
+        addRangeField(root, 'Pulse quiet max ms', 500, 45000, 100, c.connectionPulse.quietMaxMs, (v) => setConfig({ connectionPulse: { quietMaxMs: v } }));
+        addRangeField(root, 'Pulse glitch min ms', 80, 6000, 10, c.connectionPulse.glitchMinMs, (v) => setConfig({ connectionPulse: { glitchMinMs: v } }));
+        addRangeField(root, 'Pulse glitch max ms', 80, 10000, 10, c.connectionPulse.glitchMaxMs, (v) => setConfig({ connectionPulse: { glitchMaxMs: v } }));
 
-        addRangeField(root, 'Base interval (ms)', 120, 4000, 10, c.timing.baseIntervalMs, (v) => setConfig({ timing: { baseIntervalMs: v } }));
+        addRangeField(root, 'Base interval (ms)', 120, 6000, 10, c.timing.baseIntervalMs, (v) => setConfig({ timing: { baseIntervalMs: v } }));
         addRangeField(root, 'Interval jitter (ms)', 0, 2500, 10, c.timing.intervalJitterMs, (v) => setConfig({ timing: { intervalJitterMs: v } }));
         addRangeField(root, 'Burst chance', 0, 1, 0.01, c.probability.burstChance, (v) => setConfig({ probability: { burstChance: v } }));
         addRangeField(root, 'Signal-loss chance', 0, 1, 0.01, c.probability.signalLossChance, (v) => setConfig({ probability: { signalLossChance: v } }));
@@ -967,7 +889,6 @@
         addRangeField(root, 'Blockiness', 0, 1, 0.01, c.distortion.blockiness, (v) => setConfig({ distortion: { blockiness: v } }));
         addRangeField(root, 'Pixel size', 2, 20, 1, c.pixelate.pixelSize, (v) => setConfig({ pixelate: { pixelSize: v } }));
         addRangeField(root, 'Pixel opacity', 0, 0.8, 0.01, c.pixelate.opacity, (v) => setConfig({ pixelate: { opacity: v } }));
-
         addRangeField(root, 'Noise opacity', 0, 0.6, 0.01, c.noise.opacity, (v) => setConfig({ noise: { opacity: v } }));
         addRangeField(root, 'Scanline speed', 1, 20, 0.1, c.scanlines.speed, (v) => setConfig({ scanlines: { speed: v } }));
         addRangeField(root, 'Scanline spacing', 2, 16, 1, c.scanlines.spacing, (v) => setConfig({ scanlines: { spacing: v } }));
@@ -976,6 +897,12 @@
         addRangeField(root, 'Sync speed', 2, 20, 0.1, c.syncBar.speed, (v) => setConfig({ syncBar: { speed: v } }));
         addRangeField(root, 'Sync thickness', 1, 8, 1, c.syncBar.thickness, (v) => setConfig({ syncBar: { thickness: v } }));
         addRangeField(root, 'Sync width %', 20, 100, 1, c.syncBar.widthPct, (v) => setConfig({ syncBar: { widthPct: v } }));
+
+        addColorField(root, 'Background A', c.theme.bgA, (v) => setConfig({ theme: { bgA: v } }));
+        addColorField(root, 'Background B', c.theme.bgB, (v) => setConfig({ theme: { bgB: v } }));
+        addColorField(root, 'Background C', c.theme.bgC, (v) => setConfig({ theme: { bgC: v } }));
+        addColorField(root, 'Ink color', c.theme.ink, (v) => setConfig({ theme: { ink: v } }));
+        addColorField(root, 'Accent color', c.theme.accent, (v) => setConfig({ theme: { accent: v } }));
 
         addToggleField(root, 'Noise', c.noise.enabled, (v) => setEffectEnabled('noise', v));
         addToggleField(root, 'Scanlines', c.scanlines.enabled, (v) => setEffectEnabled('scanlines', v));
@@ -989,7 +916,7 @@
 
         const row = document.createElement('div');
         row.className = 'row';
-        ['subtle', 'broadcast', 'signalLoss', 'aggressive'].forEach((name) => {
+        ['subtle', 'broadcast', 'pulse', 'signalLoss', 'aggressive'].forEach((name) => {
           const button = document.createElement('button');
           button.type = 'button';
           button.textContent = name;
@@ -997,51 +924,24 @@
           row.appendChild(button);
         });
 
-        const tBurst = document.createElement('button');
-        tBurst.textContent = 'trigger burst';
-        tBurst.addEventListener('click', () => triggerBurst());
-        row.appendChild(tBurst);
-
-        const tLoss = document.createElement('button');
-        tLoss.textContent = 'trigger loss';
-        tLoss.addEventListener('click', () => triggerSignalLoss());
-        row.appendChild(tLoss);
-
-        const tBlackout = document.createElement('button');
-        tBlackout.textContent = 'trigger blackout';
-        tBlackout.addEventListener('click', () => triggerBlackout());
-        row.appendChild(tBlackout);
-
-        const reset = document.createElement('button');
-        reset.type = 'button';
-        reset.textContent = 'reset';
-        reset.addEventListener('click', resetConfig);
-        row.appendChild(reset);
-
+        const tBurst = document.createElement('button'); tBurst.textContent = 'trigger burst'; tBurst.addEventListener('click', () => triggerBurst()); row.appendChild(tBurst);
+        const tLoss = document.createElement('button'); tLoss.textContent = 'trigger loss'; tLoss.addEventListener('click', () => triggerSignalLoss()); row.appendChild(tLoss);
+        const tBlackout = document.createElement('button'); tBlackout.textContent = 'trigger blackout'; tBlackout.addEventListener('click', () => triggerBlackout()); row.appendChild(tBlackout);
+        const exportBtn = document.createElement('button'); exportBtn.textContent = 'export full html'; exportBtn.addEventListener('click', exportConfiguredHtml); row.appendChild(exportBtn);
+        const reset = document.createElement('button'); reset.type = 'button'; reset.textContent = 'reset'; reset.addEventListener('click', resetConfig); row.appendChild(reset);
         root.appendChild(row);
       }
 
       function initReducedMotion() {
-        const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (reduced) {
-          setConfig({
-            autoMode: false,
-            noise: { fps: 8, opacity: 0.06 },
-            scanlines: { speed: 12 },
-            jitter: { enabled: false },
-            syncBar: { enabled: false },
-            pixelate: { opacity: 0.08 }
-          });
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          setConfig({ autoMode: false, noise: { fps: 8, opacity: 0.06 }, scanlines: { speed: 12 }, jitter: { enabled: false }, syncBar: { enabled: false }, pixelate: { opacity: 0.08 } });
         }
       }
 
       function init() {
-        resizeNoise();
-        bindEvents();
-        bindVisibility();
-        initReducedMotion();
-        applyConfigToUI();
-        renderControls();
+        state.config = sanitizeConfig(deepMerge(structuredClone(DEFAULT_CONFIG), BOOT_CONFIG));
+        resizeNoise(); bindEvents(); bindVisibility(); initReducedMotion();
+        applyConfigToUI(); renderControls();
         elements.controls.hidden = !state.config.showControls;
         state.raf = requestAnimationFrame(drawNoiseFrame);
         start();
@@ -1049,33 +949,15 @@
       }
 
       window.Glitchy = {
-        enable: () => setEnabled(true),
-        disable: () => setEnabled(false),
-        toggle: () => setEnabled(!state.config.enabled),
-        setEnabled,
-        start,
-        stop,
-        pause,
-        resume,
-        isRunning: () => state.running && !state.paused,
-        setConfig,
-        getConfig,
-        resetConfig,
-        setEffectEnabled,
-        applyProfile,
-        triggerBurst,
-        triggerSignalLoss,
-        triggerDropout,
-        triggerBlackout,
-        triggerSequence
+        enable: () => setEnabled(true), disable: () => setEnabled(false), toggle: () => setEnabled(!state.config.enabled), setEnabled,
+        start, stop, pause, resume, isRunning: () => state.running && !state.paused,
+        setConfig, getConfig, resetConfig, setEffectEnabled, applyProfile,
+        triggerBurst, triggerSignalLoss, triggerDropout, triggerBlackout, triggerSequence,
+        exportConfiguredHtml
       };
 
       window.addEventListener('resize', resizeNoise, { passive: true });
-      window.addEventListener('beforeunload', () => {
-        stop();
-        cancelAnimationFrame(state.raf);
-      });
-
+      window.addEventListener('beforeunload', () => { stop(); cancelAnimationFrame(state.raf); });
       init();
     })();
   </script>
