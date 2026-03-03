@@ -9,7 +9,7 @@
       --signal: 1;
       --tear-x: 0px;
       --tear-y: 0px;
-      --noise-alpha: 0.12;
+      --noise-alpha: 0.14;
       --scanline-opacity: 0.38;
       --scanline-spacing: 3px;
       --scanline-speed: 5s;
@@ -18,6 +18,12 @@
       --rgb-opacity: 0.7;
       --sync-speed: 8s;
       --sync-opacity: 0.8;
+      --pixel-size: 4px;
+      --pixel-opacity: 0.22;
+      --bar-thickness: 2px;
+      --bar-width: 80%;
+      --scan-drift: 8px;
+      --screen-opacity: 1;
     }
 
     * { box-sizing: border-box; }
@@ -31,7 +37,10 @@
       background: radial-gradient(circle at 50% 40%, #11192a 0%, #090e18 45%, #03060b 100%);
     }
 
-    body { display: grid; place-items: center; }
+    body {
+      display: grid;
+      place-items: center;
+    }
 
     .stage {
       position: fixed;
@@ -41,6 +50,8 @@
       filter: url(#signal-distort);
       transform: translate3d(var(--tear-x), var(--tear-y), 0);
       animation: field-jitter 4s infinite steps(1, end);
+      opacity: var(--screen-opacity);
+      transition: opacity 70ms steps(1, end);
     }
 
     body.no-jitter .stage { animation: none; }
@@ -93,6 +104,44 @@
       background: radial-gradient(circle at 50% 48%, transparent 45%, rgba(0, 0, 0, 0.42) 100%);
       mix-blend-mode: multiply;
       opacity: 0.92;
+    }
+
+    .pixel-grid {
+      position: fixed;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+      opacity: var(--pixel-opacity);
+      mix-blend-mode: overlay;
+      background-image:
+        linear-gradient(rgba(135, 222, 255, 0.22) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(135, 222, 255, 0.2) 1px, transparent 1px);
+      background-size: var(--pixel-size) var(--pixel-size), var(--pixel-size) var(--pixel-size);
+      animation: pixel-wander 220ms steps(2, end) infinite;
+    }
+
+    body.no-pixelate .pixel-grid { display: none; }
+
+    .tear-bars {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      opacity: 0;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          transparent 0 18px,
+          rgba(186, 233, 255, 0.22) 18px 20px,
+          rgba(9, 18, 31, 0.26) 20px 34px,
+          transparent 34px 50px
+        );
+      mix-blend-mode: screen;
+    }
+
+    body.glitch-burst .tear-bars {
+      opacity: 0.45;
+      animation: tear-shift 120ms steps(2, end) infinite;
     }
 
     .content {
@@ -187,24 +236,32 @@
 
     body.no-noise .noise { opacity: 0 !important; }
 
-    .sync-bar {
+    .sync-bars {
       position: fixed;
-      inset-inline: 0;
-      height: 2px;
-      z-index: 5;
-      opacity: 0;
+      inset: 0;
       pointer-events: none;
+      z-index: 6;
+    }
+
+    .sync-bar {
+      position: absolute;
+      left: calc((100% - var(--bar-width)) / 2);
+      width: var(--bar-width);
+      height: var(--bar-thickness);
+      border-radius: 999px;
+      opacity: 0;
       background: linear-gradient(90deg, transparent, rgba(185, 252, 255, 0.95), transparent);
       filter: blur(0.35px);
       animation: sync-sweep var(--sync-speed) linear infinite;
+      animation-delay: var(--bar-delay, 0s);
     }
 
-    body.no-sync .sync-bar { display: none; }
+    body.no-sync .sync-bars { display: none; }
 
     .dropout {
       position: fixed;
       inset: 0;
-      z-index: 6;
+      z-index: 7;
       pointer-events: none;
       opacity: 0;
       background: repeating-linear-gradient(
@@ -238,7 +295,7 @@
       top: 52px;
       right: 12px;
       z-index: 10;
-      width: min(340px, 92vw);
+      width: min(360px, 94vw);
       max-height: 86vh;
       overflow: auto;
       border-radius: 12px;
@@ -254,7 +311,7 @@
 
     .controls[hidden] { display: none; }
     .controls label { display: grid; gap: 0.2rem; }
-    .controls .row { display: flex; gap: 0.55rem; align-items: center; }
+    .controls .row { display: flex; gap: 0.55rem; align-items: center; flex-wrap: wrap; }
     .controls input[type='range'] { width: 100%; }
     .controls button {
       background: #0f2437;
@@ -268,7 +325,7 @@
 
     @keyframes scan-drift {
       from { background-position: 0 0; }
-      to { background-position: 0 6px; }
+      to { background-position: 0 var(--scan-drift); }
     }
 
     @keyframes scan-wobble {
@@ -279,9 +336,9 @@
     }
 
     @keyframes sync-sweep {
-      0%, 80%, 100% { transform: translateY(-8vh); opacity: 0; }
-      82% { opacity: var(--sync-opacity); }
-      90% { transform: translateY(110vh); opacity: 0.35; }
+      0%, 75%, 100% { transform: translateY(-12vh); opacity: 0; }
+      77% { opacity: var(--sync-opacity); }
+      92% { transform: translateY(115vh); opacity: 0.35; }
     }
 
     @keyframes field-jitter {
@@ -306,20 +363,38 @@
       100% { opacity: 0; }
     }
 
+    @keyframes pixel-wander {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-0.8px, 0.6px); }
+    }
+
+    @keyframes tear-shift {
+      0%, 100% { transform: translateX(-2px); }
+      50% { transform: translateX(3px); }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .stage,
       .panel::before,
       .sync-bar,
-      h1 { animation: none !important; }
+      h1,
+      .pixel-grid,
+      .tear-bars { animation: none !important; }
     }
   </style>
 </head>
 <body>
   <svg width="0" height="0" aria-hidden="true" focusable="false" style="position: absolute;">
-    <filter id="signal-distort" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB">
+    <filter id="signal-distort" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
       <feTurbulence id="turbulence" type="fractalNoise" baseFrequency="0.004 0.018" numOctaves="2" seed="17" result="noise"></feTurbulence>
       <feDisplacementMap id="displacement" in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="B" result="warp"></feDisplacementMap>
-      <feColorMatrix in="warp" type="matrix" values="1.05 0 0 0 0  0 1.02 0 0 0  0 0 1.12 0 0  0 0 0 1 0"></feColorMatrix>
+      <feColorMatrix id="posterize" in="warp" type="matrix" values="1.1 0 0 0 0  0 1.05 0 0 0  0 0 1.15 0 0  0 0 0 1 0"></feColorMatrix>
+      <feComponentTransfer in="posterize" result="quantized">
+        <feFuncR type="discrete" tableValues="0 0.18 0.35 0.52 0.72 1"></feFuncR>
+        <feFuncG type="discrete" tableValues="0 0.2 0.36 0.55 0.75 1"></feFuncG>
+        <feFuncB type="discrete" tableValues="0 0.22 0.4 0.58 0.8 1"></feFuncB>
+      </feComponentTransfer>
+      <feBlend in="warp" in2="quantized" mode="screen"></feBlend>
     </filter>
   </svg>
 
@@ -332,7 +407,7 @@
         </div>
         <div class="title-wrap">
           <h1 data-text="Signal Lost">Signal Lost</h1>
-          <p class="subtitle">Fully controllable single-file glitch system: manual triggers, random interval + jitter, per-effect toggles, presets, and runtime API.</p>
+          <p class="subtitle">Expanded controls: blackout signal-loss mode, pixelated distortion, multi sync bars, and triggerable runtime API.</p>
         </div>
         <div class="telemetry">
           <span>CH 04-A // RF: -92 dBm</span>
@@ -342,8 +417,10 @@
     </section>
   </div>
 
+  <div class="pixel-grid"></div>
   <canvas id="noise" class="noise" aria-hidden="true"></canvas>
-  <div class="sync-bar"></div>
+  <div class="tear-bars"></div>
+  <div id="sync-bars" class="sync-bars"></div>
   <div class="dropout"></div>
 
   <button id="toggle-controls" class="control-toggle" type="button">Controls</button>
@@ -358,48 +435,54 @@
         enabled: true,
         intensity: 1,
         timing: { baseIntervalMs: 1200, intervalJitterMs: 850, burstMinMs: 140, burstMaxMs: 340, cooldownMs: 170 },
-        probability: { burstChance: 0.64, signalLossChance: 0.14, dropoutChance: 0.45 },
+        probability: { burstChance: 0.64, signalLossChance: 0.14, dropoutChance: 0.45, blackoutChance: 0.12 },
         distortion: {
           enabled: true,
           baseFrequencyX: 0.004,
           baseFrequencyY: 0.018,
-          burstFrequencyX: 0.016,
-          burstFrequencyY: 0.052,
+          burstFrequencyX: 0.02,
+          burstFrequencyY: 0.08,
           displacementMin: 8,
-          displacementMax: 56
+          displacementMax: 70,
+          blockiness: 0.55
         },
-        noise: { enabled: true, opacity: 0.12, fps: 24, grainStrength: 1.1 },
-        scanlines: { enabled: true, opacity: 0.38, speed: 5, spacing: 3, wobbleAmount: 1 },
+        blackout: { enabled: true, minMs: 80, maxMs: 360, opacityWhenLost: 0, reappearFlash: true },
+        noise: { enabled: true, opacity: 0.14, fps: 24, grainStrength: 1.2 },
+        scanlines: { enabled: true, opacity: 0.38, speed: 5, spacing: 3, wobbleAmount: 1, driftPx: 8 },
         chroma: { enabled: true, shiftPx: 2, opacity: 0.7 },
-        syncBar: { enabled: true, speed: 8, opacity: 0.8 },
-        jitter: { enabled: true, xPx: 1.2, yPx: 2.5, vHoldChance: 0.2 },
+        syncBar: { enabled: true, speed: 8, opacity: 0.8, count: 3, thickness: 2, widthPct: 80 },
+        pixelate: { enabled: true, pixelSize: 4, opacity: 0.22 },
+        jitter: { enabled: true, xPx: 1.4, yPx: 2.8, vHoldChance: 0.22 },
         dropout: { enabled: true }
       };
 
       const PROFILES = {
         subtle: {
-          intensity: 0.65,
+          intensity: 0.62,
           timing: { baseIntervalMs: 1700, intervalJitterMs: 700 },
-          probability: { burstChance: 0.45, signalLossChance: 0.08 },
-          distortion: { displacementMax: 28 },
+          probability: { burstChance: 0.45, signalLossChance: 0.07, blackoutChance: 0.04 },
+          distortion: { displacementMax: 28, blockiness: 0.25 },
           noise: { opacity: 0.08 },
-          scanlines: { opacity: 0.24 }
+          scanlines: { opacity: 0.24 },
+          pixelate: { opacity: 0.08 }
         },
         broadcast: {},
         signalLoss: {
           intensity: 1.25,
-          timing: { baseIntervalMs: 900, intervalJitterMs: 500 },
-          probability: { burstChance: 0.75, signalLossChance: 0.36, dropoutChance: 0.72 },
-          distortion: { displacementMin: 20, displacementMax: 80 },
-          noise: { opacity: 0.2 }
+          timing: { baseIntervalMs: 860, intervalJitterMs: 450 },
+          probability: { burstChance: 0.75, signalLossChance: 0.42, dropoutChance: 0.72, blackoutChance: 0.28 },
+          distortion: { displacementMin: 20, displacementMax: 98, blockiness: 0.75 },
+          blackout: { minMs: 140, maxMs: 650 },
+          noise: { opacity: 0.22 }
         },
         aggressive: {
           intensity: 1.45,
-          timing: { baseIntervalMs: 780, intervalJitterMs: 420 },
-          probability: { burstChance: 0.85, signalLossChance: 0.44, dropoutChance: 0.8 },
-          distortion: { burstFrequencyX: 0.022, burstFrequencyY: 0.08, displacementMin: 24, displacementMax: 96 },
-          scanlines: { speed: 2.6, wobbleAmount: 1.6 },
-          chroma: { shiftPx: 3.8 }
+          timing: { baseIntervalMs: 760, intervalJitterMs: 420 },
+          probability: { burstChance: 0.85, signalLossChance: 0.44, dropoutChance: 0.8, blackoutChance: 0.35 },
+          distortion: { burstFrequencyX: 0.026, burstFrequencyY: 0.11, displacementMin: 26, displacementMax: 120, blockiness: 0.9 },
+          scanlines: { speed: 2.6, wobbleAmount: 1.6, driftPx: 14 },
+          chroma: { shiftPx: 3.8 },
+          syncBar: { count: 5, thickness: 3 }
         }
       };
       PROFILES.broadcast = {};
@@ -409,11 +492,13 @@
         noise: document.getElementById('noise'),
         turbulence: document.getElementById('turbulence'),
         displacement: document.getElementById('displacement'),
+        posterize: document.getElementById('posterize'),
         quality: document.getElementById('quality'),
         state: document.getElementById('tx-state'),
         timecode: document.getElementById('timecode'),
         controls: document.getElementById('controls'),
-        toggleControls: document.getElementById('toggle-controls')
+        toggleControls: document.getElementById('toggle-controls'),
+        syncBars: document.getElementById('sync-bars')
       };
       const ctx = elements.noise.getContext('2d', { alpha: true });
 
@@ -426,7 +511,8 @@
         noiseNextAt: 0,
         burstUntil: 0,
         signalLossUntil: 0,
-        hiddenPause: false
+        hiddenPause: false,
+        blackoutUntil: 0
       };
 
       function clamp(v, min, max) {
@@ -456,13 +542,19 @@
         config.probability.burstChance = clamp(config.probability.burstChance, 0, 1);
         config.probability.signalLossChance = clamp(config.probability.signalLossChance, 0, 1);
         config.probability.dropoutChance = clamp(config.probability.dropoutChance, 0, 1);
+        config.probability.blackoutChance = clamp(config.probability.blackoutChance, 0, 1);
 
         config.distortion.baseFrequencyX = clamp(config.distortion.baseFrequencyX, 0, 0.04);
-        config.distortion.baseFrequencyY = clamp(config.distortion.baseFrequencyY, 0, 0.12);
-        config.distortion.burstFrequencyX = clamp(config.distortion.burstFrequencyX, 0, 0.08);
-        config.distortion.burstFrequencyY = clamp(config.distortion.burstFrequencyY, 0, 0.22);
-        config.distortion.displacementMin = clamp(config.distortion.displacementMin, 0, 240);
-        config.distortion.displacementMax = clamp(config.distortion.displacementMax, config.distortion.displacementMin, 320);
+        config.distortion.baseFrequencyY = clamp(config.distortion.baseFrequencyY, 0, 0.16);
+        config.distortion.burstFrequencyX = clamp(config.distortion.burstFrequencyX, 0, 0.09);
+        config.distortion.burstFrequencyY = clamp(config.distortion.burstFrequencyY, 0, 0.24);
+        config.distortion.displacementMin = clamp(config.distortion.displacementMin, 0, 300);
+        config.distortion.displacementMax = clamp(config.distortion.displacementMax, config.distortion.displacementMin, 400);
+        config.distortion.blockiness = clamp(config.distortion.blockiness, 0, 1);
+
+        config.blackout.minMs = clamp(config.blackout.minMs, 20, 2000);
+        config.blackout.maxMs = clamp(config.blackout.maxMs, config.blackout.minMs, 6000);
+        config.blackout.opacityWhenLost = clamp(config.blackout.opacityWhenLost, 0, 1);
 
         config.noise.opacity = clamp(config.noise.opacity, 0, 0.6);
         config.noise.fps = clamp(config.noise.fps, 1, 60);
@@ -470,14 +562,21 @@
 
         config.scanlines.opacity = clamp(config.scanlines.opacity, 0, 1);
         config.scanlines.speed = clamp(config.scanlines.speed, 1, 20);
-        config.scanlines.spacing = clamp(config.scanlines.spacing, 2, 12);
+        config.scanlines.spacing = clamp(config.scanlines.spacing, 2, 16);
         config.scanlines.wobbleAmount = clamp(config.scanlines.wobbleAmount, 0, 4);
+        config.scanlines.driftPx = clamp(config.scanlines.driftPx, 1, 36);
 
-        config.chroma.shiftPx = clamp(config.chroma.shiftPx, 0, 12);
+        config.chroma.shiftPx = clamp(config.chroma.shiftPx, 0, 14);
         config.chroma.opacity = clamp(config.chroma.opacity, 0, 1);
 
         config.syncBar.speed = clamp(config.syncBar.speed, 2, 20);
         config.syncBar.opacity = clamp(config.syncBar.opacity, 0, 1);
+        config.syncBar.count = clamp(config.syncBar.count, 1, 8);
+        config.syncBar.thickness = clamp(config.syncBar.thickness, 1, 8);
+        config.syncBar.widthPct = clamp(config.syncBar.widthPct, 20, 100);
+
+        config.pixelate.pixelSize = clamp(config.pixelate.pixelSize, 2, 20);
+        config.pixelate.opacity = clamp(config.pixelate.opacity, 0, 0.8);
 
         config.jitter.xPx = clamp(config.jitter.xPx, 0, 16);
         config.jitter.yPx = clamp(config.jitter.yPx, 0, 16);
@@ -490,6 +589,17 @@
         document.documentElement.style.setProperty(name, String(value));
       }
 
+      function renderSyncBars() {
+        const c = state.config.syncBar;
+        elements.syncBars.innerHTML = '';
+        for (let i = 0; i < c.count; i += 1) {
+          const bar = document.createElement('div');
+          bar.className = 'sync-bar';
+          bar.style.setProperty('--bar-delay', `${(i / c.count) * c.speed}s`);
+          elements.syncBars.appendChild(bar);
+        }
+      }
+
       function applyConfigToUI() {
         const c = state.config;
         setCssVar('--noise-alpha', c.noise.opacity.toFixed(3));
@@ -497,10 +607,15 @@
         setCssVar('--scanline-spacing', `${c.scanlines.spacing}px`);
         setCssVar('--scanline-speed', `${c.scanlines.speed.toFixed(2)}s`);
         setCssVar('--scanline-wobble', `${(5 / Math.max(c.scanlines.wobbleAmount, 0.1)).toFixed(2)}s`);
+        setCssVar('--scan-drift', `${c.scanlines.driftPx.toFixed(1)}px`);
         setCssVar('--rgb-shift', `${c.chroma.shiftPx.toFixed(2)}px`);
         setCssVar('--rgb-opacity', c.chroma.opacity.toFixed(3));
         setCssVar('--sync-speed', `${c.syncBar.speed.toFixed(2)}s`);
         setCssVar('--sync-opacity', c.syncBar.opacity.toFixed(3));
+        setCssVar('--pixel-size', `${c.pixelate.pixelSize.toFixed(1)}px`);
+        setCssVar('--pixel-opacity', c.pixelate.opacity.toFixed(3));
+        setCssVar('--bar-thickness', `${c.syncBar.thickness.toFixed(1)}px`);
+        setCssVar('--bar-width', `${c.syncBar.widthPct.toFixed(1)}%`);
 
         elements.body.classList.toggle('no-noise', !(c.enabled && c.noise.enabled));
         elements.body.classList.toggle('no-scanlines', !(c.enabled && c.scanlines.enabled));
@@ -509,14 +624,13 @@
         elements.body.classList.toggle('no-jitter', !(c.enabled && c.jitter.enabled));
         elements.body.classList.toggle('no-sync', !(c.enabled && c.syncBar.enabled));
         elements.body.classList.toggle('no-dropout', !(c.enabled && c.dropout.enabled));
+        elements.body.classList.toggle('no-pixelate', !(c.enabled && c.pixelate.enabled));
 
-        if (!c.enabled || !c.distortion.enabled) {
-          elements.displacement.setAttribute('scale', '0');
-        }
-        if (!c.enabled) {
-          elements.state.textContent = 'Transmission: paused';
-        }
+        if (!c.enabled || !c.distortion.enabled) elements.displacement.setAttribute('scale', '0');
+        if (!c.enabled) elements.state.textContent = 'Transmission: paused';
+
         elements.toggleControls.style.display = c.showControls ? 'block' : 'none';
+        renderSyncBars();
       }
 
       function resizeNoise() {
@@ -571,9 +685,14 @@
         elements.timecode.textContent = formatTimecode();
       }
 
-      function setDistortion(scale, freqX, freqY) {
+      function setDistortion(scale, freqX, freqY, blockiness = 0.5) {
         elements.turbulence.setAttribute('baseFrequency', `${freqX.toFixed(4)} ${freqY.toFixed(4)}`);
         elements.displacement.setAttribute('scale', String(scale.toFixed(2)));
+        const lift = 1 + blockiness * 0.35;
+        elements.posterize.setAttribute(
+          'values',
+          `${lift.toFixed(2)} 0 0 0 0  0 ${(1 + blockiness * 0.2).toFixed(2)} 0 0 0  0 0 ${(1 + blockiness * 0.4).toFixed(2)} 0 0  0 0 0 1 0`
+        );
       }
 
       function randomSigned(maxAbs) {
@@ -589,15 +708,14 @@
           40,
           5000
         );
-        const until = performance.now() + duration;
-        state.burstUntil = until;
+        state.burstUntil = performance.now() + duration;
         elements.body.classList.add('glitch-burst');
 
         if (c.distortion.enabled) {
           const freqX = c.distortion.baseFrequencyX + Math.random() * c.distortion.burstFrequencyX * intensity;
           const freqY = c.distortion.baseFrequencyY + Math.random() * c.distortion.burstFrequencyY * intensity;
           const scale = c.distortion.displacementMin + Math.random() * (c.distortion.displacementMax - c.distortion.displacementMin) * intensity;
-          setDistortion(scale, freqX, freqY);
+          setDistortion(scale, freqX, freqY, c.distortion.blockiness);
         }
 
         if (c.jitter.enabled) {
@@ -610,7 +728,27 @@
           setCssVar('--tear-x', '0px');
           setCssVar('--tear-y', '0px');
           if (c.distortion.enabled) {
-            setDistortion(0, c.distortion.baseFrequencyX, c.distortion.baseFrequencyY);
+            setDistortion(0, c.distortion.baseFrequencyX, c.distortion.baseFrequencyY, c.distortion.blockiness);
+          }
+        }, duration);
+      }
+
+      function triggerBlackout(options = {}) {
+        const c = state.config;
+        if (!(c.enabled && c.blackout.enabled)) return;
+        const duration = clamp(
+          options.durationMs ?? (c.blackout.minMs + Math.random() * (c.blackout.maxMs - c.blackout.minMs)),
+          20,
+          8000
+        );
+        state.blackoutUntil = performance.now() + duration;
+        setCssVar('--screen-opacity', c.blackout.opacityWhenLost.toFixed(3));
+        elements.state.textContent = 'Transmission: blackout';
+        setTimeout(() => {
+          setCssVar('--screen-opacity', '1');
+          elements.state.textContent = 'Transmission: unstable';
+          if (c.blackout.reappearFlash) {
+            triggerBurst({ durationMs: 90, intensity: 1.8 });
           }
         }, duration);
       }
@@ -622,12 +760,13 @@
         state.signalLossUntil = performance.now() + duration;
         setCssVar('--signal', '0.45');
         elements.state.textContent = 'Transmission: signal loss';
-        if (c.dropout.enabled && Math.random() < c.probability.dropoutChance) {
-          triggerDropout();
-        }
+        if (c.dropout.enabled && Math.random() < c.probability.dropoutChance) triggerDropout();
+        if (c.blackout.enabled && Math.random() < c.probability.blackoutChance) triggerBlackout();
         setTimeout(() => {
           setCssVar('--signal', '1');
-          elements.state.textContent = 'Transmission: unstable';
+          if (performance.now() > state.blackoutUntil) {
+            elements.state.textContent = 'Transmission: unstable';
+          }
         }, duration);
       }
 
@@ -645,6 +784,7 @@
             if (step.type === 'burst') triggerBurst(step);
             if (step.type === 'loss') triggerSignalLoss(step);
             if (step.type === 'dropout') triggerDropout(step);
+            if (step.type === 'blackout') triggerBlackout(step);
           }, at);
         }
       }
@@ -664,6 +804,7 @@
           const doLoss = Math.random() < c.probability.signalLossChance;
           if (doLoss) triggerSignalLoss();
           if (!doLoss && Math.random() < c.probability.dropoutChance * 0.35) triggerDropout();
+          if (!doLoss && c.blackout.enabled && Math.random() < c.probability.blackoutChance * 0.4) triggerBlackout();
           updateTelemetry(doLoss);
         } else {
           elements.timecode.textContent = formatTimecode();
@@ -717,7 +858,9 @@
           chroma: ['chroma', 'enabled'],
           jitter: ['jitter', 'enabled'],
           syncBar: ['syncBar', 'enabled'],
-          dropout: ['dropout', 'enabled']
+          dropout: ['dropout', 'enabled'],
+          pixelate: ['pixelate', 'enabled'],
+          blackout: ['blackout', 'enabled']
         };
         const target = map[effectName];
         if (!target) return;
@@ -758,12 +901,14 @@
         window.addEventListener('glitch:burst', (event) => triggerBurst(event.detail || {}));
         window.addEventListener('glitch:signal-loss', (event) => triggerSignalLoss(event.detail || {}));
         window.addEventListener('glitch:dropout', () => triggerDropout());
+        window.addEventListener('glitch:blackout', (event) => triggerBlackout(event.detail || {}));
 
         if (state.config.debugKeybinds) {
           window.addEventListener('keydown', (event) => {
             if (event.key.toLowerCase() === 'g') triggerBurst();
             if (event.key.toLowerCase() === 'l') triggerSignalLoss();
             if (event.key.toLowerCase() === 'd') triggerDropout();
+            if (event.key.toLowerCase() === 'b') triggerBlackout();
           });
         }
 
@@ -813,34 +958,66 @@
         addRangeField(root, 'Base interval (ms)', 120, 4000, 10, c.timing.baseIntervalMs, (v) => setConfig({ timing: { baseIntervalMs: v } }));
         addRangeField(root, 'Interval jitter (ms)', 0, 2500, 10, c.timing.intervalJitterMs, (v) => setConfig({ timing: { intervalJitterMs: v } }));
         addRangeField(root, 'Burst chance', 0, 1, 0.01, c.probability.burstChance, (v) => setConfig({ probability: { burstChance: v } }));
+        addRangeField(root, 'Signal-loss chance', 0, 1, 0.01, c.probability.signalLossChance, (v) => setConfig({ probability: { signalLossChance: v } }));
+        addRangeField(root, 'Blackout chance', 0, 1, 0.01, c.probability.blackoutChance, (v) => setConfig({ probability: { blackoutChance: v } }));
+        addRangeField(root, 'Blackout min ms', 20, 2000, 10, c.blackout.minMs, (v) => setConfig({ blackout: { minMs: v } }));
+        addRangeField(root, 'Blackout max ms', 20, 4000, 10, c.blackout.maxMs, (v) => setConfig({ blackout: { maxMs: v } }));
+
+        addRangeField(root, 'Distortion max', 0, 180, 1, c.distortion.displacementMax, (v) => setConfig({ distortion: { displacementMax: v } }));
+        addRangeField(root, 'Blockiness', 0, 1, 0.01, c.distortion.blockiness, (v) => setConfig({ distortion: { blockiness: v } }));
+        addRangeField(root, 'Pixel size', 2, 20, 1, c.pixelate.pixelSize, (v) => setConfig({ pixelate: { pixelSize: v } }));
+        addRangeField(root, 'Pixel opacity', 0, 0.8, 0.01, c.pixelate.opacity, (v) => setConfig({ pixelate: { opacity: v } }));
+
         addRangeField(root, 'Noise opacity', 0, 0.6, 0.01, c.noise.opacity, (v) => setConfig({ noise: { opacity: v } }));
-        addRangeField(root, 'Scanline speed (s)', 1, 20, 0.1, c.scanlines.speed, (v) => setConfig({ scanlines: { speed: v } }));
-        addRangeField(root, 'Scanline spacing', 2, 12, 1, c.scanlines.spacing, (v) => setConfig({ scanlines: { spacing: v } }));
-        addRangeField(root, 'Displacement max', 0, 160, 1, c.distortion.displacementMax, (v) => setConfig({ distortion: { displacementMax: v } }));
+        addRangeField(root, 'Scanline speed', 1, 20, 0.1, c.scanlines.speed, (v) => setConfig({ scanlines: { speed: v } }));
+        addRangeField(root, 'Scanline spacing', 2, 16, 1, c.scanlines.spacing, (v) => setConfig({ scanlines: { spacing: v } }));
+        addRangeField(root, 'Scan drift px', 1, 36, 1, c.scanlines.driftPx, (v) => setConfig({ scanlines: { driftPx: v } }));
+        addRangeField(root, 'Sync count', 1, 8, 1, c.syncBar.count, (v) => setConfig({ syncBar: { count: v } }));
+        addRangeField(root, 'Sync speed', 2, 20, 0.1, c.syncBar.speed, (v) => setConfig({ syncBar: { speed: v } }));
+        addRangeField(root, 'Sync thickness', 1, 8, 1, c.syncBar.thickness, (v) => setConfig({ syncBar: { thickness: v } }));
+        addRangeField(root, 'Sync width %', 20, 100, 1, c.syncBar.widthPct, (v) => setConfig({ syncBar: { widthPct: v } }));
 
         addToggleField(root, 'Noise', c.noise.enabled, (v) => setEffectEnabled('noise', v));
         addToggleField(root, 'Scanlines', c.scanlines.enabled, (v) => setEffectEnabled('scanlines', v));
         addToggleField(root, 'Distortion', c.distortion.enabled, (v) => setEffectEnabled('distortion', v));
         addToggleField(root, 'Dropout', c.dropout.enabled, (v) => setEffectEnabled('dropout', v));
         addToggleField(root, 'Chroma', c.chroma.enabled, (v) => setEffectEnabled('chroma', v));
-        addToggleField(root, 'Sync bar', c.syncBar.enabled, (v) => setEffectEnabled('syncBar', v));
+        addToggleField(root, 'Sync bars', c.syncBar.enabled, (v) => setEffectEnabled('syncBar', v));
         addToggleField(root, 'Jitter', c.jitter.enabled, (v) => setEffectEnabled('jitter', v));
+        addToggleField(root, 'Pixel overlay', c.pixelate.enabled, (v) => setEffectEnabled('pixelate', v));
+        addToggleField(root, 'Blackout mode', c.blackout.enabled, (v) => setEffectEnabled('blackout', v));
 
         const row = document.createElement('div');
         row.className = 'row';
-        const presets = ['subtle', 'broadcast', 'signalLoss', 'aggressive'];
-        for (const name of presets) {
+        ['subtle', 'broadcast', 'signalLoss', 'aggressive'].forEach((name) => {
           const button = document.createElement('button');
           button.type = 'button';
           button.textContent = name;
           button.addEventListener('click', () => applyProfile(name));
           row.appendChild(button);
-        }
+        });
+
+        const tBurst = document.createElement('button');
+        tBurst.textContent = 'trigger burst';
+        tBurst.addEventListener('click', () => triggerBurst());
+        row.appendChild(tBurst);
+
+        const tLoss = document.createElement('button');
+        tLoss.textContent = 'trigger loss';
+        tLoss.addEventListener('click', () => triggerSignalLoss());
+        row.appendChild(tLoss);
+
+        const tBlackout = document.createElement('button');
+        tBlackout.textContent = 'trigger blackout';
+        tBlackout.addEventListener('click', () => triggerBlackout());
+        row.appendChild(tBlackout);
+
         const reset = document.createElement('button');
         reset.type = 'button';
         reset.textContent = 'reset';
         reset.addEventListener('click', resetConfig);
         row.appendChild(reset);
+
         root.appendChild(row);
       }
 
@@ -852,7 +1029,8 @@
             noise: { fps: 8, opacity: 0.06 },
             scanlines: { speed: 12 },
             jitter: { enabled: false },
-            syncBar: { enabled: false }
+            syncBar: { enabled: false },
+            pixelate: { opacity: 0.08 }
           });
         }
       }
@@ -888,6 +1066,7 @@
         triggerBurst,
         triggerSignalLoss,
         triggerDropout,
+        triggerBlackout,
         triggerSequence
       };
 
