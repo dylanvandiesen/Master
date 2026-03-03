@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Glitchy — Controlled Signal Loss</title>
+  <style>
+    :root {
+      --bg-a: #11192a;
+      --bg-b: #090e18;
+      --bg-c: #03060b;
+      --ink: #d7f4ff;
+      --accent: #48e3ff;
+      --accent-soft: rgba(72, 227, 255, 0.2);
+
+      --signal: 1;
+      --tear-x: 0px;
+      --tear-y: 0px;
+      --noise-alpha: 0.14;
+      --scanline-opacity: 0.38;
+      --scanline-spacing: 3px;
+      --scanline-speed: 5s;
+      --scanline-wobble: 6s;
+      --rgb-shift: 2px;
+      --rgb-opacity: 0.7;
+      --sync-speed: 8s;
+      --sync-opacity: 0.8;
+      --pixel-size: 4px;
+      --pixel-opacity: 0.22;
+      --bar-thickness: 2px;
+      --bar-width: 80%;
+      --scan-drift: 8px;
+      --screen-opacity: 1;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      color: var(--ink);
+      font-family: "IBM Plex Mono", "Consolas", "Menlo", monospace;
+      background: radial-gradient(circle at 50% 40%, var(--bg-a) 0%, var(--bg-b) 45%, var(--bg-c) 100%);
+    }
+
+    body { display: grid; place-items: center; }
+
+    .stage {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      filter: url(#signal-distort);
+      transform: translate3d(var(--tear-x), var(--tear-y), 0);
+      animation: field-jitter 4s infinite steps(1, end);
+      opacity: var(--screen-opacity);
+      transition: opacity 160ms ease, filter 160ms ease;
+    }
+
+    body.no-jitter .stage { animation: none; }
+    body.no-distortion .stage { filter: none; }
+
+    .panel {
+      position: relative;
+      width: min(1100px, 92vw);
+      height: min(72vh, 700px);
+      border-radius: 16px;
+      border: 1px solid color-mix(in oklab, var(--ink) 26%, transparent);
+      overflow: hidden;
+      isolation: isolate;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)),
+        radial-gradient(circle at 50% 8%, var(--accent-soft), transparent 55%),
+        #050914;
+      box-shadow:
+        inset 0 0 120px color-mix(in oklab, var(--accent) 24%, transparent),
+        0 12px 40px rgba(0, 0, 0, 0.65),
+        0 0 38px color-mix(in oklab, var(--accent) 20%, transparent);
+    }
+
+    .panel::before,
+    .panel::after {
+      content: "";
+      position: absolute;
+      inset: -12%;
+      pointer-events: none;
+    }
+
+    .panel::before {
+      background: repeating-linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--ink) 16%, transparent) 0px,
+        color-mix(in oklab, var(--ink) 16%, transparent) 1px,
+        transparent 1px,
+        transparent var(--scanline-spacing)
+      );
+      mix-blend-mode: screen;
+      opacity: calc(var(--scanline-opacity) * var(--signal));
+      animation: scan-drift var(--scanline-speed) linear infinite, scan-wobble var(--scanline-wobble) ease-in-out infinite;
+      transition: opacity 180ms ease;
+    }
+
+    body.no-scanlines .panel::before { display: none; }
+
+    .panel::after {
+      background: radial-gradient(circle at 50% 48%, transparent 45%, rgba(0, 0, 0, 0.42) 100%);
+      mix-blend-mode: multiply;
+      opacity: 0.92;
+    }
+
+    .pixel-grid,
+    .tear-bars,
+    .noise,
+    .sync-bars,
+    .dropout { transition: opacity 160ms ease; }
+
+    .pixel-grid {
+      position: fixed;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+      opacity: var(--pixel-opacity);
+      mix-blend-mode: overlay;
+      background-image:
+        linear-gradient(color-mix(in oklab, var(--ink) 30%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in oklab, var(--ink) 28%, transparent) 1px, transparent 1px);
+      background-size: var(--pixel-size) var(--pixel-size), var(--pixel-size) var(--pixel-size);
+      animation: pixel-wander 220ms steps(2, end) infinite;
+    }
+
+    body.no-pixelate .pixel-grid { display: none; }
+
+    .tear-bars {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      opacity: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0 18px,
+        color-mix(in oklab, var(--ink) 26%, transparent) 18px 20px,
+        rgba(9, 18, 31, 0.26) 20px 34px,
+        transparent 34px 50px
+      );
+      mix-blend-mode: screen;
+    }
+
+    body.glitch-burst .tear-bars {
+      opacity: 0.45;
+      animation: tear-shift 120ms steps(2, end) infinite;
+    }
+
+    .content {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      padding: 2.2rem;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 1.5rem;
+    }
+
+    .status,
+    .telemetry {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      font-size: clamp(0.72rem, 1.3vw, 0.92rem);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.9;
+      text-shadow: 0 0 12px color-mix(in oklab, var(--ink) 40%, transparent);
+    }
+
+    .telemetry {
+      font-size: clamp(0.74rem, 1.35vw, 0.92rem);
+      opacity: 0.82;
+      letter-spacing: 0.04em;
+      text-transform: none;
+    }
+
+    .title-wrap {
+      text-align: center;
+      display: grid;
+      place-items: center;
+      align-self: center;
+    }
+
+    h1 {
+      margin: 0;
+      position: relative;
+      font-size: clamp(2rem, 8vw, 6.2rem);
+      line-height: 0.92;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: color-mix(in oklab, var(--ink) 90%, white);
+      text-shadow: 0 0 14px color-mix(in oklab, var(--ink) 45%, transparent), 0 0 48px color-mix(in oklab, var(--accent) 26%, transparent);
+      animation: chroma-split 3.6s infinite steps(1, end);
+    }
+
+    body.no-chroma h1 { animation: none; }
+
+    h1::before,
+    h1::after {
+      content: attr(data-text);
+      position: absolute;
+      inset: 0;
+      opacity: var(--rgb-opacity);
+      pointer-events: none;
+    }
+
+    h1::before {
+      color: rgba(255, 40, 103, 0.55);
+      transform: translateX(calc(var(--rgb-shift) * -1));
+      mix-blend-mode: screen;
+    }
+
+    h1::after {
+      color: color-mix(in oklab, var(--accent) 82%, #23c6ff);
+      transform: translateX(var(--rgb-shift));
+      mix-blend-mode: screen;
+    }
+
+    body.no-chroma h1::before,
+    body.no-chroma h1::after { display: none; }
+
+    .subtitle {
+      margin-top: 0.9rem;
+      max-width: 58ch;
+      font-size: clamp(0.85rem, 1.7vw, 1.08rem);
+      opacity: 0.86;
+    }
+
+    .noise {
+      position: fixed;
+      inset: 0;
+      z-index: 4;
+      mix-blend-mode: screen;
+      opacity: var(--noise-alpha);
+      pointer-events: none;
+    }
+
+    body.no-noise .noise { opacity: 0 !important; }
+
+    .sync-bars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 6;
+    }
+
+    .sync-bar {
+      position: absolute;
+      left: calc((100% - var(--bar-width)) / 2);
+      width: var(--bar-width);
+      height: var(--bar-thickness);
+      border-radius: 999px;
+      opacity: 0;
+      background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--ink) 95%, white), transparent);
+      filter: blur(0.35px);
+      animation: sync-sweep var(--sync-speed) linear infinite;
+      animation-delay: var(--bar-delay, 0s);
+    }
+
+    body.no-sync .sync-bars { display: none; }
+
+    .dropout {
+      position: fixed;
+      inset: 0;
+      z-index: 7;
+      pointer-events: none;
+      opacity: 0;
+      background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.82) 0px, rgba(0, 0, 0, 0.82) 2px, transparent 3px, transparent 7px);
+    }
+
+    body.glitch-burst .dropout { animation: dropout 0.2s steps(2, end) 2; }
+    body.no-dropout .dropout { display: none; }
+
+    body.connection-calm .stage { filter: none !important; }
+    body.connection-calm .panel::before,
+    body.connection-calm .pixel-grid,
+    body.connection-calm .tear-bars,
+    body.connection-calm .noise,
+    body.connection-calm .sync-bars,
+    body.connection-calm .dropout { opacity: 0 !important; }
+    body.connection-calm h1::before,
+    body.connection-calm h1::after { opacity: 0 !important; }
+
+    .control-toggle {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 11;
+      background: rgba(5, 12, 20, 0.8);
+      border: 1px solid rgba(153, 231, 255, 0.3);
+      color: #d7f4ff;
+      border-radius: 8px;
+      padding: 0.35rem 0.55rem;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .controls {
+      position: fixed;
+      top: 52px;
+      right: 12px;
+      z-index: 10;
+      width: min(390px, 95vw);
+      max-height: 86vh;
+      overflow: auto;
+      border-radius: 12px;
+      border: 1px solid rgba(153, 231, 255, 0.25);
+      background: rgba(4, 10, 16, 0.88);
+      backdrop-filter: blur(6px);
+      padding: 0.85rem;
+      display: grid;
+      gap: 0.55rem;
+      color: #d7f4ff;
+      font-size: 0.78rem;
+    }
+
+    .controls[hidden] { display: none; }
+    .controls label { display: grid; gap: 0.2rem; }
+    .controls .row { display: flex; gap: 0.55rem; align-items: center; flex-wrap: wrap; }
+    .controls input[type='range'] { width: 100%; }
+    .controls button,
+    .controls select,
+    .controls input[type='color'] {
+      background: #0f2437;
+      border: 1px solid rgba(153, 231, 255, 0.3);
+      color: #d7f4ff;
+      border-radius: 6px;
+      padding: 0.35rem 0.5rem;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    @keyframes scan-drift { from { background-position: 0 0; } to { background-position: 0 var(--scan-drift); } }
+    @keyframes scan-wobble { 0%, 100% { transform: translateX(0px); } 25% { transform: translateX(0.35px); } 50% { transform: translateX(-0.5px); } 75% { transform: translateX(0.25px); } }
+    @keyframes sync-sweep { 0%, 75%, 100% { transform: translateY(-12vh); opacity: 0; } 77% { opacity: var(--sync-opacity); } 92% { transform: translateY(115vh); opacity: 0.35; } }
+    @keyframes field-jitter { 0%, 79%, 100% { transform: translate3d(var(--tear-x), var(--tear-y), 0); } 80% { transform: translate3d(calc(var(--tear-x) + 0.6px), calc(var(--tear-y) - 0.8px), 0); } 81% { transform: translate3d(calc(var(--tear-x) - 1px), calc(var(--tear-y) + 1.5px), 0); } 82% { transform: translate3d(calc(var(--tear-x) + 0.4px), var(--tear-y), 0); } }
+    @keyframes chroma-split { 0%, 72%, 100% { filter: saturate(1) contrast(1); } 73% { transform: translateX(1px); } 74% { transform: translateX(-1px) skewX(1deg); } 75% { filter: saturate(1.2) contrast(1.16); } 76% { transform: translateX(0); } }
+    @keyframes dropout { 0% { opacity: 0; } 16% { opacity: 0.2; } 55% { opacity: 0.68; } 100% { opacity: 0; } }
+    @keyframes pixel-wander { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-0.8px, 0.6px); } }
+    @keyframes tear-shift { 0%, 100% { transform: translateX(-2px); } 50% { transform: translateX(3px); } }
+
+    @media (prefers-reduced-motion: reduce) {
+      .stage, .panel::before, .sync-bar, h1, .pixel-grid, .tear-bars { animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" aria-hidden="true" focusable="false" style="position: absolute;">
+    <filter id="signal-distort" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feTurbulence id="turbulence" type="fractalNoise" baseFrequency="0.004 0.018" numOctaves="2" seed="17" result="noise"></feTurbulence>
+      <feDisplacementMap id="displacement" in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="B" result="warp"></feDisplacementMap>
+      <feColorMatrix id="posterize" in="warp" type="matrix" values="1.1 0 0 0 0  0 1.05 0 0 0  0 0 1.15 0 0  0 0 0 1 0"></feColorMatrix>
+      <feComponentTransfer in="posterize" result="quantized">
+        <feFuncR type="discrete" tableValues="0 0.18 0.35 0.52 0.72 1"></feFuncR>
+        <feFuncG type="discrete" tableValues="0 0.2 0.36 0.55 0.75 1"></feFuncG>
+        <feFuncB type="discrete" tableValues="0 0.22 0.4 0.58 0.8 1"></feFuncB>
+      </feComponentTransfer>
+      <feBlend in="warp" in2="quantized" mode="screen"></feBlend>
+    </filter>
+  </svg>
+
+  <div class="stage">
+    <section class="panel">
+      <div class="content">
+        <div class="status">
+          <span id="tx-state">Transmission: unstable</span>
+          <span id="timecode">00:00:00</span>
+        </div>
+        <div class="title-wrap">
+          <h1 data-text="Signal Lost">Signal Lost</h1>
+          <p class="subtitle">Added calm→glitch pulse mode, color controls, and export of full configured single-file HTML.</p>
+        </div>
+        <div class="telemetry">
+          <span>CH 04-A // RF: -92 dBm</span>
+          <span id="quality">Link quality: 78%</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="pixel-grid"></div>
+  <canvas id="noise" class="noise" aria-hidden="true"></canvas>
+  <div class="tear-bars"></div>
+  <div id="sync-bars" class="sync-bars"></div>
+  <div class="dropout"></div>
+
+  <button id="toggle-controls" class="control-toggle" type="button">Controls</button>
+  <aside id="controls" class="controls" hidden></aside>
+
+  <script>
+    (() => {
+      const BOOT_CONFIG = window.__GLITCHY_BOOT_CONFIG || {};
+      const DEFAULT_CONFIG = {
+        showControls: true,
+        debugKeybinds: true,
+        autoMode: true,
+        enabled: true,
+        intensity: 1,
+        timing: { baseIntervalMs: 2200, intervalJitterMs: 1200, burstMinMs: 120, burstMaxMs: 300, cooldownMs: 250 },
+        probability: { burstChance: 0.42, signalLossChance: 0.12, dropoutChance: 0.3, blackoutChance: 0.08 },
+        connectionPulse: { enabled: false, quietMinMs: 4000, quietMaxMs: 12000, glitchMinMs: 220, glitchMaxMs: 900 },
+        theme: {
+          bgA: '#11192a', bgB: '#090e18', bgC: '#03060b', ink: '#d7f4ff', accent: '#48e3ff'
+        },
+        distortion: {
+          enabled: true, baseFrequencyX: 0.004, baseFrequencyY: 0.018, burstFrequencyX: 0.02, burstFrequencyY: 0.08,
+          displacementMin: 8, displacementMax: 70, blockiness: 0.55
+        },
+        blackout: { enabled: true, minMs: 80, maxMs: 360, opacityWhenLost: 0, reappearFlash: true },
+        noise: { enabled: true, opacity: 0.14, fps: 24, grainStrength: 1.2 },
+        scanlines: { enabled: true, opacity: 0.38, speed: 5, spacing: 3, wobbleAmount: 1, driftPx: 8 },
+        chroma: { enabled: true, shiftPx: 2, opacity: 0.7 },
+        syncBar: { enabled: true, speed: 8, opacity: 0.8, count: 3, thickness: 2, widthPct: 80 },
+        pixelate: { enabled: true, pixelSize: 4, opacity: 0.22 },
+        jitter: { enabled: true, xPx: 1.4, yPx: 2.8, vHoldChance: 0.22 },
+        dropout: { enabled: true }
+      };
+
+      const PROFILES = {
+        subtle: { intensity: 0.62, probability: { burstChance: 0.2, signalLossChance: 0.04, blackoutChance: 0.02 }, pixelate: { opacity: 0.08 }, distortion: { blockiness: 0.2, displacementMax: 24 } },
+        broadcast: {},
+        signalLoss: { intensity: 1.2, probability: { burstChance: 0.75, signalLossChance: 0.4, dropoutChance: 0.72, blackoutChance: 0.28 }, blackout: { minMs: 140, maxMs: 650 }, distortion: { displacementMin: 20, displacementMax: 98, blockiness: 0.75 } },
+        pulse: { connectionPulse: { enabled: true, quietMinMs: 5000, quietMaxMs: 10000, glitchMinMs: 240, glitchMaxMs: 850 }, autoMode: true, probability: { burstChance: 0.15, signalLossChance: 0.07, blackoutChance: 0.03 } },
+        aggressive: { intensity: 1.45, timing: { baseIntervalMs: 760, intervalJitterMs: 420 }, probability: { burstChance: 0.85, signalLossChance: 0.44, dropoutChance: 0.8, blackoutChance: 0.35 }, distortion: { burstFrequencyX: 0.026, burstFrequencyY: 0.11, displacementMin: 26, displacementMax: 120, blockiness: 0.9 }, syncBar: { count: 5, thickness: 3 } }
+      };
+      PROFILES.broadcast = {};
+
+      const elements = {
+        body: document.body,
+        noise: document.getElementById('noise'),
+        turbulence: document.getElementById('turbulence'),
+        displacement: document.getElementById('displacement'),
+        posterize: document.getElementById('posterize'),
+        quality: document.getElementById('quality'),
+        state: document.getElementById('tx-state'),
+        timecode: document.getElementById('timecode'),
+        controls: document.getElementById('controls'),
+        toggleControls: document.getElementById('toggle-controls'),
+        syncBars: document.getElementById('sync-bars')
+      };
+      const ctx = elements.noise.getContext('2d', { alpha: true });
+
+      const state = {
+        config: null,
+        running: false,
+        paused: false,
+        timer: 0,
+        raf: 0,
+        noiseNextAt: 0,
+        burstUntil: 0,
+        signalLossUntil: 0,
+        hiddenPause: false,
+        blackoutUntil: 0,
+        pulseTimer: 0,
+        pulseActive: false
+      };
+
+      function clamp(v, min, max) { return Math.min(max, Math.max(min, Number(v))); }
+      function deepMerge(base, patch) {
+        if (!patch || typeof patch !== 'object') return base;
+        const out = Array.isArray(base) ? [...base] : { ...base };
+        for (const [k, v] of Object.entries(patch)) {
+          const cur = out[k];
+          out[k] = v && typeof v === 'object' && !Array.isArray(v) && cur && typeof cur === 'object' ? deepMerge(cur, v) : v;
+        }
+        return out;
+      }
+
+      function sanitizeConfig(config) {
+        config.intensity = clamp(config.intensity ?? 1, 0, 2.5);
+        config.timing.baseIntervalMs = clamp(config.timing.baseIntervalMs, 120, 12000);
+        config.timing.intervalJitterMs = clamp(config.timing.intervalJitterMs, 0, 6000);
+        config.timing.burstMinMs = clamp(config.timing.burstMinMs, 40, 2000);
+        config.timing.burstMaxMs = clamp(config.timing.burstMaxMs, config.timing.burstMinMs, 4000);
+        config.timing.cooldownMs = clamp(config.timing.cooldownMs, 0, 2500);
+
+        config.probability.burstChance = clamp(config.probability.burstChance, 0, 1);
+        config.probability.signalLossChance = clamp(config.probability.signalLossChance, 0, 1);
+        config.probability.dropoutChance = clamp(config.probability.dropoutChance, 0, 1);
+        config.probability.blackoutChance = clamp(config.probability.blackoutChance, 0, 1);
+
+        config.connectionPulse.quietMinMs = clamp(config.connectionPulse.quietMinMs, 500, 30000);
+        config.connectionPulse.quietMaxMs = clamp(config.connectionPulse.quietMaxMs, config.connectionPulse.quietMinMs, 45000);
+        config.connectionPulse.glitchMinMs = clamp(config.connectionPulse.glitchMinMs, 80, 6000);
+        config.connectionPulse.glitchMaxMs = clamp(config.connectionPulse.glitchMaxMs, config.connectionPulse.glitchMinMs, 10000);
+
+        config.distortion.baseFrequencyX = clamp(config.distortion.baseFrequencyX, 0, 0.04);
+        config.distortion.baseFrequencyY = clamp(config.distortion.baseFrequencyY, 0, 0.16);
+        config.distortion.burstFrequencyX = clamp(config.distortion.burstFrequencyX, 0, 0.09);
+        config.distortion.burstFrequencyY = clamp(config.distortion.burstFrequencyY, 0, 0.24);
+        config.distortion.displacementMin = clamp(config.distortion.displacementMin, 0, 300);
+        config.distortion.displacementMax = clamp(config.distortion.displacementMax, config.distortion.displacementMin, 400);
+        config.distortion.blockiness = clamp(config.distortion.blockiness, 0, 1);
+
+        config.blackout.minMs = clamp(config.blackout.minMs, 20, 2000);
+        config.blackout.maxMs = clamp(config.blackout.maxMs, config.blackout.minMs, 6000);
+        config.blackout.opacityWhenLost = clamp(config.blackout.opacityWhenLost, 0, 1);
+
+        config.noise.opacity = clamp(config.noise.opacity, 0, 0.6);
+        config.noise.fps = clamp(config.noise.fps, 1, 60);
+        config.noise.grainStrength = clamp(config.noise.grainStrength, 0.2, 3);
+
+        config.scanlines.opacity = clamp(config.scanlines.opacity, 0, 1);
+        config.scanlines.speed = clamp(config.scanlines.speed, 1, 20);
+        config.scanlines.spacing = clamp(config.scanlines.spacing, 2, 16);
+        config.scanlines.wobbleAmount = clamp(config.scanlines.wobbleAmount, 0, 4);
+        config.scanlines.driftPx = clamp(config.scanlines.driftPx, 1, 36);
+
+        config.chroma.shiftPx = clamp(config.chroma.shiftPx, 0, 14);
+        config.chroma.opacity = clamp(config.chroma.opacity, 0, 1);
+
+        config.syncBar.speed = clamp(config.syncBar.speed, 2, 20);
+        config.syncBar.opacity = clamp(config.syncBar.opacity, 0, 1);
+        config.syncBar.count = clamp(config.syncBar.count, 1, 8);
+        config.syncBar.thickness = clamp(config.syncBar.thickness, 1, 8);
+        config.syncBar.widthPct = clamp(config.syncBar.widthPct, 20, 100);
+
+        config.pixelate.pixelSize = clamp(config.pixelate.pixelSize, 2, 20);
+        config.pixelate.opacity = clamp(config.pixelate.opacity, 0, 0.8);
+
+        config.jitter.xPx = clamp(config.jitter.xPx, 0, 16);
+        config.jitter.yPx = clamp(config.jitter.yPx, 0, 16);
+        config.jitter.vHoldChance = clamp(config.jitter.vHoldChance, 0, 1);
+        return config;
+      }
+
+      function setCssVar(name, value) { document.documentElement.style.setProperty(name, String(value)); }
+      function renderSyncBars() {
+        const c = state.config.syncBar;
+        elements.syncBars.innerHTML = '';
+        for (let i = 0; i < c.count; i += 1) {
+          const bar = document.createElement('div');
+          bar.className = 'sync-bar';
+          bar.style.setProperty('--bar-delay', `${(i / c.count) * c.speed}s`);
+          elements.syncBars.appendChild(bar);
+        }
+      }
+
+      function applyTheme() {
+        const t = state.config.theme;
+        setCssVar('--bg-a', t.bgA);
+        setCssVar('--bg-b', t.bgB);
+        setCssVar('--bg-c', t.bgC);
+        setCssVar('--ink', t.ink);
+        setCssVar('--accent', t.accent);
+        setCssVar('--accent-soft', `${t.accent}33`);
+      }
+
+      function applyConfigToUI() {
+        const c = state.config;
+        applyTheme();
+        setCssVar('--noise-alpha', c.noise.opacity.toFixed(3));
+        setCssVar('--scanline-opacity', c.scanlines.opacity.toFixed(3));
+        setCssVar('--scanline-spacing', `${c.scanlines.spacing}px`);
+        setCssVar('--scanline-speed', `${c.scanlines.speed.toFixed(2)}s`);
+        setCssVar('--scanline-wobble', `${(5 / Math.max(c.scanlines.wobbleAmount, 0.1)).toFixed(2)}s`);
+        setCssVar('--scan-drift', `${c.scanlines.driftPx.toFixed(1)}px`);
+        setCssVar('--rgb-shift', `${c.chroma.shiftPx.toFixed(2)}px`);
+        setCssVar('--rgb-opacity', c.chroma.opacity.toFixed(3));
+        setCssVar('--sync-speed', `${c.syncBar.speed.toFixed(2)}s`);
+        setCssVar('--sync-opacity', c.syncBar.opacity.toFixed(3));
+        setCssVar('--pixel-size', `${c.pixelate.pixelSize.toFixed(1)}px`);
+        setCssVar('--pixel-opacity', c.pixelate.opacity.toFixed(3));
+        setCssVar('--bar-thickness', `${c.syncBar.thickness.toFixed(1)}px`);
+        setCssVar('--bar-width', `${c.syncBar.widthPct.toFixed(1)}%`);
+
+        elements.body.classList.toggle('no-noise', !(c.enabled && c.noise.enabled));
+        elements.body.classList.toggle('no-scanlines', !(c.enabled && c.scanlines.enabled));
+        elements.body.classList.toggle('no-distortion', !(c.enabled && c.distortion.enabled));
+        elements.body.classList.toggle('no-chroma', !(c.enabled && c.chroma.enabled));
+        elements.body.classList.toggle('no-jitter', !(c.enabled && c.jitter.enabled));
+        elements.body.classList.toggle('no-sync', !(c.enabled && c.syncBar.enabled));
+        elements.body.classList.toggle('no-dropout', !(c.enabled && c.dropout.enabled));
+        elements.body.classList.toggle('no-pixelate', !(c.enabled && c.pixelate.enabled));
+
+        if (!c.enabled || !c.distortion.enabled) elements.displacement.setAttribute('scale', '0');
+        if (!c.enabled) elements.state.textContent = 'Transmission: paused';
+        elements.toggleControls.style.display = c.showControls ? 'block' : 'none';
+        renderSyncBars();
+      }
+
+      function resizeNoise() {
+        const scale = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+        elements.noise.width = Math.max(1, Math.floor(window.innerWidth / 3) * scale);
+        elements.noise.height = Math.max(1, Math.floor(window.innerHeight / 3) * scale);
+        elements.noise.style.width = `${window.innerWidth}px`;
+        elements.noise.style.height = `${window.innerHeight}px`;
+      }
+
+      function drawNoiseFrame(now) {
+        const c = state.config;
+        if (!(c.enabled && c.noise.enabled) || elements.body.classList.contains('connection-calm')) {
+          state.raf = requestAnimationFrame(drawNoiseFrame); return;
+        }
+        const msPerFrame = 1000 / c.noise.fps;
+        if (now < state.noiseNextAt) { state.raf = requestAnimationFrame(drawNoiseFrame); return; }
+        state.noiseNextAt = now + msPerFrame;
+
+        const w = elements.noise.width, h = elements.noise.height;
+        const image = ctx.createImageData(w, h);
+        const heavy = now < state.burstUntil;
+        for (let i = 0; i < image.data.length; i += 4) {
+          const grain = Math.random() * 255 * c.noise.grainStrength;
+          const stripe = (i / 4 / w + now * 0.05) % 11 < (heavy ? 5 : 2) ? 35 : 0;
+          image.data[i] = Math.min(255, grain + stripe);
+          image.data[i + 1] = Math.min(255, grain);
+          image.data[i + 2] = Math.min(255, grain + stripe * 0.45);
+          image.data[i + 3] = heavy ? 125 : 78;
+        }
+        ctx.putImageData(image, 0, 0);
+        state.raf = requestAnimationFrame(drawNoiseFrame);
+      }
+
+      function formatTimecode() {
+        const d = new Date(); const pad = (v) => String(v).padStart(2, '0');
+        return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      }
+      function updateTelemetry(signalLoss) {
+        const link = Math.max(8, Math.min(99, Math.round(90 - Math.random() * (signalLoss ? 76 : 36))));
+        elements.quality.textContent = `Link quality: ${link}%`;
+        elements.timecode.textContent = formatTimecode();
+      }
+
+      function setDistortion(scale, fx, fy, block = 0.5) {
+        elements.turbulence.setAttribute('baseFrequency', `${fx.toFixed(4)} ${fy.toFixed(4)}`);
+        elements.displacement.setAttribute('scale', String(scale.toFixed(2)));
+        const lift = 1 + block * 0.35;
+        elements.posterize.setAttribute('values', `${lift.toFixed(2)} 0 0 0 0  0 ${(1 + block * 0.2).toFixed(2)} 0 0 0  0 0 ${(1 + block * 0.4).toFixed(2)} 0 0  0 0 0 1 0`);
+      }
+      function randomSigned(maxAbs) { return (Math.random() * 2 - 1) * maxAbs; }
+
+      function triggerBurst(options = {}) {
+        const c = state.config;
+        if (!c.enabled) return;
+        const intensity = clamp(options.intensity ?? c.intensity, 0, 3);
+        const duration = clamp(options.durationMs ?? (c.timing.burstMinMs + Math.random() * (c.timing.burstMaxMs - c.timing.burstMinMs)), 40, 5000);
+        state.burstUntil = performance.now() + duration;
+        elements.body.classList.add('glitch-burst');
+
+        if (c.distortion.enabled) {
+          const fx = c.distortion.baseFrequencyX + Math.random() * c.distortion.burstFrequencyX * intensity;
+          const fy = c.distortion.baseFrequencyY + Math.random() * c.distortion.burstFrequencyY * intensity;
+          const scale = c.distortion.displacementMin + Math.random() * (c.distortion.displacementMax - c.distortion.displacementMin) * intensity;
+          setDistortion(scale, fx, fy, c.distortion.blockiness);
+        }
+
+        if (c.jitter.enabled) {
+          setCssVar('--tear-x', `${randomSigned(c.jitter.xPx * intensity).toFixed(2)}px`);
+          setCssVar('--tear-y', `${randomSigned(c.jitter.yPx * intensity).toFixed(2)}px`);
+        }
+
+        setTimeout(() => {
+          elements.body.classList.remove('glitch-burst');
+          setCssVar('--tear-x', '0px');
+          setCssVar('--tear-y', '0px');
+          if (c.distortion.enabled) setDistortion(0, c.distortion.baseFrequencyX, c.distortion.baseFrequencyY, c.distortion.blockiness);
+        }, duration);
+      }
+
+      function triggerBlackout(options = {}) {
+        const c = state.config;
+        if (!(c.enabled && c.blackout.enabled)) return;
+        const duration = clamp(options.durationMs ?? (c.blackout.minMs + Math.random() * (c.blackout.maxMs - c.blackout.minMs)), 20, 8000);
+        state.blackoutUntil = performance.now() + duration;
+        setCssVar('--screen-opacity', c.blackout.opacityWhenLost.toFixed(3));
+        elements.state.textContent = 'Transmission: blackout';
+        setTimeout(() => {
+          setCssVar('--screen-opacity', '1');
+          elements.state.textContent = 'Transmission: unstable';
+          if (c.blackout.reappearFlash) triggerBurst({ durationMs: 90, intensity: 1.8 });
+        }, duration);
+      }
+
+      function triggerSignalLoss(options = {}) {
+        const c = state.config;
+        if (!c.enabled) return;
+        const duration = clamp(options.durationMs ?? (220 + Math.random() * 800), 50, 7000);
+        state.signalLossUntil = performance.now() + duration;
+        setCssVar('--signal', '0.45');
+        elements.state.textContent = 'Transmission: signal loss';
+        if (c.dropout.enabled && Math.random() < c.probability.dropoutChance) triggerDropout();
+        if (c.blackout.enabled && Math.random() < c.probability.blackoutChance) triggerBlackout();
+        setTimeout(() => {
+          setCssVar('--signal', '1');
+          if (performance.now() > state.blackoutUntil) elements.state.textContent = 'Transmission: unstable';
+        }, duration);
+      }
+
+      function triggerDropout() {
+        if (!(state.config.enabled && state.config.dropout.enabled)) return;
+        elements.body.classList.add('glitch-burst');
+        setTimeout(() => elements.body.classList.remove('glitch-burst'), 220);
+      }
+
+      function setConnectionCalm(on) {
+        elements.body.classList.toggle('connection-calm', on);
+        state.pulseActive = !on;
+        if (on) {
+          setCssVar('--signal', '1');
+          setCssVar('--screen-opacity', '1');
+          elements.state.textContent = 'Transmission: stable';
+        } else {
+          elements.state.textContent = 'Transmission: unstable';
+        }
+      }
+
+      function schedulePulseCycle() {
+        window.clearTimeout(state.pulseTimer);
+        const c = state.config;
+        if (!(c.enabled && c.connectionPulse.enabled)) {
+          setConnectionCalm(false);
+          return;
+        }
+
+        const quiet = c.connectionPulse.quietMinMs + Math.random() * (c.connectionPulse.quietMaxMs - c.connectionPulse.quietMinMs);
+        setConnectionCalm(true);
+        state.pulseTimer = window.setTimeout(() => {
+          setConnectionCalm(false);
+          triggerBurst({ intensity: 1.1 });
+          if (Math.random() < 0.45) triggerSignalLoss({ durationMs: 180 + Math.random() * 420 });
+          const active = c.connectionPulse.glitchMinMs + Math.random() * (c.connectionPulse.glitchMaxMs - c.connectionPulse.glitchMinMs);
+          state.pulseTimer = window.setTimeout(schedulePulseCycle, active);
+        }, quiet);
+      }
+
+      function triggerSequence(sequence = []) {
+        let at = 0;
+        for (const step of sequence) {
+          at += clamp(step.delayMs ?? 100, 0, 10000);
+          setTimeout(() => {
+            if (step.type === 'burst') triggerBurst(step);
+            if (step.type === 'loss') triggerSignalLoss(step);
+            if (step.type === 'dropout') triggerDropout(step);
+            if (step.type === 'blackout') triggerBlackout(step);
+          }, at);
+        }
+      }
+
+      function computeNextDelay() {
+        const c = state.config;
+        const jitter = (Math.random() * 2 - 1) * c.timing.intervalJitterMs;
+        return Math.max(120, c.timing.baseIntervalMs + jitter);
+      }
+
+      function schedulerTick() {
+        if (!state.running || state.paused) return;
+        const c = state.config;
+        if (c.enabled && c.autoMode && !c.connectionPulse.enabled) {
+          if (Math.random() < c.probability.burstChance) triggerBurst();
+          const doLoss = Math.random() < c.probability.signalLossChance;
+          if (doLoss) triggerSignalLoss();
+          if (!doLoss && Math.random() < c.probability.dropoutChance * 0.35) triggerDropout();
+          if (!doLoss && c.blackout.enabled && Math.random() < c.probability.blackoutChance * 0.4) triggerBlackout();
+          updateTelemetry(doLoss);
+        } else {
+          elements.timecode.textContent = formatTimecode();
+        }
+
+        const delay = computeNextDelay() + c.timing.cooldownMs;
+        state.timer = window.setTimeout(schedulerTick, delay);
+      }
+
+      function start() { if (state.running) return; state.running = true; state.paused = false; state.timer = window.setTimeout(schedulerTick, computeNextDelay()); schedulePulseCycle(); }
+      function stop() { state.running = false; state.paused = false; window.clearTimeout(state.timer); window.clearTimeout(state.pulseTimer); state.timer = 0; state.pulseTimer = 0; }
+      function pause() { state.paused = true; window.clearTimeout(state.timer); window.clearTimeout(state.pulseTimer); }
+      function resume() { if (!state.running) start(); state.paused = false; window.clearTimeout(state.timer); state.timer = window.setTimeout(schedulerTick, computeNextDelay()); schedulePulseCycle(); }
+
+      function setConfig(partial) {
+        state.config = sanitizeConfig(deepMerge(state.config, partial));
+        applyConfigToUI();
+        schedulePulseCycle();
+        renderControls();
+      }
+      function setEnabled(enabled) { setConfig({ enabled: Boolean(enabled) }); }
+
+      function setEffectEnabled(effectName, isEnabled) {
+        const map = {
+          noise: ['noise', 'enabled'], scanlines: ['scanlines', 'enabled'], distortion: ['distortion', 'enabled'], chroma: ['chroma', 'enabled'],
+          jitter: ['jitter', 'enabled'], syncBar: ['syncBar', 'enabled'], dropout: ['dropout', 'enabled'], pixelate: ['pixelate', 'enabled'], blackout: ['blackout', 'enabled']
+        };
+        const target = map[effectName]; if (!target) return;
+        const [group, key] = target; setConfig({ [group]: { [key]: Boolean(isEnabled) } });
+      }
+
+      function applyProfile(name) { const p = PROFILES[name]; if (!p) return false; setConfig(p); return true; }
+      function getConfig() { return structuredClone(state.config); }
+      function resetConfig() { state.config = sanitizeConfig(deepMerge(structuredClone(DEFAULT_CONFIG), BOOT_CONFIG)); applyConfigToUI(); schedulePulseCycle(); renderControls(); }
+
+      function exportConfiguredHtml() {
+        const cfg = JSON.stringify(getConfig(), null, 2);
+        let html = `<!doctype html>\n${document.documentElement.outerHTML}`;
+        const inject = `<script>window.__GLITCHY_BOOT_CONFIG = ${cfg};<\/script>`;
+        if (html.includes('window.__GLITCHY_BOOT_CONFIG')) {
+          html = html.replace(/window\.__GLITCHY_BOOT_CONFIG\s*=\s*[^;]+;/, `window.__GLITCHY_BOOT_CONFIG = ${cfg};`);
+        } else {
+          html = html.replace('<script>', `${inject}\n  <script>`);
+        }
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'glitchy-export.html';
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function bindVisibility() {
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden && state.running) { state.hiddenPause = true; pause(); }
+          else if (!document.hidden && state.hiddenPause) { state.hiddenPause = false; resume(); }
+        });
+      }
+
+      function bindEvents() {
+        window.addEventListener('glitch:burst', (event) => triggerBurst(event.detail || {}));
+        window.addEventListener('glitch:signal-loss', (event) => triggerSignalLoss(event.detail || {}));
+        window.addEventListener('glitch:dropout', () => triggerDropout());
+        window.addEventListener('glitch:blackout', (event) => triggerBlackout(event.detail || {}));
+
+        if (state.config.debugKeybinds) {
+          window.addEventListener('keydown', (event) => {
+            if (event.key.toLowerCase() === 'g') triggerBurst();
+            if (event.key.toLowerCase() === 'l') triggerSignalLoss();
+            if (event.key.toLowerCase() === 'd') triggerDropout();
+            if (event.key.toLowerCase() === 'b') triggerBlackout();
+          });
+        }
+
+        elements.toggleControls.addEventListener('click', () => { elements.controls.hidden = !elements.controls.hidden; });
+      }
+
+      function addRangeField(parent, label, min, max, step, value, onInput) {
+        const wrapper = document.createElement('label');
+        wrapper.textContent = `${label}: ${value}`;
+        const input = document.createElement('input');
+        input.type = 'range'; input.min = String(min); input.max = String(max); input.step = String(step); input.value = String(value);
+        input.addEventListener('input', () => { wrapper.firstChild.textContent = `${label}: ${input.value}`; onInput(Number(input.value)); });
+        wrapper.appendChild(input); parent.appendChild(wrapper);
+      }
+
+      function addToggleField(parent, label, checked, onChange) {
+        const row = document.createElement('label'); row.className = 'row';
+        const input = document.createElement('input'); input.type = 'checkbox'; input.checked = checked;
+        input.addEventListener('change', () => onChange(input.checked));
+        const txt = document.createElement('span'); txt.textContent = label;
+        row.append(input, txt); parent.appendChild(row);
+      }
+
+      function addColorField(parent, label, value, onInput) {
+        const row = document.createElement('label');
+        row.textContent = label;
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.value = value;
+        input.addEventListener('input', () => onInput(input.value));
+        row.appendChild(input);
+        parent.appendChild(row);
+      }
+
+      function renderControls() {
+        const c = state.config;
+        const root = elements.controls;
+        root.innerHTML = '';
+
+        addToggleField(root, 'Master enabled', c.enabled, (v) => setEnabled(v));
+        addToggleField(root, 'Auto mode', c.autoMode, (v) => setConfig({ autoMode: v }));
+        addToggleField(root, 'Connection pulse mode (calm -> short glitch)', c.connectionPulse.enabled, (v) => setConfig({ connectionPulse: { enabled: v } }));
+        addRangeField(root, 'Pulse quiet min ms', 500, 30000, 100, c.connectionPulse.quietMinMs, (v) => setConfig({ connectionPulse: { quietMinMs: v } }));
+        addRangeField(root, 'Pulse quiet max ms', 500, 45000, 100, c.connectionPulse.quietMaxMs, (v) => setConfig({ connectionPulse: { quietMaxMs: v } }));
+        addRangeField(root, 'Pulse glitch min ms', 80, 6000, 10, c.connectionPulse.glitchMinMs, (v) => setConfig({ connectionPulse: { glitchMinMs: v } }));
+        addRangeField(root, 'Pulse glitch max ms', 80, 10000, 10, c.connectionPulse.glitchMaxMs, (v) => setConfig({ connectionPulse: { glitchMaxMs: v } }));
+
+        addRangeField(root, 'Base interval (ms)', 120, 6000, 10, c.timing.baseIntervalMs, (v) => setConfig({ timing: { baseIntervalMs: v } }));
+        addRangeField(root, 'Interval jitter (ms)', 0, 2500, 10, c.timing.intervalJitterMs, (v) => setConfig({ timing: { intervalJitterMs: v } }));
+        addRangeField(root, 'Burst chance', 0, 1, 0.01, c.probability.burstChance, (v) => setConfig({ probability: { burstChance: v } }));
+        addRangeField(root, 'Signal-loss chance', 0, 1, 0.01, c.probability.signalLossChance, (v) => setConfig({ probability: { signalLossChance: v } }));
+        addRangeField(root, 'Blackout chance', 0, 1, 0.01, c.probability.blackoutChance, (v) => setConfig({ probability: { blackoutChance: v } }));
+        addRangeField(root, 'Blackout min ms', 20, 2000, 10, c.blackout.minMs, (v) => setConfig({ blackout: { minMs: v } }));
+        addRangeField(root, 'Blackout max ms', 20, 4000, 10, c.blackout.maxMs, (v) => setConfig({ blackout: { maxMs: v } }));
+
+        addRangeField(root, 'Distortion max', 0, 180, 1, c.distortion.displacementMax, (v) => setConfig({ distortion: { displacementMax: v } }));
+        addRangeField(root, 'Blockiness', 0, 1, 0.01, c.distortion.blockiness, (v) => setConfig({ distortion: { blockiness: v } }));
+        addRangeField(root, 'Pixel size', 2, 20, 1, c.pixelate.pixelSize, (v) => setConfig({ pixelate: { pixelSize: v } }));
+        addRangeField(root, 'Pixel opacity', 0, 0.8, 0.01, c.pixelate.opacity, (v) => setConfig({ pixelate: { opacity: v } }));
+        addRangeField(root, 'Noise opacity', 0, 0.6, 0.01, c.noise.opacity, (v) => setConfig({ noise: { opacity: v } }));
+        addRangeField(root, 'Scanline speed', 1, 20, 0.1, c.scanlines.speed, (v) => setConfig({ scanlines: { speed: v } }));
+        addRangeField(root, 'Scanline spacing', 2, 16, 1, c.scanlines.spacing, (v) => setConfig({ scanlines: { spacing: v } }));
+        addRangeField(root, 'Scan drift px', 1, 36, 1, c.scanlines.driftPx, (v) => setConfig({ scanlines: { driftPx: v } }));
+        addRangeField(root, 'Sync count', 1, 8, 1, c.syncBar.count, (v) => setConfig({ syncBar: { count: v } }));
+        addRangeField(root, 'Sync speed', 2, 20, 0.1, c.syncBar.speed, (v) => setConfig({ syncBar: { speed: v } }));
+        addRangeField(root, 'Sync thickness', 1, 8, 1, c.syncBar.thickness, (v) => setConfig({ syncBar: { thickness: v } }));
+        addRangeField(root, 'Sync width %', 20, 100, 1, c.syncBar.widthPct, (v) => setConfig({ syncBar: { widthPct: v } }));
+
+        addColorField(root, 'Background A', c.theme.bgA, (v) => setConfig({ theme: { bgA: v } }));
+        addColorField(root, 'Background B', c.theme.bgB, (v) => setConfig({ theme: { bgB: v } }));
+        addColorField(root, 'Background C', c.theme.bgC, (v) => setConfig({ theme: { bgC: v } }));
+        addColorField(root, 'Ink color', c.theme.ink, (v) => setConfig({ theme: { ink: v } }));
+        addColorField(root, 'Accent color', c.theme.accent, (v) => setConfig({ theme: { accent: v } }));
+
+        addToggleField(root, 'Noise', c.noise.enabled, (v) => setEffectEnabled('noise', v));
+        addToggleField(root, 'Scanlines', c.scanlines.enabled, (v) => setEffectEnabled('scanlines', v));
+        addToggleField(root, 'Distortion', c.distortion.enabled, (v) => setEffectEnabled('distortion', v));
+        addToggleField(root, 'Dropout', c.dropout.enabled, (v) => setEffectEnabled('dropout', v));
+        addToggleField(root, 'Chroma', c.chroma.enabled, (v) => setEffectEnabled('chroma', v));
+        addToggleField(root, 'Sync bars', c.syncBar.enabled, (v) => setEffectEnabled('syncBar', v));
+        addToggleField(root, 'Jitter', c.jitter.enabled, (v) => setEffectEnabled('jitter', v));
+        addToggleField(root, 'Pixel overlay', c.pixelate.enabled, (v) => setEffectEnabled('pixelate', v));
+        addToggleField(root, 'Blackout mode', c.blackout.enabled, (v) => setEffectEnabled('blackout', v));
+
+        const row = document.createElement('div');
+        row.className = 'row';
+        ['subtle', 'broadcast', 'pulse', 'signalLoss', 'aggressive'].forEach((name) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = name;
+          button.addEventListener('click', () => applyProfile(name));
+          row.appendChild(button);
+        });
+
+        const tBurst = document.createElement('button'); tBurst.textContent = 'trigger burst'; tBurst.addEventListener('click', () => triggerBurst()); row.appendChild(tBurst);
+        const tLoss = document.createElement('button'); tLoss.textContent = 'trigger loss'; tLoss.addEventListener('click', () => triggerSignalLoss()); row.appendChild(tLoss);
+        const tBlackout = document.createElement('button'); tBlackout.textContent = 'trigger blackout'; tBlackout.addEventListener('click', () => triggerBlackout()); row.appendChild(tBlackout);
+        const exportBtn = document.createElement('button'); exportBtn.textContent = 'export full html'; exportBtn.addEventListener('click', exportConfiguredHtml); row.appendChild(exportBtn);
+        const reset = document.createElement('button'); reset.type = 'button'; reset.textContent = 'reset'; reset.addEventListener('click', resetConfig); row.appendChild(reset);
+        root.appendChild(row);
+      }
+
+      function initReducedMotion() {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          setConfig({ autoMode: false, noise: { fps: 8, opacity: 0.06 }, scanlines: { speed: 12 }, jitter: { enabled: false }, syncBar: { enabled: false }, pixelate: { opacity: 0.08 } });
+        }
+      }
+
+      function init() {
+        state.config = sanitizeConfig(deepMerge(structuredClone(DEFAULT_CONFIG), BOOT_CONFIG));
+        resizeNoise(); bindEvents(); bindVisibility(); initReducedMotion();
+        applyConfigToUI(); renderControls();
+        elements.controls.hidden = !state.config.showControls;
+        state.raf = requestAnimationFrame(drawNoiseFrame);
+        start();
+        setInterval(() => { elements.timecode.textContent = formatTimecode(); }, 1000);
+      }
+
+      window.Glitchy = {
+        enable: () => setEnabled(true), disable: () => setEnabled(false), toggle: () => setEnabled(!state.config.enabled), setEnabled,
+        start, stop, pause, resume, isRunning: () => state.running && !state.paused,
+        setConfig, getConfig, resetConfig, setEffectEnabled, applyProfile,
+        triggerBurst, triggerSignalLoss, triggerDropout, triggerBlackout, triggerSequence,
+        exportConfiguredHtml
+      };
+
+      window.addEventListener('resize', resizeNoise, { passive: true });
+      window.addEventListener('beforeunload', () => { stop(); cancelAnimationFrame(state.raf); });
+      init();
+    })();
+  </script>
+</body>
+</html>
