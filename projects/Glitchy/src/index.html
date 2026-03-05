@@ -12,6 +12,8 @@
       --ink: #d7f4ff;
       --accent: #48e3ff;
       --accent-soft: rgba(72, 227, 255, 0.2);
+      --bg-image-opacity: 0.3;
+      --bg-image-flicker: 0;
 
       --signal: 1;
       --tear-x: 0px;
@@ -31,6 +33,7 @@
       --bar-width: 80%;
       --scan-drift: 8px;
       --screen-opacity: 1;
+      --fx-mix: 1;
     }
 
     * { box-sizing: border-box; }
@@ -44,11 +47,28 @@
       background: radial-gradient(circle at 50% 40%, var(--bg-a) 0%, var(--bg-b) 45%, var(--bg-c) 100%);
     }
 
+    .bg-photo {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: calc(var(--bg-image-opacity) * (1 - var(--bg-image-flicker)));
+      background-image: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=2000&q=80');
+      background-size: cover;
+      background-position: center;
+      mix-blend-mode: soft-light;
+      transition: opacity 180ms ease;
+      filter: saturate(0.9) contrast(1.05);
+    }
+
+    body.blackout-active .bg-photo { opacity: 0 !important; }
+
     body { display: grid; place-items: center; }
 
     .stage {
       position: fixed;
       inset: 0;
+      z-index: 1;
       display: grid;
       place-items: center;
       filter: url(#signal-distort);
@@ -96,7 +116,7 @@
         transparent var(--scanline-spacing)
       );
       mix-blend-mode: screen;
-      opacity: calc(var(--scanline-opacity) * var(--signal));
+      opacity: calc(var(--scanline-opacity) * var(--signal) * var(--fx-mix));
       animation: scan-drift var(--scanline-speed) linear infinite, scan-wobble var(--scanline-wobble) ease-in-out infinite;
       transition: opacity 180ms ease;
     }
@@ -120,7 +140,7 @@
       inset: 0;
       z-index: 3;
       pointer-events: none;
-      opacity: var(--pixel-opacity);
+      opacity: calc(var(--pixel-opacity) * var(--fx-mix));
       mix-blend-mode: overlay;
       background-image:
         linear-gradient(color-mix(in oklab, var(--ink) 30%, transparent) 1px, transparent 1px),
@@ -148,7 +168,7 @@
     }
 
     body.glitch-burst .tear-bars {
-      opacity: 0.45;
+      opacity: calc(0.45 * var(--fx-mix));
       animation: tear-shift 120ms steps(2, end) infinite;
     }
 
@@ -181,12 +201,7 @@
       text-transform: none;
     }
 
-    .title-wrap {
-      text-align: center;
-      display: grid;
-      place-items: center;
-      align-self: center;
-    }
+    .title-wrap { text-align: center; display: grid; place-items: center; align-self: center; }
 
     h1 {
       margin: 0;
@@ -207,38 +222,22 @@
       content: attr(data-text);
       position: absolute;
       inset: 0;
-      opacity: var(--rgb-opacity);
+      opacity: calc(var(--rgb-opacity) * var(--fx-mix));
       pointer-events: none;
     }
 
-    h1::before {
-      color: rgba(255, 40, 103, 0.55);
-      transform: translateX(calc(var(--rgb-shift) * -1));
-      mix-blend-mode: screen;
-    }
-
-    h1::after {
-      color: color-mix(in oklab, var(--accent) 82%, #23c6ff);
-      transform: translateX(var(--rgb-shift));
-      mix-blend-mode: screen;
-    }
+    h1::before { color: rgba(255, 40, 103, 0.55); transform: translateX(calc(var(--rgb-shift) * -1)); mix-blend-mode: screen; }
+    h1::after { color: color-mix(in oklab, var(--accent) 82%, #23c6ff); transform: translateX(var(--rgb-shift)); mix-blend-mode: screen; }
 
     body.no-chroma h1::before,
     body.no-chroma h1::after { display: none; }
-
-    .subtitle {
-      margin-top: 0.9rem;
-      max-width: 58ch;
-      font-size: clamp(0.85rem, 1.7vw, 1.08rem);
-      opacity: 0.86;
-    }
 
     .noise {
       position: fixed;
       inset: 0;
       z-index: 4;
       mix-blend-mode: screen;
-      opacity: var(--noise-alpha);
+      opacity: calc(var(--noise-alpha) * var(--fx-mix));
       pointer-events: none;
     }
 
@@ -249,6 +248,7 @@
       inset: 0;
       pointer-events: none;
       z-index: 6;
+      opacity: var(--fx-mix);
     }
 
     .sync-bar {
@@ -307,7 +307,7 @@
       top: 52px;
       right: 12px;
       z-index: 10;
-      width: min(390px, 95vw);
+      width: min(420px, 95vw);
       max-height: 86vh;
       overflow: auto;
       border-radius: 12px;
@@ -352,17 +352,20 @@
   </style>
 </head>
 <body>
+  <div class="bg-photo" aria-hidden="true"></div>
+
   <svg width="0" height="0" aria-hidden="true" focusable="false" style="position: absolute;">
     <filter id="signal-distort" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
       <feTurbulence id="turbulence" type="fractalNoise" baseFrequency="0.004 0.018" numOctaves="2" seed="17" result="noise"></feTurbulence>
       <feDisplacementMap id="displacement" in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="B" result="warp"></feDisplacementMap>
-      <feColorMatrix id="posterize" in="warp" type="matrix" values="1.1 0 0 0 0  0 1.05 0 0 0  0 0 1.15 0 0  0 0 0 1 0"></feColorMatrix>
-      <feComponentTransfer in="posterize" result="quantized">
+      <feColorMatrix id="saturation" in="warp" type="saturate" values="1" result="saturated"></feColorMatrix>
+      <feColorMatrix id="posterize" in="saturated" type="matrix" values="1.1 0 0 0 0  0 1.05 0 0 0  0 0 1.15 0 0  0 0 0 1 0" result="tinted"></feColorMatrix>
+      <feComponentTransfer in="tinted" result="quantized">
         <feFuncR type="discrete" tableValues="0 0.18 0.35 0.52 0.72 1"></feFuncR>
         <feFuncG type="discrete" tableValues="0 0.2 0.36 0.55 0.75 1"></feFuncG>
         <feFuncB type="discrete" tableValues="0 0.22 0.4 0.58 0.8 1"></feFuncB>
       </feComponentTransfer>
-      <feBlend in="warp" in2="quantized" mode="screen"></feBlend>
+      <feBlend id="blend" in="warp" in2="quantized" mode="screen"></feBlend>
     </filter>
   </svg>
 
@@ -375,7 +378,6 @@
         </div>
         <div class="title-wrap">
           <h1 data-text="Signal Lost">Signal Lost</h1>
-          <p class="subtitle">Added calm→glitch pulse mode, color controls, and export of full configured single-file HTML.</p>
         </div>
         <div class="telemetry">
           <span>CH 04-A // RF: -92 dBm</span>
@@ -406,38 +408,48 @@
         timing: { baseIntervalMs: 2200, intervalJitterMs: 1200, burstMinMs: 120, burstMaxMs: 300, cooldownMs: 250 },
         probability: { burstChance: 0.42, signalLossChance: 0.12, dropoutChance: 0.3, blackoutChance: 0.08 },
         connectionPulse: { enabled: false, quietMinMs: 4000, quietMaxMs: 12000, glitchMinMs: 220, glitchMaxMs: 900 },
-        theme: {
-          bgA: '#11192a', bgB: '#090e18', bgC: '#03060b', ink: '#d7f4ff', accent: '#48e3ff'
-        },
+        autoCalm: { enabled: true, minLevel: 0.22, maxLevel: 1, downSpeed: 0.025, upSpeed: 0.018, dipChance: 0.28 },
+        theme: { bgA: '#11192a', bgB: '#090e18', bgC: '#03060b', ink: '#d7f4ff', accent: '#48e3ff' },
+        backgroundImage: { enabled: true, opacity: 0.3, flickerOnLoss: true },
         distortion: {
-          enabled: true, baseFrequencyX: 0.004, baseFrequencyY: 0.018, burstFrequencyX: 0.02, burstFrequencyY: 0.08,
-          displacementMin: 8, displacementMax: 70, blockiness: 0.55
+          enabled: true,
+          baseFrequencyX: 0.004,
+          baseFrequencyY: 0.018,
+          burstFrequencyX: 0.02,
+          burstFrequencyY: 0.08,
+          displacementMin: 8,
+          displacementMax: 70,
+          blockiness: 0.55,
+          horizontalStretch: 2.2,
+          saturation: 1.0,
+          blendMode: 'screen',
+          quantize: true
         },
         blackout: { enabled: true, minMs: 80, maxMs: 360, opacityWhenLost: 0, reappearFlash: true },
-        noise: { enabled: true, opacity: 0.14, fps: 24, grainStrength: 1.2 },
+        noise: { enabled: true, opacity: 0.14, fps: 24, grainStrength: 1.2, resolutionDivisor: 3, tint: 1.0 },
         scanlines: { enabled: true, opacity: 0.38, speed: 5, spacing: 3, wobbleAmount: 1, driftPx: 8 },
         chroma: { enabled: true, shiftPx: 2, opacity: 0.7 },
         syncBar: { enabled: true, speed: 8, opacity: 0.8, count: 3, thickness: 2, widthPct: 80 },
         pixelate: { enabled: true, pixelSize: 4, opacity: 0.22 },
-        jitter: { enabled: true, xPx: 1.4, yPx: 2.8, vHoldChance: 0.22 },
+        jitter: { enabled: true, xPx: 1.4, yPx: 2.8 },
         dropout: { enabled: true }
       };
 
       const PROFILES = {
         subtle: { intensity: 0.62, probability: { burstChance: 0.2, signalLossChance: 0.04, blackoutChance: 0.02 }, pixelate: { opacity: 0.08 }, distortion: { blockiness: 0.2, displacementMax: 24 } },
-        broadcast: {},
+        pulse: { connectionPulse: { enabled: true }, autoMode: true, probability: { burstChance: 0.15, signalLossChance: 0.07, blackoutChance: 0.03 } },
         signalLoss: { intensity: 1.2, probability: { burstChance: 0.75, signalLossChance: 0.4, dropoutChance: 0.72, blackoutChance: 0.28 }, blackout: { minMs: 140, maxMs: 650 }, distortion: { displacementMin: 20, displacementMax: 98, blockiness: 0.75 } },
-        pulse: { connectionPulse: { enabled: true, quietMinMs: 5000, quietMaxMs: 10000, glitchMinMs: 240, glitchMaxMs: 850 }, autoMode: true, probability: { burstChance: 0.15, signalLossChance: 0.07, blackoutChance: 0.03 } },
         aggressive: { intensity: 1.45, timing: { baseIntervalMs: 760, intervalJitterMs: 420 }, probability: { burstChance: 0.85, signalLossChance: 0.44, dropoutChance: 0.8, blackoutChance: 0.35 }, distortion: { burstFrequencyX: 0.026, burstFrequencyY: 0.11, displacementMin: 26, displacementMax: 120, blockiness: 0.9 }, syncBar: { count: 5, thickness: 3 } }
       };
-      PROFILES.broadcast = {};
 
       const elements = {
         body: document.body,
         noise: document.getElementById('noise'),
         turbulence: document.getElementById('turbulence'),
         displacement: document.getElementById('displacement'),
+        saturation: document.getElementById('saturation'),
         posterize: document.getElementById('posterize'),
+        blend: document.getElementById('blend'),
         quality: document.getElementById('quality'),
         state: document.getElementById('tx-state'),
         timecode: document.getElementById('timecode'),
@@ -455,14 +467,16 @@
         raf: 0,
         noiseNextAt: 0,
         burstUntil: 0,
-        signalLossUntil: 0,
-        hiddenPause: false,
         blackoutUntil: 0,
+        hiddenPause: false,
         pulseTimer: 0,
-        pulseActive: false
+        calmLevel: 1,
+        calmDirection: -1,
+        calmTicker: 0
       };
 
-      function clamp(v, min, max) { return Math.min(max, Math.max(min, Number(v))); }
+      const BLEND_MODES = ['normal', 'screen', 'overlay', 'multiply', 'lighten', 'darken', 'hard-light', 'soft-light'];
+      const clamp = (v, min, max) => Math.min(max, Math.max(min, Number(v)));
       function deepMerge(base, patch) {
         if (!patch || typeof patch !== 'object') return base;
         const out = Array.isArray(base) ? [...base] : { ...base };
@@ -473,65 +487,75 @@
         return out;
       }
 
-      function sanitizeConfig(config) {
-        config.intensity = clamp(config.intensity ?? 1, 0, 2.5);
-        config.timing.baseIntervalMs = clamp(config.timing.baseIntervalMs, 120, 12000);
-        config.timing.intervalJitterMs = clamp(config.timing.intervalJitterMs, 0, 6000);
-        config.timing.burstMinMs = clamp(config.timing.burstMinMs, 40, 2000);
-        config.timing.burstMaxMs = clamp(config.timing.burstMaxMs, config.timing.burstMinMs, 4000);
-        config.timing.cooldownMs = clamp(config.timing.cooldownMs, 0, 2500);
+      function sanitizeConfig(c) {
+        c.intensity = clamp(c.intensity, 0, 2.5);
+        c.timing.baseIntervalMs = clamp(c.timing.baseIntervalMs, 120, 12000);
+        c.timing.intervalJitterMs = clamp(c.timing.intervalJitterMs, 0, 6000);
+        c.timing.burstMinMs = clamp(c.timing.burstMinMs, 40, 2000);
+        c.timing.burstMaxMs = clamp(c.timing.burstMaxMs, c.timing.burstMinMs, 5000);
+        c.timing.cooldownMs = clamp(c.timing.cooldownMs, 0, 2500);
 
-        config.probability.burstChance = clamp(config.probability.burstChance, 0, 1);
-        config.probability.signalLossChance = clamp(config.probability.signalLossChance, 0, 1);
-        config.probability.dropoutChance = clamp(config.probability.dropoutChance, 0, 1);
-        config.probability.blackoutChance = clamp(config.probability.blackoutChance, 0, 1);
+        c.probability.burstChance = clamp(c.probability.burstChance, 0, 1);
+        c.probability.signalLossChance = clamp(c.probability.signalLossChance, 0, 1);
+        c.probability.dropoutChance = clamp(c.probability.dropoutChance, 0, 1);
+        c.probability.blackoutChance = clamp(c.probability.blackoutChance, 0, 1);
 
-        config.connectionPulse.quietMinMs = clamp(config.connectionPulse.quietMinMs, 500, 30000);
-        config.connectionPulse.quietMaxMs = clamp(config.connectionPulse.quietMaxMs, config.connectionPulse.quietMinMs, 45000);
-        config.connectionPulse.glitchMinMs = clamp(config.connectionPulse.glitchMinMs, 80, 6000);
-        config.connectionPulse.glitchMaxMs = clamp(config.connectionPulse.glitchMaxMs, config.connectionPulse.glitchMinMs, 10000);
+        c.connectionPulse.quietMinMs = clamp(c.connectionPulse.quietMinMs, 500, 30000);
+        c.connectionPulse.quietMaxMs = clamp(c.connectionPulse.quietMaxMs, c.connectionPulse.quietMinMs, 45000);
+        c.connectionPulse.glitchMinMs = clamp(c.connectionPulse.glitchMinMs, 80, 6000);
+        c.connectionPulse.glitchMaxMs = clamp(c.connectionPulse.glitchMaxMs, c.connectionPulse.glitchMinMs, 10000);
 
-        config.distortion.baseFrequencyX = clamp(config.distortion.baseFrequencyX, 0, 0.04);
-        config.distortion.baseFrequencyY = clamp(config.distortion.baseFrequencyY, 0, 0.16);
-        config.distortion.burstFrequencyX = clamp(config.distortion.burstFrequencyX, 0, 0.09);
-        config.distortion.burstFrequencyY = clamp(config.distortion.burstFrequencyY, 0, 0.24);
-        config.distortion.displacementMin = clamp(config.distortion.displacementMin, 0, 300);
-        config.distortion.displacementMax = clamp(config.distortion.displacementMax, config.distortion.displacementMin, 400);
-        config.distortion.blockiness = clamp(config.distortion.blockiness, 0, 1);
+        c.autoCalm.minLevel = clamp(c.autoCalm.minLevel, 0, 1);
+        c.autoCalm.maxLevel = clamp(c.autoCalm.maxLevel, c.autoCalm.minLevel, 1);
+        c.autoCalm.downSpeed = clamp(c.autoCalm.downSpeed, 0.001, 0.2);
+        c.autoCalm.upSpeed = clamp(c.autoCalm.upSpeed, 0.001, 0.2);
+        c.autoCalm.dipChance = clamp(c.autoCalm.dipChance, 0, 1);
 
-        config.blackout.minMs = clamp(config.blackout.minMs, 20, 2000);
-        config.blackout.maxMs = clamp(config.blackout.maxMs, config.blackout.minMs, 6000);
-        config.blackout.opacityWhenLost = clamp(config.blackout.opacityWhenLost, 0, 1);
+        c.distortion.baseFrequencyX = clamp(c.distortion.baseFrequencyX, 0, 0.1);
+        c.distortion.baseFrequencyY = clamp(c.distortion.baseFrequencyY, 0, 0.2);
+        c.distortion.burstFrequencyX = clamp(c.distortion.burstFrequencyX, 0, 0.2);
+        c.distortion.burstFrequencyY = clamp(c.distortion.burstFrequencyY, 0, 0.3);
+        c.distortion.displacementMin = clamp(c.distortion.displacementMin, 0, 300);
+        c.distortion.displacementMax = clamp(c.distortion.displacementMax, c.distortion.displacementMin, 400);
+        c.distortion.blockiness = clamp(c.distortion.blockiness, 0, 1);
+        c.distortion.horizontalStretch = clamp(c.distortion.horizontalStretch, 0.4, 8);
+        c.distortion.saturation = clamp(c.distortion.saturation, 0, 3);
+        if (!BLEND_MODES.includes(c.distortion.blendMode)) c.distortion.blendMode = 'screen';
 
-        config.noise.opacity = clamp(config.noise.opacity, 0, 0.6);
-        config.noise.fps = clamp(config.noise.fps, 1, 60);
-        config.noise.grainStrength = clamp(config.noise.grainStrength, 0.2, 3);
+        c.blackout.minMs = clamp(c.blackout.minMs, 20, 3000);
+        c.blackout.maxMs = clamp(c.blackout.maxMs, c.blackout.minMs, 6000);
+        c.blackout.opacityWhenLost = clamp(c.blackout.opacityWhenLost, 0, 1);
 
-        config.scanlines.opacity = clamp(config.scanlines.opacity, 0, 1);
-        config.scanlines.speed = clamp(config.scanlines.speed, 1, 20);
-        config.scanlines.spacing = clamp(config.scanlines.spacing, 2, 16);
-        config.scanlines.wobbleAmount = clamp(config.scanlines.wobbleAmount, 0, 4);
-        config.scanlines.driftPx = clamp(config.scanlines.driftPx, 1, 36);
+        c.noise.opacity = clamp(c.noise.opacity, 0, 0.8);
+        c.noise.fps = clamp(c.noise.fps, 1, 60);
+        c.noise.grainStrength = clamp(c.noise.grainStrength, 0.2, 4);
+        c.noise.resolutionDivisor = clamp(c.noise.resolutionDivisor, 1, 8);
+        c.noise.tint = clamp(c.noise.tint, 0, 2);
 
-        config.chroma.shiftPx = clamp(config.chroma.shiftPx, 0, 14);
-        config.chroma.opacity = clamp(config.chroma.opacity, 0, 1);
+        c.scanlines.opacity = clamp(c.scanlines.opacity, 0, 1);
+        c.scanlines.speed = clamp(c.scanlines.speed, 1, 20);
+        c.scanlines.spacing = clamp(c.scanlines.spacing, 2, 20);
+        c.scanlines.wobbleAmount = clamp(c.scanlines.wobbleAmount, 0, 4);
+        c.scanlines.driftPx = clamp(c.scanlines.driftPx, 1, 40);
 
-        config.syncBar.speed = clamp(config.syncBar.speed, 2, 20);
-        config.syncBar.opacity = clamp(config.syncBar.opacity, 0, 1);
-        config.syncBar.count = clamp(config.syncBar.count, 1, 8);
-        config.syncBar.thickness = clamp(config.syncBar.thickness, 1, 8);
-        config.syncBar.widthPct = clamp(config.syncBar.widthPct, 20, 100);
+        c.chroma.shiftPx = clamp(c.chroma.shiftPx, 0, 20);
+        c.chroma.opacity = clamp(c.chroma.opacity, 0, 1);
 
-        config.pixelate.pixelSize = clamp(config.pixelate.pixelSize, 2, 20);
-        config.pixelate.opacity = clamp(config.pixelate.opacity, 0, 0.8);
+        c.syncBar.speed = clamp(c.syncBar.speed, 2, 20);
+        c.syncBar.opacity = clamp(c.syncBar.opacity, 0, 1);
+        c.syncBar.count = clamp(c.syncBar.count, 1, 8);
+        c.syncBar.thickness = clamp(c.syncBar.thickness, 1, 10);
+        c.syncBar.widthPct = clamp(c.syncBar.widthPct, 20, 100);
 
-        config.jitter.xPx = clamp(config.jitter.xPx, 0, 16);
-        config.jitter.yPx = clamp(config.jitter.yPx, 0, 16);
-        config.jitter.vHoldChance = clamp(config.jitter.vHoldChance, 0, 1);
-        return config;
+        c.pixelate.pixelSize = clamp(c.pixelate.pixelSize, 2, 32);
+        c.pixelate.opacity = clamp(c.pixelate.opacity, 0, 0.8);
+        c.backgroundImage.opacity = clamp(c.backgroundImage.opacity, 0, 1);
+        c.jitter.xPx = clamp(c.jitter.xPx, 0, 24);
+        c.jitter.yPx = clamp(c.jitter.yPx, 0, 24);
+        return c;
       }
 
-      function setCssVar(name, value) { document.documentElement.style.setProperty(name, String(value)); }
+      const setCssVar = (n, v) => document.documentElement.style.setProperty(n, String(v));
       function renderSyncBars() {
         const c = state.config.syncBar;
         elements.syncBars.innerHTML = '';
@@ -553,9 +577,17 @@
         setCssVar('--accent-soft', `${t.accent}33`);
       }
 
+      function applyFilterControls() {
+        const d = state.config.distortion;
+        elements.saturation.setAttribute('values', d.saturation.toFixed(3));
+        elements.blend.setAttribute('mode', d.blendMode);
+        elements.posterize.setAttribute('in', d.quantize ? 'saturated' : 'warp');
+      }
+
       function applyConfigToUI() {
         const c = state.config;
         applyTheme();
+        applyFilterControls();
         setCssVar('--noise-alpha', c.noise.opacity.toFixed(3));
         setCssVar('--scanline-opacity', c.scanlines.opacity.toFixed(3));
         setCssVar('--scanline-spacing', `${c.scanlines.spacing}px`);
@@ -570,15 +602,17 @@
         setCssVar('--pixel-opacity', c.pixelate.opacity.toFixed(3));
         setCssVar('--bar-thickness', `${c.syncBar.thickness.toFixed(1)}px`);
         setCssVar('--bar-width', `${c.syncBar.widthPct.toFixed(1)}%`);
+        setCssVar('--bg-image-opacity', c.backgroundImage.enabled ? c.backgroundImage.opacity.toFixed(3) : '0');
+        setCssVar('--fx-mix', state.calmLevel.toFixed(3));
 
         elements.body.classList.toggle('no-noise', !(c.enabled && c.noise.enabled));
         elements.body.classList.toggle('no-scanlines', !(c.enabled && c.scanlines.enabled));
         elements.body.classList.toggle('no-distortion', !(c.enabled && c.distortion.enabled));
         elements.body.classList.toggle('no-chroma', !(c.enabled && c.chroma.enabled));
-        elements.body.classList.toggle('no-jitter', !(c.enabled && c.jitter.enabled));
         elements.body.classList.toggle('no-sync', !(c.enabled && c.syncBar.enabled));
         elements.body.classList.toggle('no-dropout', !(c.enabled && c.dropout.enabled));
         elements.body.classList.toggle('no-pixelate', !(c.enabled && c.pixelate.enabled));
+        elements.body.classList.toggle('no-jitter', !(c.enabled && c.jitter.enabled));
 
         if (!c.enabled || !c.distortion.enabled) elements.displacement.setAttribute('scale', '0');
         if (!c.enabled) elements.state.textContent = 'Transmission: paused';
@@ -587,18 +621,17 @@
       }
 
       function resizeNoise() {
+        const div = state.config.noise.resolutionDivisor;
         const scale = Math.max(1, Math.floor(window.devicePixelRatio || 1));
-        elements.noise.width = Math.max(1, Math.floor(window.innerWidth / 3) * scale);
-        elements.noise.height = Math.max(1, Math.floor(window.innerHeight / 3) * scale);
+        elements.noise.width = Math.max(1, Math.floor(window.innerWidth / div) * scale);
+        elements.noise.height = Math.max(1, Math.floor(window.innerHeight / div) * scale);
         elements.noise.style.width = `${window.innerWidth}px`;
         elements.noise.style.height = `${window.innerHeight}px`;
       }
 
       function drawNoiseFrame(now) {
         const c = state.config;
-        if (!(c.enabled && c.noise.enabled) || elements.body.classList.contains('connection-calm')) {
-          state.raf = requestAnimationFrame(drawNoiseFrame); return;
-        }
+        if (!(c.enabled && c.noise.enabled) || elements.body.classList.contains('connection-calm')) { state.raf = requestAnimationFrame(drawNoiseFrame); return; }
         const msPerFrame = 1000 / c.noise.fps;
         if (now < state.noiseNextAt) { state.raf = requestAnimationFrame(drawNoiseFrame); return; }
         state.noiseNextAt = now + msPerFrame;
@@ -609,19 +642,20 @@
         for (let i = 0; i < image.data.length; i += 4) {
           const grain = Math.random() * 255 * c.noise.grainStrength;
           const stripe = (i / 4 / w + now * 0.05) % 11 < (heavy ? 5 : 2) ? 35 : 0;
-          image.data[i] = Math.min(255, grain + stripe);
+          image.data[i] = Math.min(255, grain + stripe * c.noise.tint);
           image.data[i + 1] = Math.min(255, grain);
-          image.data[i + 2] = Math.min(255, grain + stripe * 0.45);
+          image.data[i + 2] = Math.min(255, grain + stripe * 0.45 * c.noise.tint);
           image.data[i + 3] = heavy ? 125 : 78;
         }
         ctx.putImageData(image, 0, 0);
         state.raf = requestAnimationFrame(drawNoiseFrame);
       }
 
-      function formatTimecode() {
-        const d = new Date(); const pad = (v) => String(v).padStart(2, '0');
-        return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-      }
+      const formatTimecode = () => {
+        const d = new Date(); const p = (v) => String(v).padStart(2, '0');
+        return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+      };
+
       function updateTelemetry(signalLoss) {
         const link = Math.max(8, Math.min(99, Math.round(90 - Math.random() * (signalLoss ? 76 : 36))));
         elements.quality.textContent = `Link quality: ${link}%`;
@@ -629,12 +663,15 @@
       }
 
       function setDistortion(scale, fx, fy, block = 0.5) {
-        elements.turbulence.setAttribute('baseFrequency', `${fx.toFixed(4)} ${fy.toFixed(4)}`);
+        const stretchX = state.config.distortion.horizontalStretch;
+        const adjustedX = fx / stretchX;
+        elements.turbulence.setAttribute('baseFrequency', `${adjustedX.toFixed(4)} ${fy.toFixed(4)}`);
         elements.displacement.setAttribute('scale', String(scale.toFixed(2)));
         const lift = 1 + block * 0.35;
         elements.posterize.setAttribute('values', `${lift.toFixed(2)} 0 0 0 0  0 ${(1 + block * 0.2).toFixed(2)} 0 0 0  0 0 ${(1 + block * 0.4).toFixed(2)} 0 0  0 0 0 1 0`);
       }
-      function randomSigned(maxAbs) { return (Math.random() * 2 - 1) * maxAbs; }
+
+      const randomSigned = (maxAbs) => (Math.random() * 2 - 1) * maxAbs;
 
       function triggerBurst(options = {}) {
         const c = state.config;
@@ -650,7 +687,6 @@
           const scale = c.distortion.displacementMin + Math.random() * (c.distortion.displacementMax - c.distortion.displacementMin) * intensity;
           setDistortion(scale, fx, fy, c.distortion.blockiness);
         }
-
         if (c.jitter.enabled) {
           setCssVar('--tear-x', `${randomSigned(c.jitter.xPx * intensity).toFixed(2)}px`);
           setCssVar('--tear-y', `${randomSigned(c.jitter.yPx * intensity).toFixed(2)}px`);
@@ -664,14 +700,21 @@
         }, duration);
       }
 
+      function setBgImageFlicker(on) {
+        if (!state.config.backgroundImage.flickerOnLoss) return;
+        setCssVar('--bg-image-flicker', on ? '0.45' : '0');
+      }
+
       function triggerBlackout(options = {}) {
         const c = state.config;
         if (!(c.enabled && c.blackout.enabled)) return;
         const duration = clamp(options.durationMs ?? (c.blackout.minMs + Math.random() * (c.blackout.maxMs - c.blackout.minMs)), 20, 8000);
         state.blackoutUntil = performance.now() + duration;
+        elements.body.classList.add('blackout-active');
         setCssVar('--screen-opacity', c.blackout.opacityWhenLost.toFixed(3));
         elements.state.textContent = 'Transmission: blackout';
         setTimeout(() => {
+          elements.body.classList.remove('blackout-active');
           setCssVar('--screen-opacity', '1');
           elements.state.textContent = 'Transmission: unstable';
           if (c.blackout.reappearFlash) triggerBurst({ durationMs: 90, intensity: 1.8 });
@@ -682,13 +725,14 @@
         const c = state.config;
         if (!c.enabled) return;
         const duration = clamp(options.durationMs ?? (220 + Math.random() * 800), 50, 7000);
-        state.signalLossUntil = performance.now() + duration;
         setCssVar('--signal', '0.45');
         elements.state.textContent = 'Transmission: signal loss';
+        setBgImageFlicker(true);
         if (c.dropout.enabled && Math.random() < c.probability.dropoutChance) triggerDropout();
         if (c.blackout.enabled && Math.random() < c.probability.blackoutChance) triggerBlackout();
         setTimeout(() => {
           setCssVar('--signal', '1');
+          setBgImageFlicker(false);
           if (performance.now() > state.blackoutUntil) elements.state.textContent = 'Transmission: unstable';
         }, duration);
       }
@@ -701,7 +745,6 @@
 
       function setConnectionCalm(on) {
         elements.body.classList.toggle('connection-calm', on);
-        state.pulseActive = !on;
         if (on) {
           setCssVar('--signal', '1');
           setCssVar('--screen-opacity', '1');
@@ -712,22 +755,38 @@
       }
 
       function schedulePulseCycle() {
-        window.clearTimeout(state.pulseTimer);
+        clearTimeout(state.pulseTimer);
         const c = state.config;
-        if (!(c.enabled && c.connectionPulse.enabled)) {
-          setConnectionCalm(false);
-          return;
-        }
-
+        if (!(c.enabled && c.connectionPulse.enabled)) { setConnectionCalm(false); return; }
         const quiet = c.connectionPulse.quietMinMs + Math.random() * (c.connectionPulse.quietMaxMs - c.connectionPulse.quietMinMs);
         setConnectionCalm(true);
-        state.pulseTimer = window.setTimeout(() => {
+        state.pulseTimer = setTimeout(() => {
           setConnectionCalm(false);
           triggerBurst({ intensity: 1.1 });
           if (Math.random() < 0.45) triggerSignalLoss({ durationMs: 180 + Math.random() * 420 });
           const active = c.connectionPulse.glitchMinMs + Math.random() * (c.connectionPulse.glitchMaxMs - c.connectionPulse.glitchMinMs);
-          state.pulseTimer = window.setTimeout(schedulePulseCycle, active);
+          state.pulseTimer = setTimeout(schedulePulseCycle, active);
         }, quiet);
+      }
+
+      function runAutoCalmStep() {
+        const c = state.config.autoCalm;
+        if (!c.enabled || !state.config.autoMode || state.config.connectionPulse.enabled) {
+          state.calmLevel = 1;
+          setCssVar('--fx-mix', '1');
+          return;
+        }
+
+        if (Math.random() < c.dipChance * 0.03) state.calmDirection = -1;
+        if (state.calmDirection < 0) {
+          state.calmLevel -= c.downSpeed;
+          if (state.calmLevel <= c.minLevel) state.calmDirection = 1;
+        } else {
+          state.calmLevel += c.upSpeed;
+          if (state.calmLevel >= c.maxLevel) state.calmDirection = -1;
+        }
+        state.calmLevel = clamp(state.calmLevel, c.minLevel, c.maxLevel);
+        setCssVar('--fx-mix', state.calmLevel.toFixed(3));
       }
 
       function triggerSequence(sequence = []) {
@@ -752,63 +811,57 @@
       function schedulerTick() {
         if (!state.running || state.paused) return;
         const c = state.config;
+        runAutoCalmStep();
+
         if (c.enabled && c.autoMode && !c.connectionPulse.enabled) {
-          if (Math.random() < c.probability.burstChance) triggerBurst();
-          const doLoss = Math.random() < c.probability.signalLossChance;
+          const calmFactor = state.calmLevel;
+          if (Math.random() < c.probability.burstChance * calmFactor) triggerBurst({ intensity: calmFactor + 0.2 });
+          const doLoss = Math.random() < c.probability.signalLossChance * calmFactor;
           if (doLoss) triggerSignalLoss();
-          if (!doLoss && Math.random() < c.probability.dropoutChance * 0.35) triggerDropout();
-          if (!doLoss && c.blackout.enabled && Math.random() < c.probability.blackoutChance * 0.4) triggerBlackout();
+          if (!doLoss && Math.random() < c.probability.dropoutChance * 0.35 * calmFactor) triggerDropout();
+          if (!doLoss && c.blackout.enabled && Math.random() < c.probability.blackoutChance * 0.4 * calmFactor) triggerBlackout();
           updateTelemetry(doLoss);
         } else {
           elements.timecode.textContent = formatTimecode();
         }
 
-        const delay = computeNextDelay() + c.timing.cooldownMs;
-        state.timer = window.setTimeout(schedulerTick, delay);
+        state.timer = setTimeout(schedulerTick, computeNextDelay() + c.timing.cooldownMs);
       }
 
-      function start() { if (state.running) return; state.running = true; state.paused = false; state.timer = window.setTimeout(schedulerTick, computeNextDelay()); schedulePulseCycle(); }
-      function stop() { state.running = false; state.paused = false; window.clearTimeout(state.timer); window.clearTimeout(state.pulseTimer); state.timer = 0; state.pulseTimer = 0; }
-      function pause() { state.paused = true; window.clearTimeout(state.timer); window.clearTimeout(state.pulseTimer); }
-      function resume() { if (!state.running) start(); state.paused = false; window.clearTimeout(state.timer); state.timer = window.setTimeout(schedulerTick, computeNextDelay()); schedulePulseCycle(); }
+      function start() { if (state.running) return; state.running = true; state.paused = false; state.timer = setTimeout(schedulerTick, computeNextDelay()); state.calmTicker = setInterval(runAutoCalmStep, 120); schedulePulseCycle(); }
+      function stop() { state.running = false; state.paused = false; clearTimeout(state.timer); clearTimeout(state.pulseTimer); clearInterval(state.calmTicker); state.timer = 0; state.pulseTimer = 0; state.calmTicker = 0; }
+      function pause() { state.paused = true; clearTimeout(state.timer); clearTimeout(state.pulseTimer); clearInterval(state.calmTicker); }
+      function resume() { if (!state.running) start(); state.paused = false; clearTimeout(state.timer); state.timer = setTimeout(schedulerTick, computeNextDelay()); state.calmTicker = setInterval(runAutoCalmStep, 120); schedulePulseCycle(); }
 
       function setConfig(partial) {
         state.config = sanitizeConfig(deepMerge(state.config, partial));
+        resizeNoise();
         applyConfigToUI();
         schedulePulseCycle();
         renderControls();
       }
-      function setEnabled(enabled) { setConfig({ enabled: Boolean(enabled) }); }
-
+      const setEnabled = (enabled) => setConfig({ enabled: Boolean(enabled) });
       function setEffectEnabled(effectName, isEnabled) {
         const map = {
           noise: ['noise', 'enabled'], scanlines: ['scanlines', 'enabled'], distortion: ['distortion', 'enabled'], chroma: ['chroma', 'enabled'],
-          jitter: ['jitter', 'enabled'], syncBar: ['syncBar', 'enabled'], dropout: ['dropout', 'enabled'], pixelate: ['pixelate', 'enabled'], blackout: ['blackout', 'enabled']
+          syncBar: ['syncBar', 'enabled'], dropout: ['dropout', 'enabled'], pixelate: ['pixelate', 'enabled'], blackout: ['blackout', 'enabled']
         };
         const target = map[effectName]; if (!target) return;
         const [group, key] = target; setConfig({ [group]: { [key]: Boolean(isEnabled) } });
       }
-
-      function applyProfile(name) { const p = PROFILES[name]; if (!p) return false; setConfig(p); return true; }
-      function getConfig() { return structuredClone(state.config); }
-      function resetConfig() { state.config = sanitizeConfig(deepMerge(structuredClone(DEFAULT_CONFIG), BOOT_CONFIG)); applyConfigToUI(); schedulePulseCycle(); renderControls(); }
+      const applyProfile = (name) => { const p = PROFILES[name]; if (!p) return false; setConfig(p); return true; };
+      const getConfig = () => structuredClone(state.config);
+      const resetConfig = () => { state.config = sanitizeConfig(deepMerge(structuredClone(DEFAULT_CONFIG), BOOT_CONFIG)); resizeNoise(); applyConfigToUI(); schedulePulseCycle(); renderControls(); };
 
       function exportConfiguredHtml() {
         const cfg = JSON.stringify(getConfig(), null, 2);
         let html = `<!doctype html>\n${document.documentElement.outerHTML}`;
         const inject = `<script>window.__GLITCHY_BOOT_CONFIG = ${cfg};<\/script>`;
-        if (html.includes('window.__GLITCHY_BOOT_CONFIG')) {
-          html = html.replace(/window\.__GLITCHY_BOOT_CONFIG\s*=\s*[^;]+;/, `window.__GLITCHY_BOOT_CONFIG = ${cfg};`);
-        } else {
-          html = html.replace('<script>', `${inject}\n  <script>`);
-        }
+        if (html.includes('window.__GLITCHY_BOOT_CONFIG')) html = html.replace(/window\.__GLITCHY_BOOT_CONFIG\s*=\s*[^;]+;/, `window.__GLITCHY_BOOT_CONFIG = ${cfg};`);
+        else html = html.replace('<script>', `${inject}\n  <script>`);
         const blob = new Blob([html], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'glitchy-export.html';
-        a.click();
-        URL.revokeObjectURL(url);
+        const a = document.createElement('a'); a.href = url; a.download = 'glitchy-export.html'; a.click(); URL.revokeObjectURL(url);
       }
 
       function bindVisibility() {
@@ -819,20 +872,19 @@
       }
 
       function bindEvents() {
-        window.addEventListener('glitch:burst', (event) => triggerBurst(event.detail || {}));
-        window.addEventListener('glitch:signal-loss', (event) => triggerSignalLoss(event.detail || {}));
+        window.addEventListener('glitch:burst', (e) => triggerBurst(e.detail || {}));
+        window.addEventListener('glitch:signal-loss', (e) => triggerSignalLoss(e.detail || {}));
         window.addEventListener('glitch:dropout', () => triggerDropout());
-        window.addEventListener('glitch:blackout', (event) => triggerBlackout(event.detail || {}));
+        window.addEventListener('glitch:blackout', (e) => triggerBlackout(e.detail || {}));
 
         if (state.config.debugKeybinds) {
-          window.addEventListener('keydown', (event) => {
-            if (event.key.toLowerCase() === 'g') triggerBurst();
-            if (event.key.toLowerCase() === 'l') triggerSignalLoss();
-            if (event.key.toLowerCase() === 'd') triggerDropout();
-            if (event.key.toLowerCase() === 'b') triggerBlackout();
+          window.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'g') triggerBurst();
+            if (e.key.toLowerCase() === 'l') triggerSignalLoss();
+            if (e.key.toLowerCase() === 'd') triggerDropout();
+            if (e.key.toLowerCase() === 'b') triggerBlackout();
           });
         }
-
         elements.toggleControls.addEventListener('click', () => { elements.controls.hidden = !elements.controls.hidden; });
       }
 
@@ -840,28 +892,26 @@
         const wrapper = document.createElement('label');
         wrapper.textContent = `${label}: ${value}`;
         const input = document.createElement('input');
-        input.type = 'range'; input.min = String(min); input.max = String(max); input.step = String(step); input.value = String(value);
+        input.type = 'range'; input.min = `${min}`; input.max = `${max}`; input.step = `${step}`; input.value = `${value}`;
         input.addEventListener('input', () => { wrapper.firstChild.textContent = `${label}: ${input.value}`; onInput(Number(input.value)); });
         wrapper.appendChild(input); parent.appendChild(wrapper);
       }
-
       function addToggleField(parent, label, checked, onChange) {
         const row = document.createElement('label'); row.className = 'row';
-        const input = document.createElement('input'); input.type = 'checkbox'; input.checked = checked;
-        input.addEventListener('change', () => onChange(input.checked));
-        const txt = document.createElement('span'); txt.textContent = label;
-        row.append(input, txt); parent.appendChild(row);
+        const input = document.createElement('input'); input.type = 'checkbox'; input.checked = checked; input.addEventListener('change', () => onChange(input.checked));
+        const txt = document.createElement('span'); txt.textContent = label; row.append(input, txt); parent.appendChild(row);
       }
-
       function addColorField(parent, label, value, onInput) {
-        const row = document.createElement('label');
-        row.textContent = label;
-        const input = document.createElement('input');
-        input.type = 'color';
-        input.value = value;
-        input.addEventListener('input', () => onInput(input.value));
-        row.appendChild(input);
-        parent.appendChild(row);
+        const row = document.createElement('label'); row.textContent = label;
+        const input = document.createElement('input'); input.type = 'color'; input.value = value; input.addEventListener('input', () => onInput(input.value));
+        row.appendChild(input); parent.appendChild(row);
+      }
+      function addSelectField(parent, label, value, options, onChange) {
+        const row = document.createElement('label'); row.textContent = label;
+        const select = document.createElement('select');
+        options.forEach((opt) => { const o = document.createElement('option'); o.value = opt; o.textContent = opt; if (opt === value) o.selected = true; select.appendChild(o); });
+        select.addEventListener('change', () => onChange(select.value));
+        row.appendChild(select); parent.appendChild(row);
       }
 
       function renderControls() {
@@ -871,6 +921,10 @@
 
         addToggleField(root, 'Master enabled', c.enabled, (v) => setEnabled(v));
         addToggleField(root, 'Auto mode', c.autoMode, (v) => setConfig({ autoMode: v }));
+        addToggleField(root, 'Auto calm (staggered dial up/down)', c.autoCalm.enabled, (v) => setConfig({ autoCalm: { enabled: v } }));
+        addRangeField(root, 'Calm min level', 0, 1, 0.01, c.autoCalm.minLevel, (v) => setConfig({ autoCalm: { minLevel: v } }));
+        addRangeField(root, 'Calm dip chance', 0, 1, 0.01, c.autoCalm.dipChance, (v) => setConfig({ autoCalm: { dipChance: v } }));
+
         addToggleField(root, 'Connection pulse mode (calm -> short glitch)', c.connectionPulse.enabled, (v) => setConfig({ connectionPulse: { enabled: v } }));
         addRangeField(root, 'Pulse quiet min ms', 500, 30000, 100, c.connectionPulse.quietMinMs, (v) => setConfig({ connectionPulse: { quietMinMs: v } }));
         addRangeField(root, 'Pulse quiet max ms', 500, 45000, 100, c.connectionPulse.quietMaxMs, (v) => setConfig({ connectionPulse: { quietMaxMs: v } }));
@@ -882,21 +936,36 @@
         addRangeField(root, 'Burst chance', 0, 1, 0.01, c.probability.burstChance, (v) => setConfig({ probability: { burstChance: v } }));
         addRangeField(root, 'Signal-loss chance', 0, 1, 0.01, c.probability.signalLossChance, (v) => setConfig({ probability: { signalLossChance: v } }));
         addRangeField(root, 'Blackout chance', 0, 1, 0.01, c.probability.blackoutChance, (v) => setConfig({ probability: { blackoutChance: v } }));
+
         addRangeField(root, 'Blackout min ms', 20, 2000, 10, c.blackout.minMs, (v) => setConfig({ blackout: { minMs: v } }));
         addRangeField(root, 'Blackout max ms', 20, 4000, 10, c.blackout.maxMs, (v) => setConfig({ blackout: { maxMs: v } }));
 
-        addRangeField(root, 'Distortion max', 0, 180, 1, c.distortion.displacementMax, (v) => setConfig({ distortion: { displacementMax: v } }));
+        addRangeField(root, 'Distortion max', 0, 240, 1, c.distortion.displacementMax, (v) => setConfig({ distortion: { displacementMax: v } }));
+        addRangeField(root, 'Horizontal stretch', 0.4, 8, 0.1, c.distortion.horizontalStretch, (v) => setConfig({ distortion: { horizontalStretch: v } }));
+        addRangeField(root, 'Distortion saturation', 0, 3, 0.01, c.distortion.saturation, (v) => setConfig({ distortion: { saturation: v } }));
         addRangeField(root, 'Blockiness', 0, 1, 0.01, c.distortion.blockiness, (v) => setConfig({ distortion: { blockiness: v } }));
-        addRangeField(root, 'Pixel size', 2, 20, 1, c.pixelate.pixelSize, (v) => setConfig({ pixelate: { pixelSize: v } }));
-        addRangeField(root, 'Pixel opacity', 0, 0.8, 0.01, c.pixelate.opacity, (v) => setConfig({ pixelate: { opacity: v } }));
-        addRangeField(root, 'Noise opacity', 0, 0.6, 0.01, c.noise.opacity, (v) => setConfig({ noise: { opacity: v } }));
+        addSelectField(root, 'Distortion blend mode', c.distortion.blendMode, BLEND_MODES, (v) => setConfig({ distortion: { blendMode: v } }));
+        addToggleField(root, 'Quantize/posterize map', c.distortion.quantize, (v) => setConfig({ distortion: { quantize: v } }));
+
+        addRangeField(root, 'Noise opacity', 0, 0.8, 0.01, c.noise.opacity, (v) => setConfig({ noise: { opacity: v } }));
+        addRangeField(root, 'Noise fps', 1, 60, 1, c.noise.fps, (v) => setConfig({ noise: { fps: v } }));
+        addRangeField(root, 'Noise grain', 0.2, 4, 0.1, c.noise.grainStrength, (v) => setConfig({ noise: { grainStrength: v } }));
+        addRangeField(root, 'Noise size (resolution divisor)', 1, 8, 1, c.noise.resolutionDivisor, (v) => setConfig({ noise: { resolutionDivisor: v } }));
+        addRangeField(root, 'Noise tint', 0, 2, 0.05, c.noise.tint, (v) => setConfig({ noise: { tint: v } }));
+
+        addRangeField(root, 'Scanline opacity', 0, 1, 0.01, c.scanlines.opacity, (v) => setConfig({ scanlines: { opacity: v } }));
         addRangeField(root, 'Scanline speed', 1, 20, 0.1, c.scanlines.speed, (v) => setConfig({ scanlines: { speed: v } }));
-        addRangeField(root, 'Scanline spacing', 2, 16, 1, c.scanlines.spacing, (v) => setConfig({ scanlines: { spacing: v } }));
-        addRangeField(root, 'Scan drift px', 1, 36, 1, c.scanlines.driftPx, (v) => setConfig({ scanlines: { driftPx: v } }));
+        addRangeField(root, 'Scanline spacing', 2, 20, 1, c.scanlines.spacing, (v) => setConfig({ scanlines: { spacing: v } }));
+        addRangeField(root, 'Scan drift px', 1, 40, 1, c.scanlines.driftPx, (v) => setConfig({ scanlines: { driftPx: v } }));
+
         addRangeField(root, 'Sync count', 1, 8, 1, c.syncBar.count, (v) => setConfig({ syncBar: { count: v } }));
         addRangeField(root, 'Sync speed', 2, 20, 0.1, c.syncBar.speed, (v) => setConfig({ syncBar: { speed: v } }));
-        addRangeField(root, 'Sync thickness', 1, 8, 1, c.syncBar.thickness, (v) => setConfig({ syncBar: { thickness: v } }));
+        addRangeField(root, 'Sync thickness', 1, 10, 1, c.syncBar.thickness, (v) => setConfig({ syncBar: { thickness: v } }));
         addRangeField(root, 'Sync width %', 20, 100, 1, c.syncBar.widthPct, (v) => setConfig({ syncBar: { widthPct: v } }));
+
+        addRangeField(root, 'Background image opacity', 0, 1, 0.01, c.backgroundImage.opacity, (v) => setConfig({ backgroundImage: { opacity: v } }));
+        addToggleField(root, 'Background image flicker on signal loss', c.backgroundImage.flickerOnLoss, (v) => setConfig({ backgroundImage: { flickerOnLoss: v } }));
+        addToggleField(root, 'Background image enabled', c.backgroundImage.enabled, (v) => setConfig({ backgroundImage: { enabled: v } }));
 
         addColorField(root, 'Background A', c.theme.bgA, (v) => setConfig({ theme: { bgA: v } }));
         addColorField(root, 'Background B', c.theme.bgB, (v) => setConfig({ theme: { bgB: v } }));
@@ -910,31 +979,24 @@
         addToggleField(root, 'Dropout', c.dropout.enabled, (v) => setEffectEnabled('dropout', v));
         addToggleField(root, 'Chroma', c.chroma.enabled, (v) => setEffectEnabled('chroma', v));
         addToggleField(root, 'Sync bars', c.syncBar.enabled, (v) => setEffectEnabled('syncBar', v));
-        addToggleField(root, 'Jitter', c.jitter.enabled, (v) => setEffectEnabled('jitter', v));
         addToggleField(root, 'Pixel overlay', c.pixelate.enabled, (v) => setEffectEnabled('pixelate', v));
         addToggleField(root, 'Blackout mode', c.blackout.enabled, (v) => setEffectEnabled('blackout', v));
 
-        const row = document.createElement('div');
-        row.className = 'row';
-        ['subtle', 'broadcast', 'pulse', 'signalLoss', 'aggressive'].forEach((name) => {
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.textContent = name;
-          button.addEventListener('click', () => applyProfile(name));
-          row.appendChild(button);
+        const row = document.createElement('div'); row.className = 'row';
+        ['subtle', 'pulse', 'signalLoss', 'aggressive'].forEach((name) => {
+          const button = document.createElement('button'); button.type = 'button'; button.textContent = name; button.addEventListener('click', () => applyProfile(name)); row.appendChild(button);
         });
-
         const tBurst = document.createElement('button'); tBurst.textContent = 'trigger burst'; tBurst.addEventListener('click', () => triggerBurst()); row.appendChild(tBurst);
         const tLoss = document.createElement('button'); tLoss.textContent = 'trigger loss'; tLoss.addEventListener('click', () => triggerSignalLoss()); row.appendChild(tLoss);
         const tBlackout = document.createElement('button'); tBlackout.textContent = 'trigger blackout'; tBlackout.addEventListener('click', () => triggerBlackout()); row.appendChild(tBlackout);
         const exportBtn = document.createElement('button'); exportBtn.textContent = 'export full html'; exportBtn.addEventListener('click', exportConfiguredHtml); row.appendChild(exportBtn);
-        const reset = document.createElement('button'); reset.type = 'button'; reset.textContent = 'reset'; reset.addEventListener('click', resetConfig); row.appendChild(reset);
+        const reset = document.createElement('button'); reset.textContent = 'reset'; reset.addEventListener('click', resetConfig); row.appendChild(reset);
         root.appendChild(row);
       }
 
       function initReducedMotion() {
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-          setConfig({ autoMode: false, noise: { fps: 8, opacity: 0.06 }, scanlines: { speed: 12 }, jitter: { enabled: false }, syncBar: { enabled: false }, pixelate: { opacity: 0.08 } });
+          setConfig({ autoMode: false, autoCalm: { enabled: false }, noise: { fps: 8, opacity: 0.06 }, scanlines: { speed: 12 }, syncBar: { enabled: false }, pixelate: { opacity: 0.08 } });
         }
       }
 
