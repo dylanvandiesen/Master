@@ -1,8 +1,12 @@
 import path from "node:path";
+import fs from "node:fs";
 import { spawn } from "node:child_process";
 
 const ROOT = process.cwd();
 const UPDATE_REDIRECT_SCRIPT = path.join(ROOT, "scripts", "remote", "update-commander-local-redirect.ps1");
+const DEFAULT_REMOTE_REDIRECT_HOST = "diesign.dev";
+const DEFAULT_REMOTE_REDIRECT_USER = "root";
+const DEFAULT_REMOTE_REDIRECT_KEY_PATH = "C:/Users/SKIKK/.ssh/root_2a01_239_491_ee00__1.tmp";
 
 function asString(value) {
   return String(value ?? "").trim();
@@ -38,6 +42,7 @@ export function buildPublicUrl(publicHost, protocol = "https", basePath = "") {
 }
 
 export function resolvePublicHostAutomationConfig(env = process.env) {
+  const fallbackKeyPath = fs.existsSync(DEFAULT_REMOTE_REDIRECT_KEY_PATH) ? DEFAULT_REMOTE_REDIRECT_KEY_PATH : "";
   return {
     publicHostVerifyTimeoutMs: Math.max(
       2000,
@@ -46,9 +51,9 @@ export function resolvePublicHostAutomationConfig(env = process.env) {
     publicAuthUser: asString(env.REMOTE_PANEL_PUBLIC_AUTH_USER),
     publicAuthPassword: asString(env.REMOTE_PANEL_PUBLIC_AUTH_PASSWORD),
     autoRemoteRedirect: parseBool(env.REMOTE_PANEL_REMOTE_REDIRECT_ENABLED, true),
-    remoteRedirectHost: asString(env.REMOTE_PANEL_REMOTE_REDIRECT_HOST),
-    remoteRedirectUser: asString(env.REMOTE_PANEL_REMOTE_REDIRECT_USER),
-    remoteRedirectKeyPath: asString(env.REMOTE_PANEL_REMOTE_REDIRECT_KEY_PATH),
+    remoteRedirectHost: asString(env.REMOTE_PANEL_REMOTE_REDIRECT_HOST) || DEFAULT_REMOTE_REDIRECT_HOST,
+    remoteRedirectUser: asString(env.REMOTE_PANEL_REMOTE_REDIRECT_USER) || DEFAULT_REMOTE_REDIRECT_USER,
+    remoteRedirectKeyPath: asString(env.REMOTE_PANEL_REMOTE_REDIRECT_KEY_PATH) || fallbackKeyPath,
     remoteRedirectSitePath: asString(env.REMOTE_PANEL_REMOTE_REDIRECT_SITE_PATH),
     localCommanderSitePath: asString(env.REMOTE_PANEL_LOCAL_COMMANDER_SITE_PATH),
   };

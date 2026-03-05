@@ -107,14 +107,40 @@ function Resolve-GithubMcpToken {
     }
 }
 
+function Get-CodexMcpServers {
+    param([Parameter(Mandatory)][string]$RepoRoot)
+
+    Push-Location $RepoRoot
+    try {
+        $raw = & codex mcp list --json 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            throw "codex mcp list --json failed with exit code ${LASTEXITCODE}."
+        }
+    } finally {
+        Pop-Location
+    }
+
+    $payload = ($raw -join [Environment]::NewLine).Trim()
+    if ([string]::IsNullOrWhiteSpace($payload)) {
+        return @()
+    }
+
+    try {
+        return @($payload | ConvertFrom-Json)
+    } catch {
+        throw "codex mcp list --json returned invalid JSON."
+    }
+}
+
 if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
     $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
     $RepoRoot = Join-Path $scriptDir "..\.."
 }
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 $mcpRoot = Join-Path $RepoRoot "mcp"
+$codexConfigPath = Join-Path $RepoRoot ".codex/config.toml"
 
-Assert-PathExists (Join-Path $RepoRoot "config.toml")
+Assert-PathExists $codexConfigPath
 Assert-PathExists (Join-Path $RepoRoot ".vscode/mcp.json")
 Assert-PathExists (Join-Path $mcpRoot "package.json")
 
@@ -160,19 +186,22 @@ if (-not (Test-Path -LiteralPath $memoryPath)) {
     $null = New-Item -ItemType File -Path $memoryPath -Force
 }
 
-$requiredTomlEntries = @(
-    "mcp_servers.filesystem_local"
-    "mcp_servers.memory_local"
-    "mcp_servers.browser_eyes_local"
-    "mcp_servers.github_local"
-    "mcp_servers.github_modern_docker"
+$codexServers = Get-CodexMcpServers -RepoRoot $RepoRoot
+$configuredCodexServers = @(
+    $codexServers |
+    Where-Object { $_.enabled } |
+    ForEach-Object { [string]$_.name } |
+    Sort-Object -Unique
 )
-$missingTomlEntries = @()
-foreach ($entry in $requiredTomlEntries) {
-    if (-not (Select-String -Path (Join-Path $RepoRoot "config.toml") -Pattern ([regex]::Escape($entry)) -Quiet)) {
-        $missingTomlEntries += $entry
-    }
-}
+$requiredCodexServers = @(
+    "filesystem_local"
+    "memory_local"
+    "browser_eyes_local"
+    "github_local"
+    "github_modern_remote"
+    "github_modern_docker"
+)
+$missingCodexServers = @($requiredCodexServers | Where-Object { $_ -notin $configuredCodexServers })
 
 $vscodeConfig = Get-Content -Raw -Path (Join-Path $RepoRoot ".vscode/mcp.json") | ConvertFrom-Json
 $vscodeServers = @($vscodeConfig.servers.PSObject.Properties.Name)
@@ -202,6 +231,7 @@ $status = [ordered]@{
     preparedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
     repoRoot = $RepoRoot
     mcpRoot = $mcpRoot
+    codexConfigPath = $codexConfigPath
     memoryFile = $memoryPath
     githubTokenLoaded = [bool](Test-TokenSet $env:GITHUB_PERSONAL_ACCESS_TOKEN)
     githubPatLoaded = [bool](Test-TokenSet $env:GITHUB_MCP_PAT)
@@ -209,7 +239,9 @@ $status = [ordered]@{
     githubTokenExpiresAt = $githubTokenExpiresAt
     githubAppFallbackUsed = [bool]($githubTokenSource -eq "github_app")
     githubTokenResolverError = $githubTokenResolutionError
-    missingTomlEntries = $missingTomlEntries
+    configuredCodexServers = $configuredCodexServers
+    missingProjectConfigServers = $missingCodexServers
+    missingTomlEntries = $missingCodexServers
     missingVscodeServers = $missingVscodeServers
 }
 $statusPath = Join-Path $RepoRoot ".agency/chat/mcp-status.json"
@@ -220,6 +252,7 @@ Write-Host ""
 Write-Host "MCP preparation summary"
 Write-Host "  Repo root: $RepoRoot"
 Write-Host "  MCP root: $mcpRoot"
+Write-Host "  Codex config: $codexConfigPath"
 Write-Host "  Memory file: $memoryPath"
 Write-Host "  GITHUB_PERSONAL_ACCESS_TOKEN loaded: $(Test-TokenSet $env:GITHUB_PERSONAL_ACCESS_TOKEN)"
 Write-Host "  GITHUB_MCP_PAT loaded: $(Test-TokenSet $env:GITHUB_MCP_PAT)"
@@ -232,8 +265,8 @@ if (-not [string]::IsNullOrWhiteSpace($githubTokenResolutionError)) {
 }
 Write-Host "  Status JSON: $statusPath"
 
-if ($missingTomlEntries.Count -gt 0) {
-    Write-Warning "Missing config.toml entries: $($missingTomlEntries -join ', ')"
+if ($missingCodexServers.Count -gt 0) {
+    Write-Warning "Missing .codex/config.toml MCP servers: $($missingCodexServers -join ', ')"
 }
 if ($missingVscodeServers.Count -gt 0) {
     Write-Warning "Missing .vscode/mcp.json servers: $($missingVscodeServers -join ', ')"

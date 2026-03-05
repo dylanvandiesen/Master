@@ -33,7 +33,7 @@ Root:
 - `dist/`: compiled output.
 - `.agency/dev-servers/`: generated server manifests.
 - `AGENTS.md`: engineering rules and architecture notes.
-- `config.toml`: local multi-agent + MCP runtime wiring.
+- `.codex/config.toml`: repo-scoped Codex + MCP runtime wiring.
 
 Project contract (`projects/<ProjectName>/`):
 

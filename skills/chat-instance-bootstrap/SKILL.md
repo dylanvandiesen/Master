@@ -30,14 +30,14 @@ cmd /c npm run chat:briefing
 ```
 
 ## Multi-Agent Rules
-- Confirm `config.toml` includes `multi_agent = true`.
+- Confirm `.codex/config.toml` includes `multi_agent = true`.
 - Use explorer agents for discovery and code search.
 - Use worker agents for scoped implementation.
 - Assign explicit file ownership before worker execution.
 
 ## Use Resource Files
 - For startup checks, read `references/startup-checklist.md`.
-- For deterministic bootstrap, run `scripts/bootstrap-session.ps1`.
+- For deterministic bootstrap, run `scripts/chat/prepare-chat-instance.ps1`.
 
 ## Repo Guardrails
 - Use `cmd /c npm run ...` if PowerShell blocks `npm.ps1`.

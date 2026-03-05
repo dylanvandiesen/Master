@@ -103,6 +103,7 @@ const state = {
   activeUtilityPanel: "preview",
   utilityCollapsed: false,
   mobileNavOpen: false,
+  preferredTunnelProvider: "cloudflared",
   preferredTunnelMode: "quick",
   promptMode: "live",
   promptQueue: [],
@@ -251,6 +252,7 @@ const els = {
   connectionMode: document.getElementById("connectionMode"),
   mobileUrlText: document.getElementById("mobileUrlText"),
   tunnelUrlText: document.getElementById("tunnelUrlText"),
+  tunnelProviderSelect: document.getElementById("tunnelProviderSelect"),
   tunnelModeQuickBtn: document.getElementById("tunnelModeQuickBtn"),
   tunnelModeTokenBtn: document.getElementById("tunnelModeTokenBtn"),
   tunnelModeNamedBtn: document.getElementById("tunnelModeNamedBtn"),
@@ -467,6 +469,7 @@ const TOOLTIP_TEXTS = {
   launchRunPreview: "Recent environment and agent launch history.",
   connectionMode: "Network bind mode and security mode summary.",
   mobileUrlText: "Best URL to open this panel from mobile.",
+  tunnelProviderSelect: "Choose whether remote HTTPS is managed through Cloudflare or an external reverse proxy/server.",
   tunnelModeQuickBtn: "Use quick tunnel mode (ephemeral public URL).",
   tunnelModeTokenBtn: "Use Cloudflare account token tunnel from REMOTE_PANEL_CLOUDFLARED_TUNNEL_TOKEN.",
   tunnelModeNamedBtn: "Use named Cloudflare tunnel from REMOTE_PANEL_CLOUDFLARED_TUNNEL_NAME.",
@@ -768,7 +771,30 @@ function normalizeTunnelMode(value, fallback = "quick") {
   return fallback;
 }
 
+function normalizeTunnelProvider(value, fallback = "cloudflared") {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (["cloudflared", "server"].includes(normalized)) {
+    return normalized;
+  }
+  return fallback;
+}
+
+function currentTunnelProvider() {
+  return normalizeTunnelProvider(
+    state.activeTunnel?.provider
+      || state.connectionHelp?.tunnel?.provider
+      || state.connectionHelp?.panel?.tunnelProvider
+      || state.preferredTunnelProvider,
+    "cloudflared"
+  );
+}
+
 function currentTunnelMode() {
+  if (currentTunnelProvider() === "server") {
+    return "named";
+  }
   return normalizeTunnelMode(
     state.activeTunnel?.requestedMode
       || state.activeTunnel?.mode
@@ -782,7 +808,7 @@ function currentTunnelMode() {
 
 function formatTunnelStatus() {
   if (!state.activeTunnel) {
-    return `Tunnel stopped (${currentTunnelMode()})`;
+    return `Tunnel stopped (${currentTunnelProvider()}, ${currentTunnelMode()})`;
   }
   const mode = normalizeTunnelMode(state.activeTunnel.requestedMode || state.activeTunnel.mode || state.preferredTunnelMode, "quick");
   const provider = state.activeTunnel.provider ? ` (${state.activeTunnel.provider}, ${mode})` : ` (${mode})`;
@@ -815,10 +841,17 @@ function renderRelayStatus() {
 
 function renderTunnelStatus() {
   const helpTunnel = state.connectionHelp?.tunnel && typeof state.connectionHelp.tunnel === "object" ? state.connectionHelp.tunnel : null;
+  state.preferredTunnelProvider = normalizeTunnelProvider(
+    state.activeTunnel?.provider || helpTunnel?.provider || state.connectionHelp?.panel?.tunnelProvider || state.preferredTunnelProvider,
+    "cloudflared"
+  );
   state.preferredTunnelMode = normalizeTunnelMode(
     state.activeTunnel?.requestedMode || state.activeTunnel?.mode || helpTunnel?.requestedMode || helpTunnel?.mode || helpTunnel?.configuredMode || state.preferredTunnelMode,
     "quick"
   );
+  if (els.tunnelProviderSelect) {
+    els.tunnelProviderSelect.value = currentTunnelProvider();
+  }
   const activeUrl = String(state.activeTunnel?.publicUrl || state.activeTunnel?.url || helpTunnel?.publicUrl || helpTunnel?.url || "").trim();
   const hasActiveTunnel = Boolean(state.activeTunnel || (helpTunnel?.active && activeUrl));
   if (state.activeTunnel) {
@@ -838,6 +871,7 @@ function renderTunnelStatus() {
 }
 
 function renderTunnelModeControls() {
+  const provider = currentTunnelProvider();
   const mode = currentTunnelMode();
   const helpTunnel = state.connectionHelp?.tunnel && typeof state.connectionHelp.tunnel === "object" ? state.connectionHelp.tunnel : null;
   const hasTokenConfig = Boolean(helpTunnel?.hasTokenConfig);
@@ -854,13 +888,16 @@ function renderTunnelModeControls() {
       continue;
     }
     button.classList.toggle("active", key === mode);
+    button.disabled = provider === "server" && key !== "named";
   }
 
   if (!els.tunnelModeHint) {
     return;
   }
   let hint = "";
-  if (mode === "token") {
+  if (provider === "server") {
+    hint = "Reverse-proxy mode expects your own HTTPS host to forward traffic to this panel. Named mode is used as the stable-host placeholder.";
+  } else if (mode === "token") {
     hint = hasTokenConfig
       ? "Token mode uses REMOTE_PANEL_CLOUDFLARED_TUNNEL_TOKEN from environment."
       : "Token mode requires REMOTE_PANEL_CLOUDFLARED_TUNNEL_TOKEN.";
@@ -876,7 +913,20 @@ function renderTunnelModeControls() {
 }
 
 function setPreferredTunnelMode(mode) {
+  if (currentTunnelProvider() === "server") {
+    state.preferredTunnelMode = "named";
+    renderTunnelModeControls();
+    return;
+  }
   state.preferredTunnelMode = normalizeTunnelMode(mode, state.preferredTunnelMode || "quick");
+  renderTunnelModeControls();
+}
+
+function setPreferredTunnelProvider(provider) {
+  state.preferredTunnelProvider = normalizeTunnelProvider(provider, state.preferredTunnelProvider || "cloudflared");
+  if (state.preferredTunnelProvider === "server") {
+    state.preferredTunnelMode = "named";
+  }
   renderTunnelModeControls();
 }
 
@@ -5959,6 +6009,10 @@ async function refreshConnectionHelp() {
 async function refreshTunnelStatus() {
   const payload = await api("/api/tunnel/status");
   state.activeTunnel = payload.activeTunnel || null;
+  state.preferredTunnelProvider = normalizeTunnelProvider(
+    payload.provider || state.activeTunnel?.provider || state.preferredTunnelProvider,
+    "cloudflared"
+  );
   state.preferredTunnelMode = normalizeTunnelMode(
     payload.mode || state.activeTunnel?.requestedMode || state.activeTunnel?.mode || state.preferredTunnelMode,
     "quick"
@@ -5970,16 +6024,22 @@ async function refreshTunnelStatus() {
 }
 
 async function startTunnel() {
+  const provider = currentTunnelProvider();
   const mode = currentTunnelMode();
-  els.connectionAdvice.textContent = `Starting external tunnel (${mode})...`;
+  els.connectionAdvice.textContent = `Starting external remote access (${provider}, ${mode})...`;
   const payload = await api("/api/tunnel/start", {
     method: "POST",
     body: {
+      provider,
       mode,
       publicHost: els.envPublicHost?.value.trim() || "",
     },
   });
   state.activeTunnel = payload.activeTunnel || null;
+  state.preferredTunnelProvider = normalizeTunnelProvider(
+    payload.provider || state.activeTunnel?.provider || state.preferredTunnelProvider,
+    "cloudflared"
+  );
   state.preferredTunnelMode = normalizeTunnelMode(
     payload.mode || state.activeTunnel?.requestedMode || state.activeTunnel?.mode || state.preferredTunnelMode,
     "quick"
@@ -5990,9 +6050,9 @@ async function startTunnel() {
   renderConnectionHelp();
   const liveTunnelUrl = state.activeTunnel?.publicUrl || state.activeTunnel?.url || "";
   if (liveTunnelUrl) {
-    els.connectionAdvice.textContent = `Tunnel live (${state.preferredTunnelMode}): ${liveTunnelUrl}`;
+    els.connectionAdvice.textContent = `Remote access live (${state.preferredTunnelProvider}, ${state.preferredTunnelMode}): ${liveTunnelUrl}`;
   } else {
-    els.connectionAdvice.textContent = `Tunnel started (${state.preferredTunnelMode}).`;
+    els.connectionAdvice.textContent = `Remote access started (${state.preferredTunnelProvider}, ${state.preferredTunnelMode}).`;
   }
   setCommandResult(JSON.stringify(payload, null, 2));
 }
@@ -6876,6 +6936,12 @@ function bindEvents() {
       els.connectionAdvice.textContent = `Copy failed: ${error.message}`;
     }
   });
+  if (els.tunnelProviderSelect) {
+    els.tunnelProviderSelect.addEventListener("change", () => {
+      setPreferredTunnelProvider(els.tunnelProviderSelect.value);
+      els.connectionAdvice.textContent = `Remote provider set to ${currentTunnelProvider()}.`;
+    });
+  }
   els.tunnelModeQuickBtn.addEventListener("click", () => {
     setPreferredTunnelMode("quick");
     els.connectionAdvice.textContent = "Tunnel mode set to quick.";

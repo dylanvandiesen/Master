@@ -1,25 +1,5 @@
-[features]
-multi_agent = true
-
-[mcp_servers.filesystem_local]
-command = "node"
-args = ["mcp/node_modules/@modelcontextprotocol/server-filesystem/dist/index.js", "."]
-
-[mcp_servers.memory_local]
-command = "node"
-args = ["mcp/node_modules/@modelcontextprotocol/server-memory/dist/index.js"]
-
-[mcp_servers.memory_local.env]
-MEMORY_FILE_PATH = "mcp/data/memory.jsonl"
-
-[mcp_servers.browser_eyes_local]
-command = "node"
-args = ["mcp/node_modules/@playwright/mcp/cli.js", "--headless", "--caps=vision", "--isolated", "--output-mode=stdout"]
-
-[mcp_servers.github_local]
-command = "node"
-args = ["scripts/mcp/run-github-mcp.mjs"]
-
-[mcp_servers.github_modern_docker]
-command = "node"
-args = ["scripts/mcp/run-github-mcp.mjs", "--docker=true"]
+# Legacy note: the canonical Codex project config for this repo lives in
+# `.codex/config.toml`.
+#
+# Keep this file only as a compatibility placeholder for older notes or tools
+# that still expect a root-level `config.toml`.

@@ -3,6 +3,8 @@ param(
     [string]$RepoRoot = "",
     [string]$Project = "",
     [string]$SessionId = "",
+    [ValidateSet("quick", "standard", "full")]
+    [string]$Mode = "standard",
     [string]$OutputPath = ".agency/chat/latest-super-context.json",
     [switch]$EmitMarkdown,
     [string]$MarkdownOutputPath = ""
@@ -58,6 +60,20 @@ function Get-RepoRelativePath {
     }
     $relative = $absolute.Substring($root.Length).TrimStart("\", "/")
     return ($relative -replace "\\", "/")
+}
+
+function Write-TextNoBom {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [Parameter(Mandatory)][string]$Content
+    )
+
+    $parent = Split-Path -Parent $Path
+    if (-not [string]::IsNullOrWhiteSpace($parent)) {
+        $null = New-Item -ItemType Directory -Path $parent -Force
+    }
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($Path, $Content, $utf8NoBom)
 }
 
 function Get-GitText {
@@ -172,6 +188,36 @@ function Get-DevServerManifestSummary {
     return $items
 }
 
+function Get-CodexMcpServerNames {
+    param([Parameter(Mandatory)][string]$RepoRootPath)
+
+    Push-Location $RepoRootPath
+    try {
+        $raw = & codex mcp list --json 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            return @()
+        }
+    } finally {
+        Pop-Location
+    }
+
+    $payload = ($raw -join [Environment]::NewLine).Trim()
+    if ([string]::IsNullOrWhiteSpace($payload)) {
+        return @()
+    }
+
+    try {
+        return @(
+            ($payload | ConvertFrom-Json) |
+            Where-Object { $_.enabled } |
+            ForEach-Object { [string]$_.name } |
+            Sort-Object -Unique
+        )
+    } catch {
+        return @()
+    }
+}
+
 if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
     $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
     $RepoRoot = Join-Path $scriptDir "..\.."
@@ -187,7 +233,7 @@ $tasklistPath = Join-Path $RepoRoot "TASKLIST.md"
 $mcpStatusPath = Join-Path $RepoRoot ".agency/chat/mcp-status.json"
 $manifestDir = Join-Path $RepoRoot ".agency/dev-servers"
 $skillsDir = Join-Path $RepoRoot "skills"
-$configTomlPath = Join-Path $RepoRoot "config.toml"
+$configTomlPath = Join-Path $RepoRoot ".codex/config.toml"
 
 $agencyConfig = Get-Content -Raw -Path $agencyConfigPath | ConvertFrom-Json
 if ([string]::IsNullOrWhiteSpace($Project)) {
@@ -247,18 +293,7 @@ $mcpScripts = @($scriptNames | Where-Object { $_ -match "^mcp:" } | Sort-Object)
 $commanderScripts = @($scriptNames | Where-Object { $_ -match "^commander(:|$)" } | Sort-Object)
 $superScripts = @($scriptNames | Where-Object { $_ -match "^super(:|$)" } | Sort-Object)
 
-$configuredMcpServers = @()
-if (Test-Path -LiteralPath $configTomlPath) {
-    $mcpConfigText = Get-Content -Raw -Path $configTomlPath
-    $mcpMatches = [regex]::Matches($mcpConfigText, "mcp_servers\.([A-Za-z0-9_]+)")
-    if ($null -ne $mcpMatches) {
-        $configuredMcpServers = @(
-            $mcpMatches |
-            ForEach-Object { $_.Groups[1].Value } |
-            Sort-Object -Unique
-        )
-    }
-}
+$configuredMcpServers = Get-CodexMcpServerNames -RepoRootPath $RepoRoot
 
 $mcpStatus = $null
 if (Test-Path -LiteralPath $mcpStatusPath) {
@@ -300,6 +335,10 @@ if ($EmitMarkdown) {
 $context = [ordered]@{
     schemaVersion = "1.0.0"
     generatedAtUtc = (Get-Date).ToUniversalTime().ToString("o")
+    bootstrap = [ordered]@{
+        mode = $Mode
+        sessionId = $SessionId
+    }
     repo = [ordered]@{
         root = $RepoRoot
         branch = $branch
@@ -333,6 +372,7 @@ $context = [ordered]@{
         scriptMap = $scriptMap
     }
     mcp = [ordered]@{
+        projectConfigPath = (Get-RepoRelativePath -RepoRootPath $RepoRoot -Path $configTomlPath)
         configuredServers = $configuredMcpServers
         prepCommand = "cmd /c npm run mcp:prep"
         statusPath = (Get-RepoRelativePath -RepoRootPath $RepoRoot -Path $mcpStatusPath)
@@ -403,7 +443,7 @@ if (-not [string]::IsNullOrWhiteSpace($resolvedOutputDir)) {
 }
 
 $contextJson = $context | ConvertTo-Json -Depth 10
-$contextJson | Set-Content -Path $resolvedOutputPath -Encoding UTF8
+Write-TextNoBom -Path $resolvedOutputPath -Content $contextJson
 
 if ($EmitMarkdown) {
     $markdownDir = Split-Path -Parent $resolvedMarkdownPath
@@ -416,6 +456,7 @@ if ($EmitMarkdown) {
     $lines.Add("")
     $lines.Add("- Generated (UTC): $($context.generatedAtUtc)")
     $lines.Add("- Selected project: $Project")
+    $lines.Add("- Bootstrap mode: $Mode")
     $lines.Add("- Git: branch $branch, commit $commit, dirty entries $dirtyCount")
     $lines.Add("- MCP servers configured: $([string]::Join(', ', (ConvertTo-Array $configuredMcpServers)))")
     $lines.Add("")

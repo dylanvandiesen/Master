@@ -3,6 +3,8 @@ param(
     [string]$RepoRoot = "",
     [string]$Project,
     [string]$SessionId,
+    [ValidateSet("quick", "standard", "full")]
+    [string]$Mode = "standard",
     [switch]$InstallRootDeps,
     [switch]$InstallMcpDeps,
     [switch]$PrepareMcp,
@@ -40,6 +42,20 @@ function Invoke-CmdOrThrow {
     }
 }
 
+function Write-TextNoBom {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [Parameter(Mandatory)][string]$Content
+    )
+
+    $parent = Split-Path -Parent $Path
+    if (-not [string]::IsNullOrWhiteSpace($parent)) {
+        $null = New-Item -ItemType Directory -Path $parent -Force
+    }
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($Path, $Content, $utf8NoBom)
+}
+
 if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
     $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
     $RepoRoot = Join-Path $scriptDir "..\.."
@@ -70,7 +86,7 @@ if ([string]::IsNullOrWhiteSpace($SessionId)) {
 $sessionRoot = Join-Path $RepoRoot ".agency/chat/sessions/$SessionId"
 $null = New-Item -ItemType Directory -Path $sessionRoot -Force
 
-Write-Host "Preparing chat session '$SessionId' for project '$Project'"
+Write-Host "Preparing chat session '$SessionId' for project '$Project' (mode: $Mode)"
 
 if ($InstallRootDeps -or (-not (Test-Path -LiteralPath (Join-Path $RepoRoot "node_modules")))) {
     Invoke-CmdOrThrow -WorkingDirectory $RepoRoot -Command "npm install"
@@ -118,6 +134,7 @@ if (-not $NoSuperContext) {
             -RepoRoot $RepoRoot `
             -Project $Project `
             -SessionId $SessionId `
+            -Mode $Mode `
             -OutputPath $superContextPath `
             -EmitMarkdown `
             -MarkdownOutputPath $superContextMarkdownPath | Out-Host
@@ -137,6 +154,7 @@ $summary = [ordered]@{
     preparedAtUtc  = (Get-Date).ToUniversalTime().ToString("o")
     repoRoot       = $RepoRoot
     project        = $Project
+    mode           = $Mode
     briefingPath   = $briefingPath
     commanderBriefingPath = $commanderBriefingPath
     systemBriefingPath = $systemBriefingPath
@@ -155,7 +173,8 @@ $summary = [ordered]@{
         "cmd /c npm run dev -- --project=$Project"
     )
 }
-$summary | ConvertTo-Json -Depth 6 | Set-Content -Path (Join-Path $sessionRoot "session.json") -Encoding UTF8
+$summaryJson = $summary | ConvertTo-Json -Depth 6
+Write-TextNoBom -Path (Join-Path $sessionRoot "session.json") -Content $summaryJson
 
 Write-Host ""
 Write-Host "Session prepared:"

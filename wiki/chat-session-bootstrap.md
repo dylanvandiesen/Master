@@ -112,7 +112,7 @@ Output:
 
 Checks include:
 
-1. `.vscode/mcp.json` and `config.toml` presence.
+1. `.vscode/mcp.json` and `.codex/config.toml` presence.
 2. MCP package inventory from `mcp/`.
 3. Memory file existence (`mcp/data/memory.jsonl`).
 4. Token availability:

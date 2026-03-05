@@ -3,6 +3,7 @@
 Shared, persistent task board for this repository.
 
 ## Active
+- [ ] Optimize agent init/briefing/memory streams and harden Commander remote access providers (`scripts/chat/**`, `scripts/remote/**`, `remote-console/**`, docs).
 
 ## Backlog
 - [ ] Add an MCP install workflow plan (commands, prerequisites, security checks) for panel/session tooling; document only, do not auto-execute installers.
@@ -15,6 +16,7 @@ Shared, persistent task board for this repository.
 - [ ] Add rate-limit and account lockout metrics dashboard for remote panel auth endpoints.
 
 ## Archived
+- [x] Aligned Codex config to `.codex/config.toml`, moved repo-scoped MCP wiring out of global config, and updated bootstrap/docs/skills to use the canonical Codex config path.
 - [x] Finalized commander subdomain routing, agent-profile storage split, and replayable panel launch planning (`remote-console/**`, `scripts/remote/**`, `.env.example`, docs).
 - [x] Consolidated launcher/control-plane flow into environment-first startup and Commander session management (`package.json`, `scripts/env/**`, `remote-console/**`, docs).
 - [x] Added `browser_eyes_local` Playwright MCP wiring, prep checks, and smoke validation for browser vision access.

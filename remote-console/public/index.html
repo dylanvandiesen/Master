@@ -435,6 +435,7 @@
 
             <article class="panel codex-panel utility-card" data-panel-id="sessions" hidden>
               <h3>Control Plane</h3>
+              <p class="muted">Legacy remote-panel session controls now live under Environment, Session Aliases, and Runs.</p>
 
               <h4>Environment</h4>
               <div class="field-grid">
@@ -718,6 +719,11 @@
               </div>
               <label for="tunnelUrlText">External Tunnel</label>
               <input id="tunnelUrlText" type="text" readonly placeholder="tunnel stopped" />
+              <label for="tunnelProviderSelect">Remote Provider</label>
+              <select id="tunnelProviderSelect">
+                <option value="cloudflared">Cloudflare Tunnel</option>
+                <option value="server">HTTPS Reverse Proxy</option>
+              </select>
               <label>Tunnel Mode</label>
               <div class="button-row tunnel-mode-row">
                 <button id="tunnelModeQuickBtn" type="button" class="mode-btn active">

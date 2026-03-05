@@ -4,7 +4,7 @@
 This repository uses a root-controlled agency build system for all playground projects under `projects/`.
 
 ## Multi-Agent Readiness
-- `config.toml` has `multi_agent = true`.
+- `.codex/config.toml` has `multi_agent = true`.
 - Use `explorer` agents for fast repo discovery and code search.
 - Use `worker` agents for scoped implementation tasks.
 - Assign each worker explicit file ownership before execution.
@@ -27,13 +27,16 @@ This repository uses a root-controlled agency build system for all playground pr
 
 ## MCP Hub
 - Local MCP servers are installed under `mcp/`.
-- Active root config entries:
+- Canonical repo-scoped Codex config: `.codex/config.toml` (layered on top of `~/.codex/config.toml`).
+- Active repo-scoped MCP entries:
   - `mcp_servers.filesystem_local`
   - `mcp_servers.memory_local`
+  - `mcp_servers.browser_eyes_local`
+  - `mcp_servers.github_modern_remote`
   - `mcp_servers.github_local`
   - `mcp_servers.github_modern_docker`
-- GitHub MCP requires `GITHUB_PERSONAL_ACCESS_TOKEN` in the environment.
-- Preferred GitHub route in VS Code is `github_modern_remote`; keep `github_legacy_local` as fallback.
+- GitHub MCP uses `GITHUB_MCP_PAT` for `github_modern_remote` and `GITHUB_PERSONAL_ACCESS_TOKEN` for `github_local`.
+- Preferred GitHub route is `github_modern_remote`; keep `github_legacy_local` / `github_local` as fallback.
 - Full docs:
   - `wiki/agency-setup.md`
   - `wiki/mcp-setup.md`

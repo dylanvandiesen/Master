@@ -1,0 +1,50 @@
+web_search = "live"
+
+[features]
+apps = true
+multi_agent = true
+js_repl = true
+prevent_idle_sleep = true
+
+[mcp_servers.filesystem_local]
+command = "node"
+args = [
+  'C:\Users\SKIKK\Documents\websites\Playground\mcp\node_modules\@modelcontextprotocol\server-filesystem\dist\index.js',
+  'C:\Users\SKIKK\Documents\websites\Playground',
+]
+
+[mcp_servers.memory_local]
+command = "node"
+args = [
+  'C:\Users\SKIKK\Documents\websites\Playground\mcp\node_modules\@modelcontextprotocol\server-memory\dist\index.js',
+]
+
+[mcp_servers.memory_local.env]
+MEMORY_FILE_PATH = 'C:\Users\SKIKK\Documents\websites\Playground\mcp\data\memory.jsonl'
+
+[mcp_servers.browser_eyes_local]
+command = "node"
+args = [
+  'C:\Users\SKIKK\Documents\websites\Playground\mcp\node_modules\@playwright\mcp\cli.js',
+  "--headless",
+  "--caps=vision",
+  "--isolated",
+  "--output-mode=stdout",
+]
+
+[mcp_servers.github_modern_remote]
+url = "https://api.githubcopilot.com/mcp/"
+bearer_token_env_var = "GITHUB_MCP_PAT"
+
+[mcp_servers.github_local]
+command = "node"
+args = [
+  'C:\Users\SKIKK\Documents\websites\Playground\scripts\mcp\run-github-mcp.mjs',
+]
+
+[mcp_servers.github_modern_docker]
+command = "node"
+args = [
+  'C:\Users\SKIKK\Documents\websites\Playground\scripts\mcp\run-github-mcp.mjs',
+  "--docker=true",
+]

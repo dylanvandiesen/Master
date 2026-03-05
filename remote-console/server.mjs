@@ -106,6 +106,7 @@ const TERMINAL_SHARED_SESSION_ID = "__shared__";
 const TUNNEL_DISCOVERY_TIMEOUT_MS = 45_000;
 const URL_IN_TEXT_REGEX = /https:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?::\d+)?(?:\/[^\s]*)?/g;
 const TUNNEL_MODES = new Set(["quick", "token", "named"]);
+const TUNNEL_PROVIDERS = new Set(["cloudflared", "server"]);
 const TERMINAL_USE_CONPTY = parseBool(process.env.REMOTE_PANEL_TERMINAL_USE_CONPTY, false);
 const WINDOWS_CLOUDFLARED_CANDIDATES = [
   "C:\\Program Files\\cloudflared\\cloudflared.exe",
@@ -197,6 +198,16 @@ function parseTunnelMode(value, fallback = "quick") {
     .trim()
     .toLowerCase();
   if (TUNNEL_MODES.has(normalized)) {
+    return normalized;
+  }
+  return fallback;
+}
+
+function parseTunnelProvider(value, fallback = "cloudflared") {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (TUNNEL_PROVIDERS.has(normalized)) {
     return normalized;
   }
   return fallback;
@@ -356,7 +367,9 @@ function parseSecurityMode(value, fallback = "off") {
 }
 
 function normalizePublicHost(value) {
-  const normalized = String(value || "").trim();
+  const normalized = String(value || "")
+    .trim()
+    .replace(/^https?:\/\//i, "");
   if (!normalized) {
     return "";
   }
@@ -436,9 +449,10 @@ const settings = {
   persistSessions: parseBool(process.env.REMOTE_PANEL_PERSIST_SESSIONS, true),
   sessionStoreFile: path.resolve(ROOT, process.env.REMOTE_PANEL_SESSION_STORE || ".agency/remote/panel-sessions.json"),
   runtimeConfigFile: PANEL_RUNTIME_CONFIG_FILE,
-  tunnelProvider: String(parseArgValue("tunnel-provider") || process.env.REMOTE_PANEL_TUNNEL_PROVIDER || "cloudflared")
-    .trim()
-    .toLowerCase(),
+  tunnelProvider: parseTunnelProvider(
+    parseArgValue("tunnel-provider") || runtimeConfig.tunnelProvider || process.env.REMOTE_PANEL_TUNNEL_PROVIDER,
+    "cloudflared"
+  ),
   sharedTerminal: parseBool(process.env.REMOTE_PANEL_SHARED_TERMINAL, true),
   tunnelMode: parseTunnelMode(tunnelModeInput, "quick"),
   cloudflaredBin: String(parseArgValue("cloudflared-bin") || process.env.REMOTE_PANEL_CLOUDFLARED_BIN || "").trim(),
@@ -542,6 +556,7 @@ function buildRuntimeConfigPayload() {
     securityMode: settings.securityMode,
     publicHost: settings.publicHost || "",
     basePath: settings.basePath || "",
+    tunnelProvider: parseTunnelProvider(settings.tunnelProvider, "cloudflared"),
     tunnelMode: parseTunnelMode(settings.tunnelMode, "quick"),
   };
 }
@@ -598,6 +613,7 @@ function normalizeAgentState(state) {
 function buildConnectionHelpPayload() {
   const lanIps = listLanIpv4Addresses();
   const securityMode = settings.securityMode;
+  const tunnelProvider = parseTunnelProvider(settings.tunnelProvider, "cloudflared");
   const lanProtocol = securityMode === "on" ? "https" : "http";
   const canDirectLan = settings.host === "0.0.0.0" && securityMode !== "on";
   const directLanUrls = canDirectLan
@@ -629,6 +645,8 @@ function buildConnectionHelpPayload() {
   let action = "";
   if (publicVerification?.ok && stablePublicUrl) {
     action = `Stable HTTPS host is verified at ${stablePublicUrl}.`;
+  } else if (tunnelProvider === "server" && settings.publicHost) {
+    action = `Public server host is configured as ${settings.publicHost}. Verify that your reverse proxy forwards HTTPS traffic to this panel.`;
   } else if (tunnelUrl) {
     action = `External tunnel is live at ${tunnelUrl}. Use this URL outside your home network.`;
   } else if (tunnel?.mode && tunnel.mode !== "quick") {
@@ -660,7 +678,7 @@ function buildConnectionHelpPayload() {
       publicHost: settings.publicHost,
       basePath: settings.basePath,
       tunnelMode: configuredTunnelMode,
-      tunnelProvider: settings.tunnelProvider,
+      tunnelProvider,
       bindSessionIp: settings.bindSessionIp,
       allowlist: settings.allowlist,
       persistSessions: settings.persistSessions,
@@ -677,13 +695,13 @@ function buildConnectionHelpPayload() {
       label: securityModeLabel(securityMode),
     },
     tunnel: {
-      active: Boolean(tunnelUrl),
-      provider: tunnel?.provider || settings.tunnelProvider,
+      active: Boolean(tunnelUrl || stablePublicUrl),
+      provider: tunnel?.provider || tunnelProvider,
       mode: tunnel?.mode || configuredTunnelMode,
       configuredMode: configuredTunnelMode,
-      hasTokenConfig: Boolean(settings.cloudflaredTunnelToken),
-      hasNamedConfig: Boolean(settings.cloudflaredTunnelName),
-      hasConfigFile: Boolean(settings.cloudflaredConfig),
+      hasTokenConfig: tunnelProvider === "cloudflared" ? Boolean(settings.cloudflaredTunnelToken) : false,
+      hasNamedConfig: tunnelProvider === "cloudflared" ? Boolean(settings.cloudflaredTunnelName) : Boolean(settings.publicHost),
+      hasConfigFile: tunnelProvider === "cloudflared" ? Boolean(settings.cloudflaredConfig) : false,
       url: tunnelUrl,
       publicUrl: stablePublicUrl,
       pid: tunnel?.pid || 0,
@@ -814,6 +832,9 @@ function publicTunnelState() {
 }
 
 function hasNamedTunnelConfig() {
+  if (settings.tunnelProvider === "server") {
+    return Boolean(String(settings.publicHost || "").trim());
+  }
   return Boolean(String(settings.cloudflaredTunnelName || "").trim());
 }
 
@@ -2149,17 +2170,43 @@ function superAgentSessionName(project = "", fallback = "super-agent") {
   return normalizeSessionName(`${base}-${stamp}`, base);
 }
 
-function buildSuperAgentInitPrompt({ project = "", mode = "quick" } = {}) {
+function buildSuperAgentContextArtifacts({ context = "project", mode = "quick" } = {}) {
+  const selectedContext = normalizeEnvironmentContext(context, "project");
+  const selectedMode = normalizeEnvironmentPrep(mode, "quick");
+  const artifacts = [".agency/chat/latest-super-context.json"];
+  if (selectedContext === "commander") {
+    artifacts.push(".agency/chat/latest-commander-briefing.md");
+    if (selectedMode === "full") {
+      artifacts.push(".agency/chat/latest-system-briefing.md");
+    }
+    return artifacts;
+  }
+  if (selectedContext === "system") {
+    artifacts.push(".agency/chat/latest-system-briefing.md");
+    return artifacts;
+  }
+  if (selectedMode === "standard" || selectedMode === "full") {
+    artifacts.push(".agency/chat/latest-system-briefing.md");
+  }
+  artifacts.push(".agency/chat/latest-briefing.md");
+  return artifacts;
+}
+
+function buildSuperAgentInitPrompt({ project = "", mode = "quick", context = "project" } = {}) {
   const selectedProject = String(project || "").trim() || "workspace-default";
-  const selectedMode = String(mode || "quick").trim().toLowerCase() === "full" ? "full" : "quick";
+  const selectedMode = normalizeEnvironmentPrep(mode, "quick");
+  const selectedContext = normalizeEnvironmentContext(context, "project");
+  const contextArtifacts = buildSuperAgentContextArtifacts({
+    context: selectedContext,
+    mode: selectedMode,
+  });
   return [
     "Initialize a Playground super agent session.",
     `Project focus: ${selectedProject}.`,
+    `Launch context: ${selectedContext}.`,
     `Bootstrap mode completed: ${selectedMode}.`,
     "Load these context artifacts first:",
-    "- .agency/chat/latest-super-context.json",
-    "- .agency/chat/latest-system-briefing.md",
-    "- .agency/chat/latest-briefing.md",
+    ...contextArtifacts.map((artifact) => `- ${artifact}`),
     "Operate quickly and keep outputs deterministic.",
     "Boundary rule: ask for explicit scope confirmation before crossing unrelated project/commander internals.",
     "Reply exactly with READY when initialization is complete.",
@@ -2394,6 +2441,7 @@ async function ensureTunnelStateForEnvironment({
     : normalizedRemoteMode;
   if (
     state.activeTunnel &&
+    String(state.activeTunnel.provider || "").trim() === String(settings.tunnelProvider || "").trim() &&
     String(state.activeTunnel.requestedMode || state.activeTunnel.mode || "").trim() === normalizedRemoteMode &&
     String(state.activeTunnel.publicHost || "").trim() === settings.publicHost
   ) {
@@ -2853,6 +2901,7 @@ async function spawnSuperAgentFromRequest(input = {}, { dryRun = false } = {}) {
   const prompt = buildSuperAgentInitPrompt({
     project,
     mode: validMode,
+    context: state.activeEnvironment?.context || "project",
   });
   const canonicalRequest = {
     agentKind: "super",
@@ -3388,9 +3437,53 @@ async function startTunnelProcess({
     throw new Error("Tunnel is already running.");
   }
 
-  const normalizedProvider = String(provider || "cloudflared").trim().toLowerCase();
-  if (normalizedProvider !== "cloudflared") {
-    throw new Error("Unsupported tunnel provider. Only 'cloudflared' is currently supported.");
+  const normalizedProvider = parseTunnelProvider(provider, "cloudflared");
+  const normalizedMode = parseTunnelMode(mode, "");
+  const normalizedRequestedMode = parseTunnelMode(requestedMode, normalizedMode);
+  const normalizedPublicHost = normalizePublicHost(publicHost || settings.publicHost || "");
+
+  if (normalizedProvider === "server") {
+    if (!normalizedPublicHost) {
+      throw new Error("Server remote provider requires a configured public host.");
+    }
+    const verification = await verifyAndMaybeManagePublicHost({
+      desiredMode: normalizedRequestedMode,
+      publicHost: normalizedPublicHost,
+      tunnelUrl: "",
+    }).catch((error) => ({
+      ok: false,
+      url: buildManagedPublicUrl(normalizedPublicHost, "https", settings.basePath).replace(/\/$/, "") || "",
+      status: 0,
+      error: error instanceof Error ? error.message : "Failed to verify remote public host.",
+    }));
+
+    settings.securityMode = "on";
+    settings.tunnelMode = normalizedRequestedMode;
+    settings.tunnelProvider = normalizedProvider;
+    settings.publicHost = normalizedPublicHost;
+    await persistRuntimeConfig().catch(() => null);
+
+    state.activeTunnel = {
+      provider: normalizedProvider,
+      mode: normalizedMode || normalizedRequestedMode || "named",
+      requestedMode: normalizedRequestedMode || normalizedMode || "named",
+      url: "",
+      publicUrl: buildManagedPublicUrl(normalizedPublicHost, "https", settings.basePath),
+      publicHost: normalizedPublicHost,
+      targetUrl,
+      pid: 0,
+      startedAt: timestamp(),
+      verification,
+    };
+    state.publicHostVerification = verification;
+    broadcastState();
+
+    if (verification?.ok && state.activeTunnel.publicUrl) {
+      pushLog("system", `External server host verified (${state.activeTunnel.publicUrl})`);
+    } else {
+      pushLog("system", `External server host configured but not yet verified (${normalizedPublicHost})`);
+    }
+    return publicTunnelState();
   }
 
   const tunnelBin = resolveCloudflaredBin();
@@ -3402,9 +3495,8 @@ async function startTunnelProcess({
     configFile,
   });
   const args = tunnelSpec.args;
-  const normalizedMode = tunnelSpec.mode;
-  const normalizedRequestedMode = parseTunnelMode(requestedMode, normalizedMode);
-  const normalizedPublicHost = normalizePublicHost(publicHost || settings.publicHost || "");
+  const normalizedCloudflareMode = tunnelSpec.mode;
+  const normalizedCloudflareRequestedMode = parseTunnelMode(requestedMode, normalizedCloudflareMode);
   const discoveredUrlHint = resolveTunnelPublicHintUrl();
   const child = spawn(tunnelBin, args, {
     cwd: ROOT,
@@ -3413,12 +3505,12 @@ async function startTunnelProcess({
   });
 
   const loggedArgs = redactCloudflaredArgs(args);
-  pushLog("system", `Starting external tunnel (${normalizedMode}): ${tunnelBin} ${loggedArgs.join(" ")}`);
+  pushLog("system", `Starting external tunnel (${normalizedCloudflareMode}): ${tunnelBin} ${loggedArgs.join(" ")}`);
 
   const discoveredUrl = await new Promise((resolve, reject) => {
     let settled = false;
     let discovered = "";
-    const quickMode = normalizedMode === "quick";
+    const quickMode = normalizedCloudflareMode === "quick";
     const startupDelayMs = quickMode ? timeoutMs : Math.max(1500, Math.min(10000, Math.floor(timeoutMs / 3)));
     const stdoutRl = child.stdout ? readline.createInterface({ input: child.stdout }) : null;
     const stderrRl = child.stderr ? readline.createInterface({ input: child.stderr }) : null;
@@ -3449,7 +3541,7 @@ async function startTunnelProcess({
         return;
       }
       discovered = url;
-      if (quickMode || normalizedMode !== "quick") {
+      if (quickMode || normalizedCloudflareMode !== "quick") {
         finalizeResolve();
       }
     };
@@ -3495,8 +3587,8 @@ async function startTunnelProcess({
 
   const tunnelState = {
     provider: normalizedProvider,
-    mode: normalizedMode,
-    requestedMode: normalizedRequestedMode,
+    mode: normalizedCloudflareMode,
+    requestedMode: normalizedCloudflareRequestedMode,
     url: discoveredUrl,
     publicUrl: "",
     publicHost: normalizedPublicHost,
@@ -3509,15 +3601,16 @@ async function startTunnelProcess({
   state.activeTunnel = tunnelState;
   state.publicHostVerification = null;
   settings.securityMode = "on";
-  settings.tunnelMode = normalizedRequestedMode;
+  settings.tunnelMode = normalizedCloudflareRequestedMode;
+  settings.tunnelProvider = normalizedProvider;
   if (normalizedPublicHost) {
     settings.publicHost = normalizedPublicHost;
-  } else if (discoveredUrl && normalizedRequestedMode === "quick") {
+  } else if (discoveredUrl && normalizedCloudflareRequestedMode === "quick") {
     settings.publicHost = discoveredUrl;
   }
   await persistRuntimeConfig().catch(() => null);
   const verification = await verifyAndMaybeManagePublicHost({
-    desiredMode: normalizedRequestedMode,
+    desiredMode: normalizedCloudflareRequestedMode,
     publicHost: normalizedPublicHost || settings.publicHost,
     tunnelUrl: discoveredUrl,
   }).catch((error) => ({
@@ -3539,7 +3632,7 @@ async function startTunnelProcess({
       if (state.activeTunnel && state.activeTunnel.pid === child.pid) {
         state.activeTunnel = null;
         state.publicHostVerification = null;
-        if (normalizedMode === "quick" && settings.publicHost === discoveredUrl) {
+        if (normalizedCloudflareMode === "quick" && settings.publicHost === discoveredUrl) {
           settings.publicHost = "";
         }
       await persistRuntimeConfig().catch(() => null);
@@ -3552,7 +3645,7 @@ async function startTunnelProcess({
       if (state.activeTunnel && state.activeTunnel.pid === child.pid) {
         state.activeTunnel = null;
         state.publicHostVerification = null;
-        if (normalizedMode === "quick" && settings.publicHost === discoveredUrl) {
+        if (normalizedCloudflareMode === "quick" && settings.publicHost === discoveredUrl) {
           settings.publicHost = "";
         }
       await persistRuntimeConfig().catch(() => null);
@@ -3561,13 +3654,13 @@ async function startTunnelProcess({
   });
 
   if (verification?.ok && state.activeTunnel.publicUrl) {
-    pushLog("system", `External tunnel ready (${normalizedRequestedMode}->${normalizedMode}): ${state.activeTunnel.publicUrl}`);
+    pushLog("system", `External tunnel ready (${normalizedCloudflareRequestedMode}->${normalizedCloudflareMode}): ${state.activeTunnel.publicUrl}`);
   } else if (discoveredUrl) {
-    pushLog("system", `External tunnel live (${normalizedRequestedMode}->${normalizedMode}): ${discoveredUrl}`);
+    pushLog("system", `External tunnel live (${normalizedCloudflareRequestedMode}->${normalizedCloudflareMode}): ${discoveredUrl}`);
   } else {
     pushLog(
       "system",
-      `External tunnel running (${normalizedRequestedMode}->${normalizedMode}) without detected URL. Set REMOTE_PANEL_PUBLIC_HOST for a clickable mobile URL.`
+      `External tunnel running (${normalizedCloudflareRequestedMode}->${normalizedCloudflareMode}) without detected URL. Set REMOTE_PANEL_PUBLIC_HOST for a clickable mobile URL.`
     );
   }
   return publicTunnelState();
@@ -3579,7 +3672,14 @@ async function stopTunnelProcess() {
   }
   const { pid } = state.activeTunnel;
   pushLog("system", `Stopping tunnel pid=${pid}`);
-  await terminateProcessTree(pid);
+  if (pid) {
+    await terminateProcessTree(pid);
+  } else {
+    state.activeTunnel = null;
+    state.publicHostVerification = null;
+    await persistRuntimeConfig().catch(() => null);
+    broadcastState();
+  }
   return true;
 }
 
@@ -5344,9 +5444,7 @@ async function handleApi(req, res, pathname, ip) {
       return;
     }
 
-    const provider = String(body.provider || settings.tunnelProvider || "cloudflared")
-      .trim()
-      .toLowerCase();
+    const provider = parseTunnelProvider(body.provider || settings.tunnelProvider || "cloudflared", "cloudflared");
     const modeInput =
       body.mode !== undefined && body.mode !== null && String(body.mode).trim() !== ""
         ? body.mode

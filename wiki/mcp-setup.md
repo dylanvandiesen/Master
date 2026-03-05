@@ -7,7 +7,7 @@ This guide documents MCP wiring in this repo with command-first workflows:
 - Install and run local MCP servers from `mcp/`.
 - Use official modern GitHub MCP remote endpoint.
 - Keep legacy local GitHub MCP as fallback.
-- Wire both `.vscode/mcp.json` and root `config.toml`.
+- Wire both `.vscode/mcp.json` and repo-scoped `.codex/config.toml`.
 - Keep tokens out of source control.
 
 ## 2) Current MCP Architecture
@@ -25,15 +25,16 @@ Configured servers:
 - `browser_eyes_local` (local Playwright MCP with vision capability)
 - `github_legacy_local` (local command fallback)
 
-### Root Runtime (Agent)
+### Codex Runtime (Agent)
 
-File: `config.toml`
+File: `.codex/config.toml`
 
 Configured servers:
 
 - `mcp_servers.filesystem_local`
 - `mcp_servers.memory_local`
 - `mcp_servers.browser_eyes_local`
+- `mcp_servers.github_modern_remote` (official remote endpoint, preferred)
 - `mcp_servers.github_local` (legacy local fallback)
 - `mcp_servers.github_modern_docker` (modern local runtime via Docker)
 
@@ -124,7 +125,8 @@ From repo root:
 
 Validation helpers:
 
-- `Get-Content ..\config.toml`
+- `Get-Content ..\.codex\config.toml`
+- `codex mcp list --json`
 - `Get-Content ..\.vscode\mcp.json`
 - `node -e "const fs=require('fs'); JSON.parse(fs.readFileSync('.vscode/mcp.json','utf8')); console.log('ok')"`
 
@@ -142,13 +144,14 @@ When editing this file:
 - keep valid JSON (no trailing commas).
 - keep server names stable to avoid client/tool mismatch.
 
-## 7) `config.toml` Notes
+## 7) `.codex/config.toml` Notes
 
 Key points:
 
 - `filesystem_local` runs local filesystem MCP server.
 - `memory_local` runs memory server with explicit `MEMORY_FILE_PATH`.
 - `browser_eyes_local` runs Playwright MCP in headless vision mode for browser inspection.
+- `github_modern_remote` uses `GITHUB_MCP_PAT` via `bearer_token_env_var`.
 - `github_local` runs `scripts/mcp/run-github-mcp.mjs` with automatic credential resolution.
 - `github_modern_docker` runs `scripts/mcp/run-github-mcp.mjs --docker=true` with the same token resolver.
 
@@ -159,7 +162,7 @@ Key points:
 1. `Set-Location C:\Users\SKIKK\Documents\websites\Playground`
 2. `Get-ChildItem .\mcp -Force`
 3. `Get-ChildItem .\mcp\node_modules\@modelcontextprotocol`
-4. `Get-Content .\config.toml`
+4. `Get-Content .\.codex\config.toml`
 5. `Get-Content .\.vscode\mcp.json`
 6. `Get-Content .\.env`
 7. `$env:GITHUB_PERSONAL_ACCESS_TOKEN = "ghp_xxx"`
@@ -198,11 +201,11 @@ Key points:
 
 ### Config and fallback operations
 
-34. `Copy-Item .\config.toml .\config.toml.bak`
+34. `Copy-Item .\.codex\config.toml .\.codex\config.toml.bak`
 35. `Copy-Item .\.vscode\mcp.json .\.vscode\mcp.json.bak`
-36. `Select-String -Path .\config.toml -Pattern "github_modern_docker|github_local|browser_eyes_local|memory_local|filesystem_local"`
+36. `Select-String -Path .\.codex\config.toml -Pattern "github_modern_remote|github_modern_docker|github_local|browser_eyes_local|memory_local|filesystem_local"`
 37. `Select-String -Path .\.vscode\mcp.json -Pattern "github_modern_remote|github_legacy_local|browser_eyes_local|memory_local|filesystem_local"`
-38. `Get-FileHash .\config.toml`
+38. `Get-FileHash .\.codex\config.toml`
 39. `Get-FileHash .\.vscode\mcp.json`
 40. `Remove-Item Env:GITHUB_PERSONAL_ACCESS_TOKEN`
 41. `Remove-Item Env:GITHUB_MCP_PAT`
@@ -258,4 +261,4 @@ node -e "const fs=require('fs'); JSON.parse(fs.readFileSync('.vscode/mcp.json','
 2. Start/verify MCP servers needed for session.
 3. Run agency dev mode for project work.
 4. Use modern GitHub MCP first, fallback only if needed.
-5. Keep `config.toml` and `.vscode/mcp.json` aligned when changing server names.
+5. Keep `.codex/config.toml` and `.vscode/mcp.json` aligned when changing server names.

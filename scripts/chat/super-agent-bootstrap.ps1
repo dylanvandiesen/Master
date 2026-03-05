@@ -114,6 +114,7 @@ if (-not $SkipContextExport) {
         -RepoRoot $RepoRoot `
         -Project $Project `
         -SessionId $effectiveSessionId `
+        -Mode $Mode `
         -OutputPath ".agency/chat/latest-super-context.json" `
         -EmitMarkdown `
         -MarkdownOutputPath ".agency/chat/latest-super-context.md" | Out-Host
@@ -126,6 +127,7 @@ if (-not $SkipContextExport) {
             -RepoRoot $RepoRoot `
             -Project $Project `
             -SessionId $effectiveSessionId `
+            -Mode $Mode `
             -OutputPath $sessionContextJson `
             -EmitMarkdown `
             -MarkdownOutputPath $sessionContextMarkdown | Out-Host

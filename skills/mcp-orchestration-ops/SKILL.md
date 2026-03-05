@@ -1,6 +1,6 @@
 ---
 name: mcp-orchestration-ops
-description: Configure and operate MCP connectivity for this Playground repository. Use when tasks involve wiring or troubleshooting `config.toml`, `.vscode/mcp.json`, or `mcp/package.json`; starting local MCP servers (`start:filesystem`, `start:memory`, `start:github:legacy`, `start:github:modern:docker`); choosing GitHub MCP route priority (modern remote, docker, legacy fallback); validating `GITHUB_PERSONAL_ACCESS_TOKEN` and `GITHUB_MCP_PAT`; or fixing memory persistence at `mcp/data/memory.jsonl`.
+description: Configure and operate MCP connectivity for this Playground repository. Use when tasks involve wiring or troubleshooting `.codex/config.toml`, `.vscode/mcp.json`, or `mcp/package.json`; starting local MCP servers (`start:filesystem`, `start:memory`, `start:github:legacy`, `start:github:modern:docker`); choosing GitHub MCP route priority (modern remote, docker, legacy fallback); validating `GITHUB_PERSONAL_ACCESS_TOKEN` and `GITHUB_MCP_PAT`; or fixing memory persistence at `mcp/data/memory.jsonl`.
 ---
 
 # MCP Orchestration Ops
@@ -15,7 +15,7 @@ Use this skill whenever MCP server wiring, startup, or auth is in scope.
 5. Start only required servers.
 
 ## MCP Topology
-- Root runtime: `config.toml`
+- Codex runtime: `.codex/config.toml`
 - VS Code runtime: `.vscode/mcp.json`
 - Local hub scripts: `mcp/package.json`
 
@@ -28,7 +28,7 @@ Current server names:
 ## Use Resource Files
 - For route priority and command matrix, read `references/server-matrix.md`.
 - For troubleshooting commands, read `references/troubleshooting.md`.
-- For deterministic validation, run `scripts/mcp-doctor.ps1`.
+- For deterministic validation, run `scripts/chat/prepare-mcp.ps1`.
 
 ## Execution
 ```powershell
@@ -45,5 +45,6 @@ cmd /c npm --prefix mcp run start:memory
 
 ## Fast Troubleshooting
 - Validate JSON: `node -e "const fs=require('fs'); JSON.parse(fs.readFileSync('.vscode/mcp.json','utf8')); console.log('ok')"`
+- Validate effective Codex MCP wiring: `codex mcp list --json`
 - Validate MCP package install: `cmd /c npm --prefix mcp run list`
 - Validate Docker path for modern local: `docker --version`

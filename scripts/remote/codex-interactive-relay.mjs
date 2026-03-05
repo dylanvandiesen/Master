@@ -232,6 +232,35 @@ function clip(text, max = 2000) {
   return `${compact.slice(0, max)}...`;
 }
 
+function normalizeHistoryRole(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "user" || normalized === "assistant" || normalized === "system") {
+    return normalized;
+  }
+  return "system";
+}
+
+function normalizeRecentHistory(history = [], maxItems = 16) {
+  if (!Array.isArray(history)) {
+    return [];
+  }
+  return history
+    .map((entry) => ({
+      role: normalizeHistoryRole(entry?.role),
+      file: String(entry?.file || "").trim(),
+      time: String(entry?.time || "").trim() || nowIso(),
+      message: clip(entry?.message || "", 1200),
+    }))
+    .filter((entry) => entry.message)
+    .slice(-Math.max(2, maxItems));
+}
+
+function pushRecentHistory(state, entry, maxItems = 16) {
+  const next = normalizeRecentHistory([...(Array.isArray(state?.recentHistory) ? state.recentHistory : []), entry], maxItems);
+  state.recentHistory = next;
+  return next;
+}
+
 async function readMemoryGraph(memoryFilePath) {
   try {
     const raw = await fs.readFile(memoryFilePath, "utf8");
@@ -322,8 +351,10 @@ async function getRecentMemory(memoryFilePath, entityName, maxItems) {
   return entity.observations.slice(-maxItems);
 }
 
-function buildRelayPrompt({ sessionName, memoryItems, userMessage, noteFile }) {
-  const memoryBlock = memoryItems.length ? memoryItems.map((item) => `- ${item}`).join("\n") : "- (no prior memory)";
+function buildRelayPrompt({ sessionName, recentHistory, userMessage, noteFile, bootstrapMode = "" }) {
+  const historyBlock = recentHistory.length
+    ? recentHistory.map((item) => `- ${item.role}(${item.file || "inline"}): ${item.message}`).join("\n")
+    : "- (no recent relay context)";
   return [
     "You are responding through a remote relay panel chat.",
     "Keep responses concise, actionable, and plain text (no markdown headings).",
@@ -331,9 +362,10 @@ function buildRelayPrompt({ sessionName, memoryItems, userMessage, noteFile }) {
     "",
     `Session: ${sessionName}`,
     `Inbox file: ${noteFile}`,
+    bootstrapMode ? `Bootstrap mode: ${bootstrapMode}` : "",
     "",
-    "Recent memory:",
-    memoryBlock,
+    "Recent relay context:",
+    historyBlock,
     "",
     "Latest user message:",
     userMessage,
@@ -651,7 +683,7 @@ function logFeed(role, fileName, message) {
   process.stdout.write(`${head}\n${message.trim() || "(empty)"}\n\n`);
 }
 
-async function processInboxFile(fileName, config) {
+async function processInboxFile(fileName, config, relayState) {
   const filePath = path.join(INBOX_DIR, fileName);
   const raw = await fs.readFile(filePath, "utf8");
   const userMessage = extractRemoteNoteMessage(raw).trim();
@@ -670,8 +702,20 @@ async function processInboxFile(fileName, config) {
       project: config.project || "",
     },
   });
-  const userObs = `[${nowIso()}] user(${fileName}): ${clip(userMessage, 1800)}`;
-  await addMemoryObservation(config.memoryFilePath, config.memoryEntity, userObs);
+  pushRecentHistory(
+    relayState,
+    {
+      role: "user",
+      file: fileName,
+      time: nowIso(),
+      message: userMessage,
+    },
+    config.historyItems
+  );
+  if (config.persistMemory) {
+    const userObs = `[${nowIso()}] user(${fileName}): ${clip(userMessage, 1800)}`;
+    await addMemoryObservation(config.memoryFilePath, config.memoryEntity, userObs);
+  }
 
   if (config.dryRun) {
     const dryReply = `DRY RUN reply for ${fileName}: relay module is active.`;
@@ -679,11 +723,23 @@ async function processInboxFile(fileName, config) {
       message: dryReply,
       inReplyTo: fileName,
     });
-    await addMemoryObservation(
-      config.memoryFilePath,
-      config.memoryEntity,
-      `[${nowIso()}] assistant(${reply.fileName}): ${clip(dryReply, 1800)}`
+    pushRecentHistory(
+      relayState,
+      {
+        role: "assistant",
+        file: reply.fileName,
+        time: nowIso(),
+        message: dryReply,
+      },
+      config.historyItems
     );
+    if (config.persistMemory) {
+      await addMemoryObservation(
+        config.memoryFilePath,
+        config.memoryEntity,
+        `[${nowIso()}] assistant(${reply.fileName}): ${clip(dryReply, 1800)}`
+      );
+    }
     await writeStatus({
       state: "idle",
       message: `Reply sent: ${reply.fileName}`,
@@ -728,12 +784,12 @@ async function processInboxFile(fileName, config) {
     },
   });
 
-  const memoryItems = await getRecentMemory(config.memoryFilePath, config.memoryEntity, config.historyItems);
   const prompt = buildRelayPrompt({
     sessionName: config.sessionName,
-    memoryItems,
+    recentHistory: normalizeRecentHistory(relayState.recentHistory, config.historyItems),
     userMessage,
     noteFile: fileName,
+    bootstrapMode: config.bootstrapMode,
   });
 
   const replyMessage = await runCodexResume(prompt, config, async (event) => {
@@ -759,11 +815,23 @@ async function processInboxFile(fileName, config) {
     message: replyMessage,
     inReplyTo: fileName,
   });
-  await addMemoryObservation(
-    config.memoryFilePath,
-    config.memoryEntity,
-    `[${nowIso()}] assistant(${reply.fileName}): ${clip(replyMessage, 1800)}`
+  pushRecentHistory(
+    relayState,
+    {
+      role: "assistant",
+      file: reply.fileName,
+      time: nowIso(),
+      message: replyMessage,
+    },
+    config.historyItems
   );
+  if (config.persistMemory) {
+    await addMemoryObservation(
+      config.memoryFilePath,
+      config.memoryEntity,
+      `[${nowIso()}] assistant(${reply.fileName}): ${clip(replyMessage, 1800)}`
+    );
+  }
   await writeStatus({
     state: "idle",
     message: `Reply sent: ${reply.fileName}`,
@@ -806,7 +874,9 @@ async function printNewOutboxMessages(lastOutboxFile) {
 async function runLoop(config, once) {
   await fs.mkdir(INBOX_DIR, { recursive: true });
   await fs.mkdir(OUTBOX_DIR, { recursive: true });
-  await ensureFile(config.memoryFilePath);
+  if (config.persistMemory) {
+    await ensureFile(config.memoryFilePath);
+  }
   await ensureFile(config.stateFilePath);
 
   await writeStatus({
@@ -831,7 +901,11 @@ async function runLoop(config, once) {
     session: config.sessionName,
     lastInboxFile: "",
     lastOutboxFile: "",
+    bootstrapMode: config.bootstrapMode,
+    recentHistory: [],
   });
+  state.bootstrapMode = config.bootstrapMode;
+  state.recentHistory = normalizeRecentHistory(state.recentHistory, config.historyItems);
 
   if (config.startFromLatest) {
     if (!state.lastInboxFile) {
@@ -849,7 +923,9 @@ async function runLoop(config, once) {
     [
       "[relay-codex] watching inbox/outbox",
       `[relay-codex] session=${config.sessionName}`,
-      `[relay-codex] memory=${path.relative(ROOT, config.memoryFilePath).replace(/\\/g, "/")}`,
+      config.persistMemory
+        ? `[relay-codex] memory=${path.relative(ROOT, config.memoryFilePath).replace(/\\/g, "/")}`
+        : "[relay-codex] memory=(disabled)",
       config.docsFilePath ? `[relay-codex] docs=${path.relative(ROOT, config.docsFilePath).replace(/\\/g, "/")}` : "[relay-codex] docs=(disabled)",
       config.dryRun
         ? "[relay-codex] mode=dry-run (no codex calls)"
@@ -879,7 +955,7 @@ async function runLoop(config, once) {
         source: "relay-codex",
       });
       try {
-        await processInboxFile(fileName, config);
+        await processInboxFile(fileName, config, state);
       } catch (error) {
         await writeStatus({
           state: "blocked",
@@ -935,6 +1011,7 @@ async function main() {
   const sessionName = sanitizeName(args["session-name"] || "codex-chat");
   const project = String(args.project || "").trim();
   const projectSlug = project ? sanitizeName(project, "project") : "";
+  const persistMemory = parseBool(args["persist-memory"], false);
   const memoryFilePath = path.resolve(ROOT, args["memory-file"] || DEFAULT_MEMORY_FILE);
   const memoryEntity = projectSlug ? `remote-chat-project:${projectSlug}` : `remote-chat-session:${sessionName}`;
   const stateFilePath = path.join(REMOTE_DIR, `relay-state-${sessionName}.json`);
@@ -949,6 +1026,7 @@ async function main() {
 
   const config = {
     sessionName,
+    persistMemory,
     memoryFilePath,
     memoryEntity,
     stateFilePath,
@@ -957,6 +1035,7 @@ async function main() {
     docsFilePath,
     pollMs: clampInt(args["poll-ms"], 1200, 400, 60000),
     historyItems: clampInt(args.history, 16, 2, 120),
+    bootstrapMode: String(args["bootstrap-mode"] || "").trim().toLowerCase(),
     useLast: parseBool(args["codex-use-last"], true),
     sessionId: String(args["codex-session-id"] || "").trim(),
     model: String(args.model || "").trim(),

@@ -14,14 +14,14 @@ This repository now includes a local skill pack under `skills/`.
 2. `skills/mcp-orchestration-ops`
    - Purpose: configure and troubleshoot MCP servers, routes, and auth.
    - Helpers:
-     - `scripts/mcp-doctor.ps1`
+     - `scripts/chat/prepare-mcp.ps1`
      - `references/server-matrix.md`
      - `references/troubleshooting.md`
 
 3. `skills/chat-instance-bootstrap`
    - Purpose: prepare fresh chat sessions and startup context.
    - Helpers:
-     - `scripts/bootstrap-session.ps1`
+     - `scripts/chat/prepare-chat-instance.ps1`
      - `references/startup-checklist.md`
 
 4. `skills/system-build-super-agent`
@@ -44,7 +44,7 @@ This repository now includes a local skill pack under `skills/`.
 
 1. `powershell -ExecutionPolicy Bypass -File skills/agency-playground-ops/scripts/agency-project-cycle.ps1 -Mode build -Project csscroll`
 2. `powershell -ExecutionPolicy Bypass -File skills/agency-playground-ops/scripts/agency-project-cycle.ps1 -Mode dev -Project csscroll -Port 5200`
-3. `powershell -ExecutionPolicy Bypass -File skills/mcp-orchestration-ops/scripts/mcp-doctor.ps1`
-4. `powershell -ExecutionPolicy Bypass -File skills/chat-instance-bootstrap/scripts/bootstrap-session.ps1 -Project csscroll`
-5. `powershell -ExecutionPolicy Bypass -File skills/chat-instance-bootstrap/scripts/bootstrap-session.ps1 -Project csscroll -Full`
+3. `powershell -ExecutionPolicy Bypass -File scripts/chat/prepare-mcp.ps1`
+4. `powershell -ExecutionPolicy Bypass -File scripts/chat/prepare-chat-instance.ps1 -Project csscroll -PrepareMcp`
+5. `powershell -ExecutionPolicy Bypass -File scripts/chat/prepare-chat-instance.ps1 -Project csscroll -InstallRootDeps -InstallMcpDeps -PrepareMcp`
 6. `powershell -ExecutionPolicy Bypass -File skills/system-build-super-agent/scripts/generate-system-briefing.ps1 -Project csscroll`

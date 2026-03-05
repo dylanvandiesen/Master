@@ -6,7 +6,7 @@
 3. `github_legacy_local` / `github_local` (fallback)
 
 ## Config Locations
-- Root runtime config: `config.toml`
+- Codex runtime config: `.codex/config.toml`
 - VS Code config: `.vscode/mcp.json`
 - MCP command scripts: `mcp/package.json`
 

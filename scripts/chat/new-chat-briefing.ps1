@@ -512,6 +512,36 @@ function Get-CommanderRuntimeSnapshot {
     return $snapshot
 }
 
+function Get-CodexMcpServerNames {
+    param([Parameter(Mandatory)][string]$RepoRootPath)
+
+    Push-Location $RepoRootPath
+    try {
+        $raw = & codex mcp list --json 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            return @()
+        }
+    } finally {
+        Pop-Location
+    }
+
+    $payload = ($raw -join [Environment]::NewLine).Trim()
+    if ([string]::IsNullOrWhiteSpace($payload)) {
+        return @()
+    }
+
+    try {
+        return @(
+            ($payload | ConvertFrom-Json) |
+            Where-Object { $_.enabled } |
+            ForEach-Object { [string]$_.name } |
+            Sort-Object -Unique
+        )
+    } catch {
+        return @()
+    }
+}
+
 if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
     $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
     $RepoRoot = Join-Path $scriptDir "..\.."
@@ -562,14 +592,8 @@ $manifestItems = Get-DevServerManifestSummary -ManifestDir (Join-Path $RepoRoot 
 $taskSummary = Get-TasklistSummary -TasklistPath (Join-Path $RepoRoot "TASKLIST.md")
 $skillSummary = Get-SkillSummary -SkillsDir (Join-Path $RepoRoot "skills")
 $commanderSnapshot = Get-CommanderRuntimeSnapshot -RepoRootPath $RepoRoot
-
-$mcpConfigText = Get-Content -Raw -Path (Join-Path $RepoRoot "config.toml")
-$mcpEnabled = @()
-foreach ($entry in @("filesystem_local", "memory_local", "browser_eyes_local", "github_local", "github_modern_docker")) {
-    if ($mcpConfigText -match ([regex]::Escape("mcp_servers.$entry"))) {
-        $mcpEnabled += $entry
-    }
-}
+$codexConfigPath = Join-Path $RepoRoot ".codex/config.toml"
+$mcpEnabled = Get-CodexMcpServerNames -RepoRootPath $RepoRoot
 
 $packageScriptNames = @()
 $systemScriptNames = @()
@@ -658,7 +682,8 @@ $lines.Add("- Repo root: $RepoRoot")
 $lines.Add("- Git: branch $branch, commit $commit, dirty entries $dirtyCount")
 $lines.Add("- Active project target: $projectTargetText")
 $lines.Add("- Projects discovered: $projectListText")
-$lines.Add("- MCP servers in config.toml: $mcpListText")
+$lines.Add("- Codex project config: $(Get-RepoRelativePath -RepoRootPath $RepoRoot -Path $codexConfigPath)")
+$lines.Add("- Effective Codex MCP servers: $mcpListText")
 $lines.Add("")
 $lines.Add("## MCP + Skills Super-Agent Strategy")
 $lines.Add("1. Establish baseline: cmd /c npm run super:bootstrap -- --project=$projectCommandTarget (fallback: mcp:prep + chat:briefing).")

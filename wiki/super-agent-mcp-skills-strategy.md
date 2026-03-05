@@ -38,7 +38,7 @@ Speed guardrails:
 
 1. Run `super:bootstrap` once per session and trust `mcp-status.json` + `latest-super-context.json`.
 2. Do not start every MCP server when only one is needed.
-3. Keep server names stable between `config.toml` and `.vscode/mcp.json`.
+3. Keep server names stable between `.codex/config.toml` and `.vscode/mcp.json`.
 4. On auth failure, switch route immediately before deep debugging.
 
 ## 3) Skills Utilization Strategy

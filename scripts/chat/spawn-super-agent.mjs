@@ -16,7 +16,8 @@ import {
 } from "../remote/codex-session-registry.mjs";
 
 const ROOT = process.cwd();
-const MODES = new Set(["quick", "full"]);
+const MODES = new Set(["quick", "standard", "full"]);
+const CONTEXTS = new Set(["project", "system", "commander"]);
 
 function parseBooleanFlag(value, fallback = true) {
   if (value === undefined || value === null || value === "") {
@@ -39,12 +40,20 @@ function normalizeMode(value) {
   return MODES.has(normalized) ? normalized : "quick";
 }
 
+function normalizeContext(value) {
+  const normalized = String(value || "project")
+    .trim()
+    .toLowerCase();
+  return CONTEXTS.has(normalized) ? normalized : "project";
+}
+
 function parseArgs(argv) {
   const options = {
     mode: "",
     project: "",
-    agentProfile: "",
-    codexProfile: "",
+      agentProfile: "",
+      context: "",
+      codexProfile: "",
     name: "",
     model: "",
     notes: "",
@@ -92,6 +101,14 @@ function parseArgs(argv) {
 
     if (key === "project") {
       options.project = readValue(index, inlineValue).trim();
+      if (!inlineValue && argv[index + 1] && !String(argv[index + 1]).startsWith("-")) {
+        index += 1;
+      }
+      continue;
+    }
+
+    if (key === "context" || key === "contextmode") {
+      options.context = normalizeContext(readValue(index, inlineValue));
       if (!inlineValue && argv[index + 1] && !String(argv[index + 1]).startsWith("-")) {
         index += 1;
       }
@@ -196,17 +213,40 @@ async function readAgencyActiveProject() {
   }
 }
 
-function buildSuperAgentPrompt({ project = "", mode = "quick" }) {
+function buildContextArtifactList(mode = "quick", context = "project") {
+  const selectedMode = normalizeMode(mode);
+  const selectedContext = normalizeContext(context);
+  const artifacts = [".agency/chat/latest-super-context.json"];
+  if (selectedContext === "commander") {
+    artifacts.push(".agency/chat/latest-commander-briefing.md");
+    if (selectedMode === "full") {
+      artifacts.push(".agency/chat/latest-system-briefing.md");
+    }
+    return artifacts;
+  }
+  if (selectedContext === "system") {
+    artifacts.push(".agency/chat/latest-system-briefing.md");
+    return artifacts;
+  }
+  if (selectedMode === "standard" || selectedMode === "full") {
+    artifacts.push(".agency/chat/latest-system-briefing.md");
+  }
+  artifacts.push(".agency/chat/latest-briefing.md");
+  return artifacts;
+}
+
+function buildSuperAgentPrompt({ project = "", mode = "quick", context = "project" }) {
   const projectLabel = String(project || "").trim() || "workspace-default";
   const selectedMode = normalizeMode(mode);
+  const selectedContext = normalizeContext(context);
+  const contextArtifacts = buildContextArtifactList(selectedMode, selectedContext);
   return [
     "Initialize a Playground super agent session.",
     `Project focus: ${projectLabel}.`,
+    `Launch context: ${selectedContext}.`,
     `Bootstrap mode completed: ${selectedMode}.`,
     "Load these context artifacts first:",
-    "- .agency/chat/latest-super-context.json",
-    "- .agency/chat/latest-system-briefing.md",
-    "- .agency/chat/latest-briefing.md",
+    ...contextArtifacts.map((artifact) => `- ${artifact}`),
     "Operate quickly and keep outputs deterministic.",
     "Boundary rule: ask for explicit scope confirmation before crossing unrelated project/commander internals.",
     "Reply exactly with READY when initialization is complete.",
@@ -361,6 +401,7 @@ async function main() {
   }
 
   const mode = normalizeMode(options.mode || resolvedAgentProfile?.mode || "quick");
+  const context = normalizeContext(options.context || process.env.npm_config_context || "project");
   const model = String(options.model || resolvedAgentProfile?.model || "").trim();
   const codexProfile = String(options.codexProfile || resolvedAgentProfile?.codexProfile || "").trim();
   const runPrep = typeof options.runPrep === "boolean"
@@ -377,7 +418,12 @@ async function main() {
   if (!name) {
     throw new Error("Invalid session name.");
   }
-  const prepScript = mode === "full" ? "super:bootstrap:full" : "super:bootstrap";
+  const prepScriptByMode = {
+    quick: "super:bootstrap",
+    standard: "super:bootstrap:standard",
+    full: "super:bootstrap:full",
+  };
+  const prepScript = prepScriptByMode[mode] || "super:bootstrap";
   const prepArgs = project ? [`--project=${project}`] : [];
   let prepResult = null;
 
@@ -391,6 +437,7 @@ async function main() {
   const prompt = buildSuperAgentPrompt({
     project,
     mode,
+    context,
   });
   const codexResult = await runCodexCreate(prompt, model, codexProfile, timeoutMs);
   if (!codexResult.ok) {
@@ -453,7 +500,7 @@ async function main() {
     },
     next: {
       resume: `codex resume ${threadId}`,
-      relayWatch: `npm run commander:relay:codex:watch -- --session-name=${name}${project ? ` --project=${project}` : ""} --codex-use-last=false`,
+      relayWatch: `npm run commander:relay:codex:watch -- --session-name=${name}${project ? ` --project=${project}` : ""} --bootstrap-mode=${mode} --codex-use-last=false`,
     },
   };
 

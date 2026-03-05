@@ -133,7 +133,7 @@ function buildPowerShellArgs(parsed) {
   const projectFromEnv = String(process.env.npm_config_project || "").trim();
   const effectiveProject = String(parsed.values.Project || projectFromEnv || "").trim();
 
-  const args = ["-ExecutionPolicy", "Bypass", "-File", "scripts/chat/prepare-chat-instance.ps1"];
+  const args = ["-ExecutionPolicy", "Bypass", "-File", "scripts/chat/prepare-chat-instance.ps1", "-Mode", mode];
 
   if (parsed.values.RepoRoot) {
     args.push("-RepoRoot", parsed.values.RepoRoot);
