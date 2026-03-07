@@ -1,10 +1,11 @@
 (() => {
+  const appShell = document.querySelector('[data-app-shell]');
   const panelFrame = document.querySelector('[data-panel-frame]');
   const panel = document.querySelector('[data-content-panel]');
   const tabs = Array.from(document.querySelectorAll('[data-tab]'));
   const routeLabel = document.querySelector('[data-route-label]');
 
-  if (!panelFrame || !panel || tabs.length === 0) {
+  if (!appShell || !panelFrame || !panel || tabs.length === 0) {
     return;
   }
 
@@ -76,7 +77,18 @@
 
   const measurePanel = () => {
     requestAnimationFrame(() => {
-      panelFrame.style.blockSize = `${panel.offsetHeight}px`;
+      panelFrame.style.blockSize = 'auto';
+      const shellStyle = getComputedStyle(appShell);
+      const shellPaddingTop = parseFloat(shellStyle.paddingTop) || 0;
+      const shellPaddingBottom = parseFloat(shellStyle.paddingBottom) || 0;
+      const shellGap = parseFloat(shellStyle.rowGap || shellStyle.gap) || 0;
+      const header = appShell.querySelector('.app-header');
+      const dock = appShell.querySelector('.dock');
+      const headerSize = header ? header.offsetHeight : 0;
+      const dockSize = dock ? dock.offsetHeight : 0;
+      const available = window.innerHeight - shellPaddingTop - shellPaddingBottom - headerSize - dockSize - (shellGap * 2);
+      const target = Math.min(panel.scrollHeight, Math.max(220, available));
+      panelFrame.style.blockSize = `${target}px`;
     });
   };
 

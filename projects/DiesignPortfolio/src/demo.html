@@ -44,6 +44,7 @@
       display: grid;
       gap: var(--space);
       grid-template-rows: auto 1fr auto;
+      overflow: clip;
     }
 
     .app-header {
@@ -61,8 +62,11 @@
     .status-row { margin-top: 10px; display: inline-flex; align-items: center; gap: 8px; font-size: .84rem; color: var(--muted); }
     .status-dot { inline-size: 8px; block-size: 8px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
 
-    .panel-frame { align-self: start; transition: block-size 320ms cubic-bezier(.2,.7,.2,1); }
+    .panel-frame { align-self: start; min-block-size: 220px; transition: block-size 320ms cubic-bezier(.2,.7,.2,1); }
     .content-panel {
+      block-size: 100%;
+      overflow: auto;
+      overscroll-behavior: contain;
       border-radius: calc(var(--radius) + 4px);
       border: 1px solid rgba(255,255,255,.12);
       background: var(--surface);
@@ -116,6 +120,7 @@
     }
 
     .dock {
+      position: sticky; bottom: max(10px, env(safe-area-inset-bottom)); z-index: 5;
       display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px;
       padding: 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,.1);
       background: rgba(11,14,26,.85); backdrop-filter: blur(18px);
@@ -172,6 +177,7 @@
 
   <script>
     (() => {
+      const appShell = document.querySelector('.app-shell');
       const panelFrame = document.querySelector('[data-panel-frame]');
       const panel = document.querySelector('[data-content-panel]');
       const tabs = Array.from(document.querySelectorAll('[data-tab]'));
@@ -226,7 +232,20 @@
       const normalizeTab = (tab) => (routes[tab] ? tab : 'home');
       const getTabFromUrl = (url = new URL(location.href)) => normalizeTab(url.searchParams.get('view') || 'home');
 
-      const measurePanel = () => requestAnimationFrame(() => { panelFrame.style.blockSize = `${panel.offsetHeight}px`; });
+      const measurePanel = () => requestAnimationFrame(() => {
+        panelFrame.style.blockSize = 'auto';
+        const shellStyle = getComputedStyle(appShell);
+        const shellPaddingTop = parseFloat(shellStyle.paddingTop) || 0;
+        const shellPaddingBottom = parseFloat(shellStyle.paddingBottom) || 0;
+        const shellGap = parseFloat(shellStyle.rowGap || shellStyle.gap) || 0;
+        const header = appShell.querySelector('.app-header');
+        const dock = appShell.querySelector('.dock');
+        const headerSize = header ? header.offsetHeight : 0;
+        const dockSize = dock ? dock.offsetHeight : 0;
+        const available = window.innerHeight - shellPaddingTop - shellPaddingBottom - headerSize - dockSize - (shellGap * 2);
+        const target = Math.min(panel.scrollHeight, Math.max(220, available));
+        panelFrame.style.blockSize = `${target}px`;
+      });
       const renderStats = (stats = []) => stats.length ? `<div class="stats">${stats.map(([v, l]) => `<div class="stat"><strong>${v}</strong><span>${l}</span></div>`).join('')}</div>` : '';
       const renderCards = (cards = []) => `<ul class="cards">${cards.map((c) => `<li><strong>${c.title}</strong>${c.text}</li>`).join('')}</ul>`;
       const renderChips = (chips = []) => chips.length ? `<div class="chips">${chips.map((c) => `<span>${c}</span>`).join('')}</div>` : '';
