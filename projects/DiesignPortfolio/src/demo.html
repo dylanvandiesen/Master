@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="DieSign single-file mobile portfolio demo." />
+  <title>DieSign Portfolio Demo (Single File)</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #05070d;
+      --surface: rgba(16, 20, 35, 0.72);
+      --surface-strong: rgba(24, 30, 52, 0.92);
+      --text: #f3f6ff;
+      --muted: #9aa5c5;
+      --accent: #7af5ff;
+      --accent-2: #9f7dff;
+      --ring: rgba(122, 245, 255, 0.4);
+      --radius: 24px;
+      --space: clamp(16px, 2.5vw, 28px);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+
+    body {
+      min-height: 100dvh;
+      font-family: Inter, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 16% 15%, rgba(159, 125, 255, 0.28), transparent 35%),
+        radial-gradient(circle at 80% 15%, rgba(122, 245, 255, 0.22), transparent 30%),
+        var(--bg);
+    }
+
+    .app-shell {
+      width: min(1060px, 100%);
+      min-height: 100dvh;
+      margin-inline: auto;
+      padding:
+        max(14px, env(safe-area-inset-top))
+        clamp(14px, 4vw, 28px)
+        calc(clamp(20px, 3vw, 28px) + max(12px, env(safe-area-inset-bottom)));
+      display: grid;
+      gap: var(--space);
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .app-header {
+      padding: clamp(12px, 2.4vw, 18px);
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,0.1);
+      background: linear-gradient(160deg, rgba(255,255,255,0.08), rgba(255,255,255,0.01));
+      backdrop-filter: blur(10px);
+    }
+
+    .app-kicker { margin: 0; color: var(--accent); letter-spacing: .08em; text-transform: uppercase; font-size: .72rem; }
+    .app-title { margin: 4px 0 0; font-size: clamp(1.6rem, 4.8vw, 2.2rem); }
+    .app-subtitle { margin: 8px 0 0; color: var(--muted); font-size: clamp(.88rem, 3.2vw, 1rem); }
+
+    .status-row { margin-top: 10px; display: inline-flex; align-items: center; gap: 8px; font-size: .84rem; color: var(--muted); }
+    .status-dot { inline-size: 8px; block-size: 8px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+
+    .panel-frame { align-self: start; transition: block-size 320ms cubic-bezier(.2,.7,.2,1); }
+    .content-panel {
+      border-radius: calc(var(--radius) + 4px);
+      border: 1px solid rgba(255,255,255,.12);
+      background: var(--surface);
+      backdrop-filter: blur(16px);
+      padding: clamp(16px, 4vw, 28px);
+      box-shadow: 0 18px 55px rgba(0,0,0,.32);
+      view-transition-name: panel;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      ::view-transition-old(panel), ::view-transition-new(panel) {
+        animation-duration: 320ms;
+        animation-timing-function: cubic-bezier(.2,.7,.2,1);
+      }
+      ::view-transition-old(panel){ animation-name: panel-out; }
+      ::view-transition-new(panel){ animation-name: panel-in; }
+    }
+    @keyframes panel-out { to { opacity: 0; transform: translateY(8px) scale(.985);} }
+    @keyframes panel-in { from { opacity: 0; transform: translateY(8px) scale(.985);} }
+
+    .panel-eyebrow { margin: 0; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); font-size: .7rem; }
+    .panel-title { margin: 8px 0 10px; font-size: clamp(1.35rem, 4vw, 1.95rem); }
+    .panel-copy { margin: 0; color: var(--muted); line-height: 1.6; }
+
+    .stats { margin-top: 18px; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+    .stat { padding: 12px; border-radius: 14px; background: var(--surface-strong); border: 1px solid rgba(255,255,255,.08); }
+    .stat strong { display:block; font-size: clamp(1.1rem, 3.8vw, 1.35rem); }
+    .stat span { color: var(--muted); font-size: .8rem; }
+
+    .cards { margin: 18px 0 0; padding: 0; list-style:none; display:grid; gap:10px; }
+    .cards li { padding: 12px 14px; border-radius:14px; background: var(--surface-strong); border:1px solid rgba(255,255,255,.08); line-height:1.4; }
+    .cards strong { display:block; margin-bottom:4px; }
+
+    .chips { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .chips span { padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.08); font-size: .78rem; color: var(--muted); }
+
+    .panel-actions { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 10px; }
+    .panel-actions a {
+      display: inline-flex; align-items:center; gap: 8px;
+      color: var(--text); text-decoration:none;
+      border-radius: 999px; border: 1px solid rgba(255,255,255,.2);
+      padding: 10px 14px; background: rgba(255,255,255,.03);
+    }
+
+    .panel-actions a:hover,
+    .panel-actions a:focus-visible,
+    .dock-item:focus-visible {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px var(--ring);
+      outline: none;
+    }
+
+    .dock {
+      display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px;
+      padding: 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,.1);
+      background: rgba(11,14,26,.85); backdrop-filter: blur(18px);
+    }
+
+    .dock-item {
+      border: 1px solid transparent; border-radius: 14px; min-height: 66px;
+      color: var(--text); background: transparent; display:grid; place-content:center;
+      gap:5px; cursor:pointer; transition: background-color 200ms ease, transform 200ms ease;
+    }
+    .dock-item::before { font-size:1.2rem; line-height:1; }
+    .dock-item::after { font-size:.72rem; color: var(--muted); }
+    .dock-item[data-tab="home"]::before{ content: "⌂"; } .dock-item[data-tab="home"]::after{ content:"Home"; }
+    .dock-item[data-tab="work"]::before{ content: "⚒"; } .dock-item[data-tab="work"]::after{ content:"Work"; }
+    .dock-item[data-tab="about"]::before{ content: "◎"; } .dock-item[data-tab="about"]::after{ content:"About"; }
+    .dock-item[data-tab="contact"]::before{ content: "✉"; } .dock-item[data-tab="contact"]::after{ content:"Contact"; }
+
+    .dock-item[aria-current="page"] { background: linear-gradient(150deg, rgba(122,245,255,.2), rgba(159,125,255,.2)); transform: translateY(-2px); }
+
+    @media (max-width: 580px) {
+      .stats { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .stats .stat:last-child { grid-column: span 2; }
+    }
+
+    @media (min-width: 820px) {
+      .app-shell { padding-bottom: clamp(24px, 3vw, 32px); }
+      .dock { max-width: 560px; justify-self: center; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <p class="app-kicker">Design Engineer Portfolio</p>
+      <h1 class="app-title">die·sign</h1>
+      <p class="app-subtitle">Single-file demo · mobile-first · app style portfolio.</p>
+      <div class="status-row" role="status" aria-live="polite">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span data-route-label>Now viewing: Home</span>
+      </div>
+    </header>
+
+    <section class="panel-frame" data-panel-frame>
+      <article class="content-panel" data-content-panel aria-live="polite"></article>
+    </section>
+
+    <nav class="dock" aria-label="Primary">
+      <button type="button" class="dock-item" data-tab="home" aria-label="Home"></button>
+      <button type="button" class="dock-item" data-tab="work" aria-label="Work"></button>
+      <button type="button" class="dock-item" data-tab="about" aria-label="About"></button>
+      <button type="button" class="dock-item" data-tab="contact" aria-label="Contact"></button>
+    </nav>
+  </main>
+
+  <script>
+    (() => {
+      const panelFrame = document.querySelector('[data-panel-frame]');
+      const panel = document.querySelector('[data-content-panel]');
+      const tabs = Array.from(document.querySelectorAll('[data-tab]'));
+      const routeLabel = document.querySelector('[data-route-label]');
+
+      const routes = {
+        home: {
+          label: 'Home',
+          title: 'A one-page portfolio with a product-grade app shell.',
+          copy: 'This is a focused demo tuned for mobile testing: semantic HTML, CSS-first architecture, progressive enhancement, and history-driven in-app navigation.',
+          stats: [['8+ yrs', 'Design + frontend'], ['40+', 'Interfaces shipped'], ['100%', 'Vanilla stack']],
+          cards: [
+            { title: 'Visual system', text: 'Type, spacing, contrast, and motion tuned for mobile and desktop parity.' },
+            { title: 'Experience model', text: 'Bottom icon dock with spatial panel transitions and stateful URL updates.' }
+          ],
+          chips: ['CSS-first', 'Progressive enhancement', 'No framework lock-in'],
+          actions: [{ href: '?view=work', label: 'See selected work' }, { href: '?view=contact', label: 'Start a project' }]
+        },
+        work: {
+          label: 'Work',
+          title: 'Selected outcomes from design-engineering engagements.',
+          copy: 'The panel scales with content density to demonstrate smooth grow/shrink behavior across short and long states.',
+          cards: [
+            { title: 'Remote Control Panel', text: 'Designed and implemented secure command UX with multi-session orchestration.' },
+            { title: 'Marketing + Product Blend', text: 'Built launch surfaces that keep brand polish while preserving performance budgets.' },
+            { title: 'Systemized Delivery', text: 'Introduced reusable UI primitives to accelerate multi-team shipping cadence.' }
+          ],
+          chips: ['UI architecture', 'Motion', 'Accessibility', 'Performance'],
+          actions: [{ href: 'https://www.diesign.dev', label: 'Current portfolio ↗' }]
+        },
+        about: {
+          label: 'About',
+          title: 'Design strategy translated directly into maintainable code.',
+          copy: 'I work across product framing, interaction design, and implementation to deliver measurable outcomes without sacrificing craft.',
+          cards: [
+            { title: 'How I work', text: 'Rapid browser-first prototyping, then stabilize into scalable production patterns.' },
+            { title: 'Core stack', text: 'Semantic HTML, modern CSS, and vanilla JavaScript with lightweight tooling only where needed.' }
+          ],
+          chips: ['Design systems', 'Front-end architecture', 'Creative direction'],
+          actions: [{ href: '?view=contact', label: 'Connect' }]
+        },
+        contact: {
+          label: 'Contact',
+          title: 'Available for focused collaborations.',
+          copy: 'Share your goals, timeline, and constraints. I can plug in as a design engineer or lead end-to-end delivery for premium web experiences.',
+          cards: [{ title: 'Best for', text: 'Launches, redesigns, app shells, and premium web interfaces.' }],
+          chips: ['Freelance', 'Product partnerships', 'Consulting'],
+          actions: [{ href: 'mailto:hello@diesign.dev', label: 'hello@diesign.dev' }, { href: 'https://www.diesign.dev', label: 'diesign.dev ↗' }]
+        }
+      };
+
+      const normalizeTab = (tab) => (routes[tab] ? tab : 'home');
+      const getTabFromUrl = (url = new URL(location.href)) => normalizeTab(url.searchParams.get('view') || 'home');
+
+      const measurePanel = () => requestAnimationFrame(() => { panelFrame.style.blockSize = `${panel.offsetHeight}px`; });
+      const renderStats = (stats = []) => stats.length ? `<div class="stats">${stats.map(([v, l]) => `<div class="stat"><strong>${v}</strong><span>${l}</span></div>`).join('')}</div>` : '';
+      const renderCards = (cards = []) => `<ul class="cards">${cards.map((c) => `<li><strong>${c.title}</strong>${c.text}</li>`).join('')}</ul>`;
+      const renderChips = (chips = []) => chips.length ? `<div class="chips">${chips.map((c) => `<span>${c}</span>`).join('')}</div>` : '';
+      const renderActions = (actions = []) => actions.length ? `<div class="panel-actions">${actions.map((a) => `<a href="${a.href}">${a.label}</a>`).join('')}</div>` : '';
+
+      const renderPanel = (tabKey) => {
+        const key = normalizeTab(tabKey);
+        const route = routes[key];
+
+        panel.innerHTML = `
+          <p class="panel-eyebrow">${route.label}</p>
+          <h2 class="panel-title">${route.title}</h2>
+          <p class="panel-copy">${route.copy}</p>
+          ${renderStats(route.stats)}
+          ${renderCards(route.cards)}
+          ${renderChips(route.chips)}
+          ${renderActions(route.actions)}
+        `;
+
+        tabs.forEach((tab) => {
+          const active = tab.dataset.tab === key;
+          if (active) tab.setAttribute('aria-current', 'page');
+          else tab.removeAttribute('aria-current');
+        });
+
+        if (routeLabel) routeLabel.textContent = `Now viewing: ${route.label}`;
+        measurePanel();
+      };
+
+      const navigate = (targetTab, { replace = false } = {}) => {
+        const tab = normalizeTab(targetTab);
+        const nextUrl = new URL(location.href);
+        nextUrl.searchParams.set('view', tab);
+
+        const updateDom = () => renderPanel(tab);
+        if (document.startViewTransition) document.startViewTransition(updateDom);
+        else updateDom();
+
+        const nextState = { tab };
+        if (replace) history.replaceState(nextState, '', nextUrl);
+        else history.pushState(nextState, '', nextUrl);
+      };
+
+      tabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          const tabKey = tab.dataset.tab || 'home';
+          const currentTab = history.state?.tab || getTabFromUrl();
+          if (currentTab !== tabKey) navigate(tabKey);
+        });
+      });
+
+      panel.addEventListener('click', (event) => {
+        const anchor = event.target.closest('a[href^="?view="]');
+        if (!anchor) return;
+        event.preventDefault();
+        navigate(getTabFromUrl(new URL(anchor.href, location.origin)));
+      });
+
+      window.addEventListener('popstate', (event) => renderPanel(normalizeTab(event.state?.tab || getTabFromUrl())));
+      window.addEventListener('resize', measurePanel);
+      navigate(getTabFromUrl(), { replace: true });
+    })();
+  </script>
+</body>
+</html>
