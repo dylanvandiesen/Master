@@ -27,7 +27,8 @@
       actions: [
         { href: '?view=work', label: 'See selected work' },
         { href: '?view=contact', label: 'Start a project' }
-      ]
+      ],
+      sizeFactor: 0.9
     },
     work: {
       label: 'Work',
@@ -41,7 +42,8 @@
       chips: ['UI architecture', 'Motion', 'Accessibility', 'Performance'],
       actions: [
         { href: 'https://www.diesign.dev', label: 'Current portfolio ↗' }
-      ]
+      ],
+      sizeFactor: 1
     },
     about: {
       label: 'About',
@@ -54,7 +56,8 @@
       chips: ['Design systems', 'Front-end architecture', 'Creative direction'],
       actions: [
         { href: '?view=contact', label: 'Connect' }
-      ]
+      ],
+      sizeFactor: 0.82
     },
     contact: {
       label: 'Contact',
@@ -67,28 +70,46 @@
       actions: [
         { href: 'mailto:hello@diesign.dev', label: 'hello@diesign.dev' },
         { href: 'https://www.diesign.dev', label: 'diesign.dev ↗' }
-      ]
+      ],
+      sizeFactor: 0.74
     }
   };
 
   const normalizeTab = (tab) => (routes[tab] ? tab : 'home');
-
   const getTabFromUrl = (url = new URL(location.href)) => normalizeTab(url.searchParams.get('view') || 'home');
 
-  const measurePanel = () => {
+  const getPanelTargetSize = (tabKey) => {
+    const shellStyle = getComputedStyle(appShell);
+    const shellPaddingTop = parseFloat(shellStyle.paddingTop) || 0;
+    const shellPaddingBottom = parseFloat(shellStyle.paddingBottom) || 0;
+    const shellGap = parseFloat(shellStyle.rowGap || shellStyle.gap) || 0;
+    const header = appShell.querySelector('.app-header');
+    const dock = appShell.querySelector('.dock');
+    const headerSize = header ? header.offsetHeight : 0;
+    const dockSize = dock ? dock.offsetHeight : 0;
+    const viewportHeight = window.visualViewport?.height || window.innerHeight;
+    const available = viewportHeight - shellPaddingTop - shellPaddingBottom - headerSize - dockSize - (shellGap * 2);
+
+    const previousSize = panelFrame.style.blockSize;
+    panelFrame.style.blockSize = 'auto';
+    const naturalContentSize = panel.scrollHeight;
+    panelFrame.style.blockSize = previousSize;
+
+    const sizeFactor = routes[normalizeTab(tabKey)]?.sizeFactor ?? 1;
+    const cappedAvailable = Math.max(220, available * sizeFactor);
+    return Math.min(naturalContentSize, cappedAvailable);
+  };
+
+  const animatePanelSize = (nextSize, { immediate = false } = {}) => {
+    if (immediate) {
+      panelFrame.style.blockSize = `${nextSize}px`;
+      return;
+    }
+
+    const currentSize = panelFrame.getBoundingClientRect().height || nextSize;
+    panelFrame.style.blockSize = `${currentSize}px`;
     requestAnimationFrame(() => {
-      panelFrame.style.blockSize = 'auto';
-      const shellStyle = getComputedStyle(appShell);
-      const shellPaddingTop = parseFloat(shellStyle.paddingTop) || 0;
-      const shellPaddingBottom = parseFloat(shellStyle.paddingBottom) || 0;
-      const shellGap = parseFloat(shellStyle.rowGap || shellStyle.gap) || 0;
-      const header = appShell.querySelector('.app-header');
-      const dock = appShell.querySelector('.dock');
-      const headerSize = header ? header.offsetHeight : 0;
-      const dockSize = dock ? dock.offsetHeight : 0;
-      const available = window.innerHeight - shellPaddingTop - shellPaddingBottom - headerSize - dockSize - (shellGap * 2);
-      const target = Math.min(panel.scrollHeight, Math.max(220, available));
-      panelFrame.style.blockSize = `${target}px`;
+      panelFrame.style.blockSize = `${nextSize}px`;
     });
   };
 
@@ -142,6 +163,8 @@
       ${renderActions(route.actions)}
     `;
 
+    panel.scrollTop = 0;
+
     tabs.forEach((tab) => {
       const active = tab.dataset.tab === key;
       if (active) {
@@ -154,21 +177,21 @@
     if (routeLabel) {
       routeLabel.textContent = `Now viewing: ${route.label}`;
     }
-
-    measurePanel();
   };
 
-  const navigate = (targetTab, { replace = false } = {}) => {
+  const navigate = (targetTab, { replace = false, immediate = false } = {}) => {
     const tab = normalizeTab(targetTab);
     const nextUrl = new URL(location.href);
     nextUrl.searchParams.set('view', tab);
 
     const updateDom = () => renderPanel(tab);
-    if (document.startViewTransition) {
+    if (document.startViewTransition && !immediate) {
       document.startViewTransition(updateDom);
     } else {
       updateDom();
     }
+
+    animatePanelSize(getPanelTargetSize(tab), { immediate });
 
     const nextState = { tab };
     if (replace) {
@@ -195,16 +218,18 @@
     }
 
     event.preventDefault();
-    const url = new URL(anchor.href, location.origin);
-    navigate(getTabFromUrl(url));
+    navigate(getTabFromUrl(new URL(anchor.href, location.origin)));
   });
 
   window.addEventListener('popstate', (event) => {
     const tab = normalizeTab(event.state?.tab || getTabFromUrl());
     renderPanel(tab);
+    animatePanelSize(getPanelTargetSize(tab));
   });
 
-  window.addEventListener('resize', measurePanel);
+  window.addEventListener('resize', () => {
+    animatePanelSize(getPanelTargetSize(history.state?.tab || getTabFromUrl()), { immediate: true });
+  });
 
-  navigate(getTabFromUrl(), { replace: true });
+  navigate(getTabFromUrl(), { replace: true, immediate: true });
 })();

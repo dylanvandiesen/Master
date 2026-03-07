@@ -36,10 +36,8 @@ body {
   width: min(1060px, 100%);
   min-height: 100dvh;
   margin-inline: auto;
-  padding:
-    max(14px, env(safe-area-inset-top))
-    clamp(14px, 4vw, 28px)
-    calc(clamp(20px, 3vw, 28px) + max(12px, env(safe-area-inset-bottom)));
+  padding-block: max(14px, env(safe-area-inset-top)) calc(clamp(20px, 3vw, 28px) + max(12px, env(safe-area-inset-bottom)));
+  padding-inline: calc(clamp(14px, 4vw, 28px) + env(safe-area-inset-left)) calc(clamp(14px, 4vw, 28px) + env(safe-area-inset-right));
   display: grid;
   gap: var(--space);
   grid-template-rows: auto 1fr auto;
@@ -93,7 +91,7 @@ body {
 .panel-frame {
   align-self: start;
   min-block-size: 220px;
-  transition: block-size 320ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: block-size 440ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .content-panel {

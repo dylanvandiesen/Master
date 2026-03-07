@@ -14,7 +14,6 @@
       --text: #f3f6ff;
       --muted: #9aa5c5;
       --accent: #7af5ff;
-      --accent-2: #9f7dff;
       --ring: rgba(122, 245, 255, 0.4);
       --radius: 24px;
       --space: clamp(16px, 2.5vw, 28px);
@@ -37,10 +36,8 @@
       width: min(1060px, 100%);
       min-height: 100dvh;
       margin-inline: auto;
-      padding:
-        max(14px, env(safe-area-inset-top))
-        clamp(14px, 4vw, 28px)
-        calc(clamp(20px, 3vw, 28px) + max(12px, env(safe-area-inset-bottom)));
+      padding-block: max(14px, env(safe-area-inset-top)) calc(clamp(20px, 3vw, 28px) + max(12px, env(safe-area-inset-bottom)));
+      padding-inline: calc(clamp(14px, 4vw, 28px) + env(safe-area-inset-left)) calc(clamp(14px, 4vw, 28px) + env(safe-area-inset-right));
       display: grid;
       gap: var(--space);
       grid-template-rows: auto 1fr auto;
@@ -62,7 +59,7 @@
     .status-row { margin-top: 10px; display: inline-flex; align-items: center; gap: 8px; font-size: .84rem; color: var(--muted); }
     .status-dot { inline-size: 8px; block-size: 8px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
 
-    .panel-frame { align-self: start; min-block-size: 220px; transition: block-size 320ms cubic-bezier(.2,.7,.2,1); }
+    .panel-frame { align-self: start; min-block-size: 220px; transition: block-size 440ms cubic-bezier(0.34, 1.56, 0.64, 1); }
     .content-panel {
       block-size: 100%;
       overflow: auto;
@@ -78,7 +75,7 @@
 
     @media (prefers-reduced-motion: no-preference) {
       ::view-transition-old(panel), ::view-transition-new(panel) {
-        animation-duration: 320ms;
+        animation-duration: 420ms;
         animation-timing-function: cubic-bezier(.2,.7,.2,1);
       }
       ::view-transition-old(panel){ animation-name: panel-out; }
@@ -120,17 +117,32 @@
     }
 
     .dock {
-      position: sticky; bottom: max(10px, env(safe-area-inset-bottom)); z-index: 5;
-      display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px;
-      padding: 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,.1);
-      background: rgba(11,14,26,.85); backdrop-filter: blur(18px);
+      position: sticky;
+      bottom: max(10px, env(safe-area-inset-bottom));
+      z-index: 5;
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 10px;
+      padding: 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,.1);
+      background: rgba(11,14,26,.85);
+      backdrop-filter: blur(18px);
     }
 
     .dock-item {
-      border: 1px solid transparent; border-radius: 14px; min-height: 66px;
-      color: var(--text); background: transparent; display:grid; place-content:center;
-      gap:5px; cursor:pointer; transition: background-color 200ms ease, transform 200ms ease;
+      border: 1px solid transparent;
+      border-radius: 14px;
+      min-height: 66px;
+      color: var(--text);
+      background: transparent;
+      display:grid;
+      place-content:center;
+      gap:5px;
+      cursor:pointer;
+      transition: background-color 200ms ease, transform 200ms ease;
     }
+
     .dock-item::before { font-size:1.2rem; line-height:1; }
     .dock-item::after { font-size:.72rem; color: var(--muted); }
     .dock-item[data-tab="home"]::before{ content: "⌂"; } .dock-item[data-tab="home"]::after{ content:"Home"; }
@@ -194,7 +206,7 @@
             { title: 'Experience model', text: 'Bottom icon dock with spatial panel transitions and stateful URL updates.' }
           ],
           chips: ['CSS-first', 'Progressive enhancement', 'No framework lock-in'],
-          actions: [{ href: '?view=work', label: 'See selected work' }, { href: '?view=contact', label: 'Start a project' }]
+          actions: [{ href: '?view=work', label: 'See selected work' }, { href: '?view=contact', label: 'Start a project' }], sizeFactor: 0.9
         },
         work: {
           label: 'Work',
@@ -206,7 +218,7 @@
             { title: 'Systemized Delivery', text: 'Introduced reusable UI primitives to accelerate multi-team shipping cadence.' }
           ],
           chips: ['UI architecture', 'Motion', 'Accessibility', 'Performance'],
-          actions: [{ href: 'https://www.diesign.dev', label: 'Current portfolio ↗' }]
+          actions: [{ href: 'https://www.diesign.dev', label: 'Current portfolio ↗' }], sizeFactor: 1
         },
         about: {
           label: 'About',
@@ -217,7 +229,7 @@
             { title: 'Core stack', text: 'Semantic HTML, modern CSS, and vanilla JavaScript with lightweight tooling only where needed.' }
           ],
           chips: ['Design systems', 'Front-end architecture', 'Creative direction'],
-          actions: [{ href: '?view=contact', label: 'Connect' }]
+          actions: [{ href: '?view=contact', label: 'Connect' }], sizeFactor: 0.82
         },
         contact: {
           label: 'Contact',
@@ -225,15 +237,14 @@
           copy: 'Share your goals, timeline, and constraints. I can plug in as a design engineer or lead end-to-end delivery for premium web experiences.',
           cards: [{ title: 'Best for', text: 'Launches, redesigns, app shells, and premium web interfaces.' }],
           chips: ['Freelance', 'Product partnerships', 'Consulting'],
-          actions: [{ href: 'mailto:hello@diesign.dev', label: 'hello@diesign.dev' }, { href: 'https://www.diesign.dev', label: 'diesign.dev ↗' }]
+          actions: [{ href: 'mailto:hello@diesign.dev', label: 'hello@diesign.dev' }, { href: 'https://www.diesign.dev', label: 'diesign.dev ↗' }], sizeFactor: 0.74
         }
       };
 
       const normalizeTab = (tab) => (routes[tab] ? tab : 'home');
       const getTabFromUrl = (url = new URL(location.href)) => normalizeTab(url.searchParams.get('view') || 'home');
 
-      const measurePanel = () => requestAnimationFrame(() => {
-        panelFrame.style.blockSize = 'auto';
+      const getPanelTargetSize = (tabKey) => {
         const shellStyle = getComputedStyle(appShell);
         const shellPaddingTop = parseFloat(shellStyle.paddingTop) || 0;
         const shellPaddingBottom = parseFloat(shellStyle.paddingBottom) || 0;
@@ -242,10 +253,32 @@
         const dock = appShell.querySelector('.dock');
         const headerSize = header ? header.offsetHeight : 0;
         const dockSize = dock ? dock.offsetHeight : 0;
-        const available = window.innerHeight - shellPaddingTop - shellPaddingBottom - headerSize - dockSize - (shellGap * 2);
-        const target = Math.min(panel.scrollHeight, Math.max(220, available));
-        panelFrame.style.blockSize = `${target}px`;
-      });
+        const viewportHeight = window.visualViewport?.height || window.innerHeight;
+        const available = viewportHeight - shellPaddingTop - shellPaddingBottom - headerSize - dockSize - (shellGap * 2);
+
+        const previousSize = panelFrame.style.blockSize;
+        panelFrame.style.blockSize = 'auto';
+        const naturalContentSize = panel.scrollHeight;
+        panelFrame.style.blockSize = previousSize;
+
+        const sizeFactor = routes[normalizeTab(tabKey)]?.sizeFactor ?? 1;
+        const cappedAvailable = Math.max(220, available * sizeFactor);
+        return Math.min(naturalContentSize, cappedAvailable);
+      };
+
+      const animatePanelSize = (nextSize, { immediate = false } = {}) => {
+        if (immediate) {
+          panelFrame.style.blockSize = `${nextSize}px`;
+          return;
+        }
+
+        const currentSize = panelFrame.getBoundingClientRect().height || nextSize;
+        panelFrame.style.blockSize = `${currentSize}px`;
+        requestAnimationFrame(() => {
+          panelFrame.style.blockSize = `${nextSize}px`;
+        });
+      };
+
       const renderStats = (stats = []) => stats.length ? `<div class="stats">${stats.map(([v, l]) => `<div class="stat"><strong>${v}</strong><span>${l}</span></div>`).join('')}</div>` : '';
       const renderCards = (cards = []) => `<ul class="cards">${cards.map((c) => `<li><strong>${c.title}</strong>${c.text}</li>`).join('')}</ul>`;
       const renderChips = (chips = []) => chips.length ? `<div class="chips">${chips.map((c) => `<span>${c}</span>`).join('')}</div>` : '';
@@ -265,6 +298,8 @@
           ${renderActions(route.actions)}
         `;
 
+        panel.scrollTop = 0;
+
         tabs.forEach((tab) => {
           const active = tab.dataset.tab === key;
           if (active) tab.setAttribute('aria-current', 'page');
@@ -272,17 +307,18 @@
         });
 
         if (routeLabel) routeLabel.textContent = `Now viewing: ${route.label}`;
-        measurePanel();
       };
 
-      const navigate = (targetTab, { replace = false } = {}) => {
+      const navigate = (targetTab, { replace = false, immediate = false } = {}) => {
         const tab = normalizeTab(targetTab);
         const nextUrl = new URL(location.href);
         nextUrl.searchParams.set('view', tab);
 
         const updateDom = () => renderPanel(tab);
-        if (document.startViewTransition) document.startViewTransition(updateDom);
+        if (document.startViewTransition && !immediate) document.startViewTransition(updateDom);
         else updateDom();
+
+        animatePanelSize(getPanelTargetSize(tab), { immediate });
 
         const nextState = { tab };
         if (replace) history.replaceState(nextState, '', nextUrl);
@@ -304,9 +340,16 @@
         navigate(getTabFromUrl(new URL(anchor.href, location.origin)));
       });
 
-      window.addEventListener('popstate', (event) => renderPanel(normalizeTab(event.state?.tab || getTabFromUrl())));
-      window.addEventListener('resize', measurePanel);
-      navigate(getTabFromUrl(), { replace: true });
+      window.addEventListener('popstate', (event) => {
+        renderPanel(normalizeTab(event.state?.tab || getTabFromUrl()));
+        animatePanelSize(getPanelTargetSize(normalizeTab(event.state?.tab || getTabFromUrl())));
+      });
+
+      window.addEventListener('resize', () => {
+        animatePanelSize(getPanelTargetSize(history.state?.tab || getTabFromUrl()), { immediate: true });
+      });
+
+      navigate(getTabFromUrl(), { replace: true, immediate: true });
     })();
   </script>
 </body>
