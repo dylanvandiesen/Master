@@ -59,7 +59,7 @@
     .status-row { margin-top: 10px; display: inline-flex; align-items: center; gap: 8px; font-size: .84rem; color: var(--muted); }
     .status-dot { inline-size: 8px; block-size: 8px; border-radius: 999px; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
 
-    .panel-frame { align-self: start; min-block-size: 220px; transition: block-size 440ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .panel-frame { align-self: start; min-block-size: 220px; }
     .content-panel {
       block-size: 100%;
       overflow: auto;
@@ -75,14 +75,14 @@
 
     @media (prefers-reduced-motion: no-preference) {
       ::view-transition-old(panel), ::view-transition-new(panel) {
-        animation-duration: 420ms;
+        animation-duration: 260ms;
         animation-timing-function: cubic-bezier(.2,.7,.2,1);
       }
       ::view-transition-old(panel){ animation-name: panel-out; }
       ::view-transition-new(panel){ animation-name: panel-in; }
     }
-    @keyframes panel-out { to { opacity: 0; transform: translateY(8px) scale(.985);} }
-    @keyframes panel-in { from { opacity: 0; transform: translateY(8px) scale(.985);} }
+    @keyframes panel-out { to { opacity: 0; } }
+    @keyframes panel-in { from { opacity: 0; } }
 
     .panel-eyebrow { margin: 0; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); font-size: .7rem; }
     .panel-title { margin: 8px 0 10px; font-size: clamp(1.35rem, 4vw, 1.95rem); }
@@ -194,6 +194,7 @@
       const panel = document.querySelector('[data-content-panel]');
       const tabs = Array.from(document.querySelectorAll('[data-tab]'));
       const routeLabel = document.querySelector('[data-route-label]');
+      let panelSizeAnimation;
 
       const routes = {
         home: {
@@ -267,13 +268,49 @@
       };
 
       const animatePanelSize = (nextSize, { immediate = false } = {}) => {
-        if (immediate) {
+        if (panelSizeAnimation) {
+          panelSizeAnimation.cancel();
+          panelSizeAnimation = undefined;
+        }
+
+        const currentSize = panelFrame.getBoundingClientRect().height || nextSize;
+
+        if (immediate || Math.abs(currentSize - nextSize) < 1) {
           panelFrame.style.blockSize = `${nextSize}px`;
           return;
         }
 
-        const currentSize = panelFrame.getBoundingClientRect().height || nextSize;
+        const direction = nextSize > currentSize ? 1 : -1;
+        const overshoot = Math.max(8, Math.abs(nextSize - currentSize) * 0.12) * direction;
+
         panelFrame.style.blockSize = `${currentSize}px`;
+
+        if (panelFrame.animate) {
+          panelSizeAnimation = panelFrame.animate(
+            [
+              { blockSize: `${currentSize}px` },
+              { blockSize: `${nextSize + overshoot}px`, offset: 0.72 },
+              { blockSize: `${nextSize}px` }
+            ],
+            {
+              duration: 480,
+              easing: 'cubic-bezier(0.22, 0.9, 0.22, 1)',
+              fill: 'forwards'
+            }
+          );
+
+          panelSizeAnimation.addEventListener('finish', () => {
+            panelFrame.style.blockSize = `${nextSize}px`;
+            panelSizeAnimation = undefined;
+          }, { once: true });
+
+          panelSizeAnimation.addEventListener('cancel', () => {
+            panelSizeAnimation = undefined;
+          }, { once: true });
+
+          return;
+        }
+
         requestAnimationFrame(() => {
           panelFrame.style.blockSize = `${nextSize}px`;
         });

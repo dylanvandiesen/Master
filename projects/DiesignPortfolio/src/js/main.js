@@ -4,6 +4,7 @@
   const panel = document.querySelector('[data-content-panel]');
   const tabs = Array.from(document.querySelectorAll('[data-tab]'));
   const routeLabel = document.querySelector('[data-route-label]');
+  let panelSizeAnimation;
 
   if (!appShell || !panelFrame || !panel || tabs.length === 0) {
     return;
@@ -101,13 +102,49 @@
   };
 
   const animatePanelSize = (nextSize, { immediate = false } = {}) => {
-    if (immediate) {
+    if (panelSizeAnimation) {
+      panelSizeAnimation.cancel();
+      panelSizeAnimation = undefined;
+    }
+
+    const currentSize = panelFrame.getBoundingClientRect().height || nextSize;
+
+    if (immediate || Math.abs(currentSize - nextSize) < 1) {
       panelFrame.style.blockSize = `${nextSize}px`;
       return;
     }
 
-    const currentSize = panelFrame.getBoundingClientRect().height || nextSize;
+    const direction = nextSize > currentSize ? 1 : -1;
+    const overshoot = Math.max(8, Math.abs(nextSize - currentSize) * 0.12) * direction;
+
     panelFrame.style.blockSize = `${currentSize}px`;
+
+    if (panelFrame.animate) {
+      panelSizeAnimation = panelFrame.animate(
+        [
+          { blockSize: `${currentSize}px` },
+          { blockSize: `${nextSize + overshoot}px`, offset: 0.72 },
+          { blockSize: `${nextSize}px` }
+        ],
+        {
+          duration: 480,
+          easing: 'cubic-bezier(0.22, 0.9, 0.22, 1)',
+          fill: 'forwards'
+        }
+      );
+
+      panelSizeAnimation.addEventListener('finish', () => {
+        panelFrame.style.blockSize = `${nextSize}px`;
+        panelSizeAnimation = undefined;
+      }, { once: true });
+
+      panelSizeAnimation.addEventListener('cancel', () => {
+        panelSizeAnimation = undefined;
+      }, { once: true });
+
+      return;
+    }
+
     requestAnimationFrame(() => {
       panelFrame.style.blockSize = `${nextSize}px`;
     });
