@@ -6,6 +6,9 @@
   const routeLabel = document.querySelector('[data-route-label]');
   let panelSizeAnimation;
 
+  const PANEL_SIZE_DURATION_MS = 560;
+  const PANEL_SIZE_EASING = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
+
   if (!appShell || !panelFrame || !panel || tabs.length === 0) {
     return;
   }
@@ -29,7 +32,8 @@
         { href: '?view=work', label: 'See selected work' },
         { href: '?view=contact', label: 'Start a project' }
       ],
-      sizeFactor: 0.9
+      heightFactor: 0.9,
+      widthFactor: 0.96
     },
     work: {
       label: 'Work',
@@ -44,7 +48,8 @@
       actions: [
         { href: 'https://www.diesign.dev', label: 'Current portfolio ↗' }
       ],
-      sizeFactor: 1
+      heightFactor: 1,
+      widthFactor: 1
     },
     about: {
       label: 'About',
@@ -58,7 +63,8 @@
       actions: [
         { href: '?view=contact', label: 'Connect' }
       ],
-      sizeFactor: 0.82
+      heightFactor: 0.82,
+      widthFactor: 0.9
     },
     contact: {
       label: 'Contact',
@@ -72,69 +78,95 @@
         { href: 'mailto:hello@diesign.dev', label: 'hello@diesign.dev' },
         { href: 'https://www.diesign.dev', label: 'diesign.dev ↗' }
       ],
-      sizeFactor: 0.74
+      heightFactor: 0.74,
+      widthFactor: 0.84
     }
   };
 
   const normalizeTab = (tab) => (routes[tab] ? tab : 'home');
   const getTabFromUrl = (url = new URL(location.href)) => normalizeTab(url.searchParams.get('view') || 'home');
 
-  const getPanelTargetSize = (tabKey) => {
+  const getPanelTargetDimensions = (tabKey) => {
+    const route = routes[normalizeTab(tabKey)] || routes.home;
     const shellStyle = getComputedStyle(appShell);
     const shellPaddingTop = parseFloat(shellStyle.paddingTop) || 0;
     const shellPaddingBottom = parseFloat(shellStyle.paddingBottom) || 0;
+    const shellPaddingLeft = parseFloat(shellStyle.paddingLeft) || 0;
+    const shellPaddingRight = parseFloat(shellStyle.paddingRight) || 0;
     const shellGap = parseFloat(shellStyle.rowGap || shellStyle.gap) || 0;
+
     const header = appShell.querySelector('.app-header');
     const dock = appShell.querySelector('.dock');
     const headerSize = header ? header.offsetHeight : 0;
     const dockSize = dock ? dock.offsetHeight : 0;
+
     const viewportHeight = window.visualViewport?.height || window.innerHeight;
-    const available = viewportHeight - shellPaddingTop - shellPaddingBottom - headerSize - dockSize - (shellGap * 2);
+    const availableHeight = viewportHeight - shellPaddingTop - shellPaddingBottom - headerSize - dockSize - (shellGap * 2);
 
-    const previousSize = panelFrame.style.blockSize;
-    panelFrame.style.blockSize = 'auto';
-    const naturalContentSize = panel.scrollHeight;
-    panelFrame.style.blockSize = previousSize;
+    const shellWidth = appShell.getBoundingClientRect().width - shellPaddingLeft - shellPaddingRight;
+    const targetWidth = Math.max(280, shellWidth * route.widthFactor);
 
-    const sizeFactor = routes[normalizeTab(tabKey)]?.sizeFactor ?? 1;
-    const cappedAvailable = Math.max(220, available * sizeFactor);
-    return Math.min(naturalContentSize, cappedAvailable);
+    const previousHeight = panelFrame.style.height;
+    const previousWidth = panelFrame.style.width;
+    panelFrame.style.height = 'auto';
+    panelFrame.style.width = `${targetWidth}px`;
+    const naturalContentHeight = panel.scrollHeight;
+    panelFrame.style.height = previousHeight;
+    panelFrame.style.width = previousWidth;
+
+    const cappedAvailableHeight = Math.max(220, availableHeight * route.heightFactor);
+    const targetHeight = Math.min(naturalContentHeight, cappedAvailableHeight);
+
+    return {
+      width: Math.min(shellWidth, targetWidth),
+      height: targetHeight
+    };
   };
 
-  const animatePanelSize = (nextSize, { immediate = false } = {}) => {
+  const animatePanelSize = (nextDimensions, { immediate = false } = {}) => {
+    const nextWidth = nextDimensions.width;
+    const nextHeight = nextDimensions.height;
+
     if (panelSizeAnimation) {
       panelSizeAnimation.cancel();
       panelSizeAnimation = undefined;
     }
 
-    const currentSize = panelFrame.getBoundingClientRect().height || nextSize;
+    const rect = panelFrame.getBoundingClientRect();
+    const currentWidth = rect.width || nextWidth;
+    const currentHeight = rect.height || nextHeight;
 
-    if (immediate || Math.abs(currentSize - nextSize) < 1) {
-      panelFrame.style.blockSize = `${nextSize}px`;
+    if (immediate || (Math.abs(currentWidth - nextWidth) < 1 && Math.abs(currentHeight - nextHeight) < 1)) {
+      panelFrame.style.width = `${nextWidth}px`;
+      panelFrame.style.height = `${nextHeight}px`;
       return;
     }
 
-    const direction = nextSize > currentSize ? 1 : -1;
-    const overshoot = Math.max(8, Math.abs(nextSize - currentSize) * 0.12) * direction;
+    const widthDirection = nextWidth > currentWidth ? 1 : -1;
+    const heightDirection = nextHeight > currentHeight ? 1 : -1;
+    const widthOvershoot = Math.max(8, Math.abs(nextWidth - currentWidth) * 0.1) * widthDirection;
+    const heightOvershoot = Math.max(10, Math.abs(nextHeight - currentHeight) * 0.14) * heightDirection;
 
-    panelFrame.style.blockSize = `${currentSize}px`;
+    panelFrame.style.width = `${currentWidth}px`;
+    panelFrame.style.height = `${currentHeight}px`;
 
     if (panelFrame.animate) {
       panelSizeAnimation = panelFrame.animate(
         [
-          { blockSize: `${currentSize}px` },
-          { blockSize: `${nextSize + overshoot}px`, offset: 0.72 },
-          { blockSize: `${nextSize}px` }
+          { width: `${currentWidth}px`, height: `${currentHeight}px` },
+          { width: `${nextWidth + widthOvershoot}px`, height: `${nextHeight + heightOvershoot}px`, offset: 0.68 },
+          { width: `${nextWidth}px`, height: `${nextHeight}px` }
         ],
         {
-          duration: 480,
-          easing: 'cubic-bezier(0.22, 0.9, 0.22, 1)',
+          duration: PANEL_SIZE_DURATION_MS,
+          easing: PANEL_SIZE_EASING,
           fill: 'forwards'
         }
       );
 
       panelSizeAnimation.addEventListener('finish', () => {
-        panelFrame.style.blockSize = `${nextSize}px`;
+        panelFrame.style.width = `${nextWidth}px`;
+        panelFrame.style.height = `${nextHeight}px`;
         panelSizeAnimation = undefined;
       }, { once: true });
 
@@ -146,7 +178,8 @@
     }
 
     requestAnimationFrame(() => {
-      panelFrame.style.blockSize = `${nextSize}px`;
+      panelFrame.style.width = `${nextWidth}px`;
+      panelFrame.style.height = `${nextHeight}px`;
     });
   };
 
@@ -222,13 +255,20 @@
     nextUrl.searchParams.set('view', tab);
 
     const updateDom = () => renderPanel(tab);
+
     if (document.startViewTransition && !immediate) {
-      document.startViewTransition(updateDom);
+      const transition = document.startViewTransition(updateDom);
+      transition.ready
+        .catch(() => undefined)
+        .finally(() => {
+          requestAnimationFrame(() => {
+            animatePanelSize(getPanelTargetDimensions(tab));
+          });
+        });
     } else {
       updateDom();
+      animatePanelSize(getPanelTargetDimensions(tab), { immediate });
     }
-
-    animatePanelSize(getPanelTargetSize(tab), { immediate });
 
     const nextState = { tab };
     if (replace) {
@@ -261,11 +301,11 @@
   window.addEventListener('popstate', (event) => {
     const tab = normalizeTab(event.state?.tab || getTabFromUrl());
     renderPanel(tab);
-    animatePanelSize(getPanelTargetSize(tab));
+    animatePanelSize(getPanelTargetDimensions(tab));
   });
 
   window.addEventListener('resize', () => {
-    animatePanelSize(getPanelTargetSize(history.state?.tab || getTabFromUrl()), { immediate: true });
+    animatePanelSize(getPanelTargetDimensions(history.state?.tab || getTabFromUrl()), { immediate: true });
   });
 
   navigate(getTabFromUrl(), { replace: true, immediate: true });

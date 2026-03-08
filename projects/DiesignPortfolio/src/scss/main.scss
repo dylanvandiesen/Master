@@ -90,12 +90,15 @@ body {
 
 .panel-frame {
   align-self: start;
+  justify-self: center;
   min-block-size: 220px;
-
+  width: 100%;
+  max-width: 100%;
+  will-change: width, height;
 }
 
 .content-panel {
-  block-size: 100%;
+  height: 100%;
   overflow: auto;
   overscroll-behavior: contain;
   border-radius: calc(var(--radius) + 4px);
