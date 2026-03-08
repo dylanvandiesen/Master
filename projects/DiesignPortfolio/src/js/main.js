@@ -7,7 +7,7 @@
   let panelSizeAnimation;
 
   const PANEL_SIZE_DURATION_MS = 560;
-  const PANEL_SIZE_EASING = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
+  const PANEL_SIZE_EASING = 'cubic-bezier(0.87, 0, 0.13, 1)';
 
   if (!appShell || !panelFrame || !panel || tabs.length === 0) {
     return;
@@ -142,11 +142,6 @@
       return;
     }
 
-    const widthDirection = nextWidth > currentWidth ? 1 : -1;
-    const heightDirection = nextHeight > currentHeight ? 1 : -1;
-    const widthOvershoot = Math.max(8, Math.abs(nextWidth - currentWidth) * 0.1) * widthDirection;
-    const heightOvershoot = Math.max(10, Math.abs(nextHeight - currentHeight) * 0.14) * heightDirection;
-
     panelFrame.style.width = `${currentWidth}px`;
     panelFrame.style.height = `${currentHeight}px`;
 
@@ -154,7 +149,6 @@
       panelSizeAnimation = panelFrame.animate(
         [
           { width: `${currentWidth}px`, height: `${currentHeight}px` },
-          { width: `${nextWidth + widthOvershoot}px`, height: `${nextHeight + heightOvershoot}px`, offset: 0.68 },
           { width: `${nextWidth}px`, height: `${nextHeight}px` }
         ],
         {
@@ -224,14 +218,21 @@
     const route = routes[key];
 
     panel.innerHTML = `
-      <p class="panel-eyebrow">${route.label}</p>
-      <h2 class="panel-title">${route.title}</h2>
-      <p class="panel-copy">${route.copy}</p>
-      ${renderStats(route.stats)}
-      ${renderCards(route.cards)}
-      ${renderChips(route.chips)}
-      ${renderActions(route.actions)}
+      <div class="panel-content" data-panel-content>
+        <p class="panel-eyebrow">${route.label}</p>
+        <h2 class="panel-title">${route.title}</h2>
+        <p class="panel-copy">${route.copy}</p>
+        ${renderStats(route.stats)}
+        ${renderCards(route.cards)}
+        ${renderChips(route.chips)}
+        ${renderActions(route.actions)}
+      </div>
     `;
+
+    const panelContent = panel.querySelector('[data-panel-content]');
+    if (panelContent) {
+      requestAnimationFrame(() => panelContent.classList.add('is-visible'));
+    }
 
     panel.scrollTop = 0;
 
