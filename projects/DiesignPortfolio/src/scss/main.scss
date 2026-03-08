@@ -119,7 +119,9 @@ a {
   height: var(--panel-height);
   max-width: 100%;
   max-height: 100%;
-  overflow: auto;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
   border: 1px solid var(--panel-line);
   border-radius: 1.8rem;
   background:
@@ -137,10 +139,6 @@ a {
     height 620ms var(--expo),
     --panel-width 620ms var(--expo),
     --panel-height 620ms var(--expo);
-}
-
-.content-panel::-webkit-scrollbar {
-  display: none;
 }
 
 .content-panel.is-sizing-immediate {
@@ -215,12 +213,23 @@ a {
 
 .panel-viewport {
   position: relative;
-  overflow: clip;
+  min-height: 0;
+  overflow: hidden;
   border-radius: 0 0 calc(1.8rem - 1px) calc(1.8rem - 1px);
   isolation: isolate;
   contain: layout paint style;
-  view-transition-name: panel-viewport;
-  view-transition-group: contain;
+}
+
+.panel-scroll {
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.panel-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .panel-content {
@@ -504,14 +513,15 @@ a {
   height: auto !important;
   max-height: none !important;
   overflow: visible !important;
+  display: block !important;
   transition: none !important;
   will-change: auto !important;
 }
 
-.measure-panel .panel-viewport {
-  view-transition-name: none;
-  view-transition-group: normal;
+.measure-panel .panel-viewport,
+.measure-panel .panel-scroll {
   contain: none;
+  overflow: visible;
 }
 
 .measure-panel .panel-content {
@@ -520,26 +530,19 @@ a {
   content-visibility: visible;
 }
 
-::view-transition-group(panel-viewport) {
-  animation-duration: 220ms;
-  animation-timing-function: ease;
-}
-
-::view-transition-group-children(panel-viewport),
-::view-transition-image-pair(panel-viewport) {
-  overflow: clip;
+::view-transition-group(panel-content),
+::view-transition-image-pair(panel-content),
+::view-transition-old(panel-content),
+::view-transition-new(panel-content) {
+  overflow: hidden;
   border-radius: 0 0 calc(1.8rem - 1px) calc(1.8rem - 1px);
-}
-
-::view-transition-old(panel-viewport),
-::view-transition-new(panel-viewport) {
-  animation: none;
-  mix-blend-mode: normal;
+  clip-path: inset(0 round 0 0 calc(1.8rem - 1px) calc(1.8rem - 1px));
 }
 
 ::view-transition-group(panel-content) {
   animation-duration: 220ms;
   animation-timing-function: ease;
+  isolation: isolate;
 }
 
 ::view-transition-old(panel-content),

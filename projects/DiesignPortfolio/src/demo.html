@@ -128,7 +128,9 @@ a {
   height: var(--panel-height);
   max-width: 100%;
   max-height: 100%;
-  overflow: auto;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
   border: 1px solid var(--panel-line);
   border-radius: 1.8rem;
   background:
@@ -146,10 +148,6 @@ a {
     height 620ms var(--expo),
     --panel-width 620ms var(--expo),
     --panel-height 620ms var(--expo);
-}
-
-.content-panel::-webkit-scrollbar {
-  display: none;
 }
 
 .content-panel.is-sizing-immediate {
@@ -224,12 +222,23 @@ a {
 
 .panel-viewport {
   position: relative;
-  overflow: clip;
+  min-height: 0;
+  overflow: hidden;
   border-radius: 0 0 calc(1.8rem - 1px) calc(1.8rem - 1px);
   isolation: isolate;
   contain: layout paint style;
-  view-transition-name: panel-viewport;
-  view-transition-group: contain;
+}
+
+.panel-scroll {
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.panel-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .panel-content {
@@ -513,14 +522,15 @@ a {
   height: auto !important;
   max-height: none !important;
   overflow: visible !important;
+  display: block !important;
   transition: none !important;
   will-change: auto !important;
 }
 
-.measure-panel .panel-viewport {
-  view-transition-name: none;
-  view-transition-group: normal;
+.measure-panel .panel-viewport,
+.measure-panel .panel-scroll {
   contain: none;
+  overflow: visible;
 }
 
 .measure-panel .panel-content {
@@ -529,26 +539,19 @@ a {
   content-visibility: visible;
 }
 
-::view-transition-group(panel-viewport) {
-  animation-duration: 220ms;
-  animation-timing-function: ease;
-}
-
-::view-transition-group-children(panel-viewport),
-::view-transition-image-pair(panel-viewport) {
-  overflow: clip;
+::view-transition-group(panel-content),
+::view-transition-image-pair(panel-content),
+::view-transition-old(panel-content),
+::view-transition-new(panel-content) {
+  overflow: hidden;
   border-radius: 0 0 calc(1.8rem - 1px) calc(1.8rem - 1px);
-}
-
-::view-transition-old(panel-viewport),
-::view-transition-new(panel-viewport) {
-  animation: none;
-  mix-blend-mode: normal;
+  clip-path: inset(0 round 0 0 calc(1.8rem - 1px) calc(1.8rem - 1px));
 }
 
 ::view-transition-group(panel-content) {
   animation-duration: 220ms;
   animation-timing-function: ease;
+  isolation: isolate;
 }
 
 ::view-transition-old(panel-content),
@@ -649,7 +652,9 @@ a {
         </header>
 
         <div class="panel-viewport">
-          <div class="panel-body" data-panel-body></div>
+          <div class="panel-scroll">
+            <div class="panel-body" data-panel-body></div>
+          </div>
         </div>
       </article>
     </section>
@@ -690,8 +695,8 @@ a {
     home: {
       label: "Home",
       status: "Studio overview",
-      widthFactor: 0.78,
-      heightFactor: 0.58,
+      widthFactor: 0.62,
+      heightFactor: 0.54,
       render: () => `
         <section class="hero-block">
           <p class="section-kicker">Single surface / four states</p>
@@ -725,7 +730,7 @@ a {
           <article class="note-card">
             <h3>Content stays readable</h3>
             <p>
-              The panel remains the scroll container, so long views can move internally while the
+              The frame stays clipped while an internal scroll surface handles long views and the
               dock stays pinned at the bottom edge.
             </p>
           </article>
@@ -743,7 +748,7 @@ a {
       label: "Work",
       status: "Project selection",
       widthFactor: 0.98,
-      heightFactor: 0.88,
+      heightFactor: 0.92,
       render: () => `
         <section class="hero-block">
           <p class="section-kicker">Selected work</p>
@@ -790,8 +795,8 @@ a {
     about: {
       label: "About",
       status: "Process notes",
-      widthFactor: 0.86,
-      heightFactor: 0.74,
+      widthFactor: 0.76,
+      heightFactor: 0.72,
       render: () => `
         <section class="hero-block">
           <p class="section-kicker">How it works</p>
@@ -839,8 +844,8 @@ a {
     contact: {
       label: "Contact",
       status: "Availability + links",
-      widthFactor: 0.66,
-      heightFactor: 0.52,
+      widthFactor: 0.52,
+      heightFactor: 0.44,
       render: () => `
         <section class="hero-block">
           <p class="section-kicker">Reach out</p>
@@ -878,13 +883,14 @@ a {
 
   const panel = document.querySelector("[data-panel]");
   const stage = document.querySelector(".panel-stage");
+  const scrollHost = document.querySelector(".panel-scroll");
   const bodyHost = document.querySelector("[data-panel-body]");
   const routeLabel = document.querySelector("[data-route-label]");
   const routeStatus = document.querySelector("[data-route-status]");
   const routeSequence = document.querySelector("[data-route-sequence]");
   const dockLinks = Array.from(document.querySelectorAll("[data-view-link]"));
 
-  if (!panel || !stage || !bodyHost || !routeLabel || !routeStatus || !routeSequence || !dockLinks.length) {
+  if (!panel || !stage || !scrollHost || !bodyHost || !routeLabel || !routeStatus || !routeSequence || !dockLinks.length) {
     return;
   }
 
@@ -931,7 +937,9 @@ a {
           </div>
         </header>
         <div class="panel-viewport">
-          <div class="panel-body"></div>
+          <div class="panel-scroll">
+            <div class="panel-body"></div>
+          </div>
         </div>
       </article>
     `;
@@ -992,10 +1000,7 @@ a {
     const availableWidth = Math.max(stage.clientWidth, 280);
     const availableHeight = Math.max(stage.clientHeight, 320);
     const maxWidth = Math.min(availableWidth, 960);
-    const minWidth = Math.min(
-      maxWidth,
-      availableWidth < 480 ? Math.max(availableWidth * 0.68, 248) : 320
-    );
+    const minWidth = Math.min(maxWidth, availableWidth < 480 ? 220 : 300);
     const width = Math.round(clamp(availableWidth * route.widthFactor, minWidth, maxWidth));
 
     measure.label.textContent = route.label;
@@ -1030,7 +1035,7 @@ a {
 
     const content = createPanelContent(view);
     bodyHost.replaceChildren(content);
-    panel.scrollTop = 0;
+    scrollHost.scrollTop = 0;
     queueFadeIn(content, token);
   }
 
@@ -1054,7 +1059,7 @@ a {
     const { historyMode = "push", immediate = false } = options;
 
     if (view === activeView && historyMode === "push") {
-      panel.scrollTop = 0;
+      scrollHost.scrollTop = 0;
       return;
     }
 

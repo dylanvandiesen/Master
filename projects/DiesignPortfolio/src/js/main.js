@@ -5,8 +5,8 @@
     home: {
       label: "Home",
       status: "Studio overview",
-      widthFactor: 0.78,
-      heightFactor: 0.58,
+      widthFactor: 0.62,
+      heightFactor: 0.54,
       render: () => `
         <section class="hero-block">
           <p class="section-kicker">Single surface / four states</p>
@@ -40,7 +40,7 @@
           <article class="note-card">
             <h3>Content stays readable</h3>
             <p>
-              The panel remains the scroll container, so long views can move internally while the
+              The frame stays clipped while an internal scroll surface handles long views and the
               dock stays pinned at the bottom edge.
             </p>
           </article>
@@ -58,7 +58,7 @@
       label: "Work",
       status: "Project selection",
       widthFactor: 0.98,
-      heightFactor: 0.88,
+      heightFactor: 0.92,
       render: () => `
         <section class="hero-block">
           <p class="section-kicker">Selected work</p>
@@ -105,8 +105,8 @@
     about: {
       label: "About",
       status: "Process notes",
-      widthFactor: 0.86,
-      heightFactor: 0.74,
+      widthFactor: 0.76,
+      heightFactor: 0.72,
       render: () => `
         <section class="hero-block">
           <p class="section-kicker">How it works</p>
@@ -154,8 +154,8 @@
     contact: {
       label: "Contact",
       status: "Availability + links",
-      widthFactor: 0.66,
-      heightFactor: 0.52,
+      widthFactor: 0.52,
+      heightFactor: 0.44,
       render: () => `
         <section class="hero-block">
           <p class="section-kicker">Reach out</p>
@@ -193,13 +193,14 @@
 
   const panel = document.querySelector("[data-panel]");
   const stage = document.querySelector(".panel-stage");
+  const scrollHost = document.querySelector(".panel-scroll");
   const bodyHost = document.querySelector("[data-panel-body]");
   const routeLabel = document.querySelector("[data-route-label]");
   const routeStatus = document.querySelector("[data-route-status]");
   const routeSequence = document.querySelector("[data-route-sequence]");
   const dockLinks = Array.from(document.querySelectorAll("[data-view-link]"));
 
-  if (!panel || !stage || !bodyHost || !routeLabel || !routeStatus || !routeSequence || !dockLinks.length) {
+  if (!panel || !stage || !scrollHost || !bodyHost || !routeLabel || !routeStatus || !routeSequence || !dockLinks.length) {
     return;
   }
 
@@ -246,7 +247,9 @@
           </div>
         </header>
         <div class="panel-viewport">
-          <div class="panel-body"></div>
+          <div class="panel-scroll">
+            <div class="panel-body"></div>
+          </div>
         </div>
       </article>
     `;
@@ -307,10 +310,7 @@
     const availableWidth = Math.max(stage.clientWidth, 280);
     const availableHeight = Math.max(stage.clientHeight, 320);
     const maxWidth = Math.min(availableWidth, 960);
-    const minWidth = Math.min(
-      maxWidth,
-      availableWidth < 480 ? Math.max(availableWidth * 0.68, 248) : 320
-    );
+    const minWidth = Math.min(maxWidth, availableWidth < 480 ? 220 : 300);
     const width = Math.round(clamp(availableWidth * route.widthFactor, minWidth, maxWidth));
 
     measure.label.textContent = route.label;
@@ -345,7 +345,7 @@
 
     const content = createPanelContent(view);
     bodyHost.replaceChildren(content);
-    panel.scrollTop = 0;
+    scrollHost.scrollTop = 0;
     queueFadeIn(content, token);
   }
 
@@ -369,7 +369,7 @@
     const { historyMode = "push", immediate = false } = options;
 
     if (view === activeView && historyMode === "push") {
-      panel.scrollTop = 0;
+      scrollHost.scrollTop = 0;
       return;
     }
 
