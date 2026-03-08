@@ -1,0 +1,49 @@
+{
+  "title": "DiesignPortfolio",
+  "slug": "diesign-portfolio",
+  "styles": {
+    "entries": [
+      "src/scss/main.scss"
+    ],
+    "loadPaths": [
+      "src/scss"
+    ]
+  },
+  "scripts": {
+    "engine": "esbuild",
+    "entries": [
+      "src/js/main.js"
+    ],
+    "legacyEntries": [
+      "src/js/**/*.js",
+      "src/js/**/*.mjs"
+    ],
+    "legacyOutputName": "main.js",
+    "target": "es2018",
+    "format": "iife",
+    "platform": "browser"
+  },
+  "images": {
+    "pattern": "src/images/**/*"
+  },
+  "static": {
+    "html": [
+      "src/**/*.html"
+    ],
+    "fonts": [
+      "src/fonts/**/*"
+    ],
+    "docs": [
+      "src/docs/**/*"
+    ],
+    "misc": [
+      "src/static/**/*"
+    ]
+  },
+  "watch": {
+    "project": [
+      "**/*"
+    ],
+    "extra": []
+  }
+}
