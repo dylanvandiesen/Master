@@ -1,7 +1,5 @@
 (() => {
   const VIEW_ORDER = ["home", "work", "about", "contact"];
-  const PANEL_EASING = "cubic-bezier(0.87, 0, 0.13, 1)";
-  const FRAME_DURATION_MS = 620;
 
   const routes = {
     home: {
@@ -49,8 +47,8 @@
           <article class="note-card">
             <h3>Transitions stay subtle</h3>
             <p>
-              CSS View Transitions handle the content swap, while the frame itself is animated with
-              the Web Animations API.
+              CSS View Transitions handle the content swap, while registered CSS properties animate
+              the live frame dimensions in both axes.
             </p>
           </article>
         </section>
@@ -146,7 +144,7 @@
               </li>
               <li>
                 <strong>Animate the shell</strong>
-                <p>The frame morph runs through WAAPI with in-out-expo easing and no bounce.</p>
+                <p>The frame follows registered width and height properties with in-out-expo easing and no bounce.</p>
               </li>
             </ol>
           </article>
@@ -209,7 +207,6 @@
 
   const measure = createMeasurePanel();
   let activeView = "";
-  let frameAnimation = null;
   let fadeFrame = 0;
   let resizeFrame = 0;
   let navigationToken = 0;
@@ -262,13 +259,10 @@
     };
   }
 
-  function createPanelContent(view, allowViewTransitionName) {
+  function createPanelContent(view) {
     const wrapper = document.createElement("div");
     wrapper.className = "panel-content";
     wrapper.dataset.view = view;
-    if (allowViewTransitionName) {
-      wrapper.style.viewTransitionName = "panel-body";
-    }
     wrapper.innerHTML = routes[view].render();
     return wrapper;
   }
@@ -292,28 +286,18 @@
     }
   }
 
-  function getPanelSize() {
-    const rect = panel.getBoundingClientRect();
-    return {
-      width: Math.round(rect.width),
-      height: Math.round(rect.height)
-    };
-  }
-
-  function applyPanelSize(size) {
-    panel.style.width = `${size.width}px`;
-    panel.style.height = `${size.height}px`;
-  }
-
-  function settleFrameAnimation() {
-    if (!frameAnimation) {
-      return;
+  function applyPanelSize(size, immediate = false) {
+    if (immediate) {
+      panel.classList.add("is-sizing-immediate");
     }
 
-    const current = getPanelSize();
-    frameAnimation.cancel();
-    frameAnimation = null;
-    applyPanelSize(current);
+    panel.style.setProperty("--panel-width", `${size.width}px`);
+    panel.style.setProperty("--panel-height", `${size.height}px`);
+
+    if (immediate) {
+      panel.getBoundingClientRect();
+      panel.classList.remove("is-sizing-immediate");
+    }
   }
 
   function measureTargetSize(view) {
@@ -331,7 +315,7 @@
     measure.status.textContent = route.status;
     measure.sequence.textContent = sequenceText(view);
     measure.panel.style.width = `${width}px`;
-    measure.body.replaceChildren(createPanelContent(view, false));
+    measure.body.replaceChildren(createPanelContent(view));
 
     const naturalHeight = Math.ceil(measure.panel.getBoundingClientRect().height);
     const minHeight = Math.min(availableHeight, availableWidth < 680 ? 360 : 420);
@@ -341,53 +325,6 @@
     const height = Math.round(clamp(naturalHeight, minHeight, maxHeight));
 
     return { width, height };
-  }
-
-  function animateFrame(targetSize, immediate) {
-    settleFrameAnimation();
-
-    const currentSize = getPanelSize();
-    if (!currentSize.width || !currentSize.height) {
-      applyPanelSize(targetSize);
-      return;
-    }
-
-    if (
-      immediate ||
-      (Math.abs(currentSize.width - targetSize.width) < 1 &&
-        Math.abs(currentSize.height - targetSize.height) < 1)
-    ) {
-      applyPanelSize(targetSize);
-      return;
-    }
-
-    applyPanelSize(currentSize);
-    const animation = panel.animate(
-      [
-        { width: `${currentSize.width}px`, height: `${currentSize.height}px` },
-        { width: `${targetSize.width}px`, height: `${targetSize.height}px` }
-      ],
-      {
-        duration: FRAME_DURATION_MS,
-        easing: PANEL_EASING,
-        fill: "forwards"
-      }
-    );
-
-    frameAnimation = animation;
-    animation.finished
-      .then(() => {
-        if (frameAnimation !== animation) {
-          return;
-        }
-        frameAnimation = null;
-        applyPanelSize(targetSize);
-      })
-      .catch(() => {
-        if (frameAnimation === animation) {
-          frameAnimation = null;
-        }
-      });
   }
 
   function queueFadeIn(content, token) {
@@ -404,7 +341,7 @@
     updateRouteMeta(view);
     updateDockState(view);
 
-    const content = createPanelContent(view, true);
+    const content = createPanelContent(view);
     bodyHost.replaceChildren(content);
     panel.scrollTop = 0;
     queueFadeIn(content, token);
@@ -447,13 +384,13 @@
 
     if (immediate || !bodyHost.firstElementChild) {
       commitView(view, token);
-      applyPanelSize(targetSize);
+      applyPanelSize(targetSize, true);
       return;
     }
 
-    animateFrame(targetSize, false);
     swapWithViewTransition(() => {
       commitView(view, token);
+      applyPanelSize(targetSize);
     });
   }
 
@@ -463,7 +400,7 @@
     }
 
     const targetSize = measureTargetSize(activeView);
-    animateFrame(targetSize, true);
+    applyPanelSize(targetSize, true);
   }
 
   function requestSyncCurrentRouteSize() {

@@ -14,6 +14,19 @@
   --dock-line: rgba(255, 244, 230, 0.08);
   --dock-ink: rgba(255, 246, 235, 0.78);
   --dock-active: #fffaf3;
+  --expo: cubic-bezier(0.87, 0, 0.13, 1);
+}
+
+@property --panel-width {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 34rem;
+}
+
+@property --panel-height {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 38rem;
 }
 
 *,
@@ -102,8 +115,8 @@ a {
 }
 
 .content-panel {
-  width: min(92vw, 34rem);
-  height: min(72vh, 38rem);
+  width: var(--panel-width);
+  height: var(--panel-height);
   max-width: 100%;
   max-height: 100%;
   overflow: auto;
@@ -118,10 +131,19 @@ a {
   -ms-overflow-style: none;
   overscroll-behavior: contain;
   transform-origin: center center;
+  transition:
+    width 620ms var(--expo),
+    height 620ms var(--expo),
+    --panel-width 620ms var(--expo),
+    --panel-height 620ms var(--expo);
 }
 
 .content-panel::-webkit-scrollbar {
   display: none;
+}
+
+.content-panel.is-sizing-immediate {
+  transition: none;
 }
 
 .panel-chrome {
@@ -188,11 +210,16 @@ a {
 .panel-body {
   position: relative;
   padding: 1.15rem;
+  overflow: clip;
+  contain: paint;
+  isolation: isolate;
+  view-transition-name: panel-body;
 }
 
 .panel-content {
   opacity: 0;
   transition: opacity 220ms ease;
+  will-change: opacity;
 }
 
 .panel-content.is-visible {
@@ -466,12 +493,28 @@ a {
   height: auto !important;
   max-height: none !important;
   overflow: visible !important;
+  transition: none !important;
+}
+
+.measure-panel .panel-body {
+  view-transition-name: none;
+}
+
+::view-transition-group(panel-body) {
+  animation-duration: 220ms;
+  animation-timing-function: ease;
+  overflow: clip;
+}
+
+::view-transition-image-pair(panel-body) {
+  isolation: isolate;
 }
 
 ::view-transition-old(panel-body),
 ::view-transition-new(panel-body) {
   animation-duration: 220ms;
   animation-timing-function: ease;
+  mix-blend-mode: normal;
 }
 
 ::view-transition-old(panel-body) {
