@@ -1,0 +1,1147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f3ebdf" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23f3ebdf'/%3E%3Cpath d='M18 18h28v28H18z' fill='none' stroke='%23d36a44' stroke-width='4'/%3E%3Cpath d='M32 24v16M24 32h16' stroke='%238f3819' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <title>DIESIGN-VIEWTRANSITIONS</title>
+  <style>
+:root {
+  color-scheme: light;
+  --shell-bg: #f3ebdf;
+  --shell-ink: #1f1913;
+  --shell-muted: #6d6358;
+  --panel-bg: rgba(255, 250, 244, 0.88);
+  --panel-line: rgba(78, 59, 39, 0.14);
+  --panel-shadow: 0 28px 90px rgba(67, 40, 17, 0.16);
+  --accent: #d36a44;
+  --accent-soft: rgba(211, 106, 68, 0.14);
+  --accent-ink: #8f3819;
+  --teal: #287a72;
+  --dock-bg: rgba(28, 22, 18, 0.9);
+  --dock-line: rgba(255, 244, 230, 0.08);
+  --dock-ink: rgba(255, 246, 235, 0.78);
+  --dock-active: #fffaf3;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+html {
+  background:
+    radial-gradient(circle at top left, rgba(214, 158, 100, 0.18), transparent 42%),
+    linear-gradient(180deg, #f7f0e6 0%, #efe6d8 100%);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+  overflow: hidden;
+  color: var(--shell-ink);
+  font-family: "Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif;
+  background: transparent;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-shell {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+  padding:
+    max(1rem, env(safe-area-inset-top))
+    max(1rem, calc(env(safe-area-inset-right) + 1rem))
+    max(1rem, calc(env(safe-area-inset-bottom) + 1rem))
+    max(1rem, calc(env(safe-area-inset-left) + 1rem));
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: clamp(0.85rem, 2.6vw, 1.4rem);
+}
+
+.ambient {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(24px);
+  opacity: 0.75;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.ambient-one {
+  width: min(52vw, 28rem);
+  height: min(52vw, 28rem);
+  top: 8%;
+  left: -4rem;
+  background: radial-gradient(circle, rgba(211, 106, 68, 0.32), rgba(211, 106, 68, 0));
+}
+
+.ambient-two {
+  width: min(42vw, 24rem);
+  height: min(42vw, 24rem);
+  right: -3rem;
+  bottom: 11%;
+  background: radial-gradient(circle, rgba(40, 122, 114, 0.24), rgba(40, 122, 114, 0));
+}
+
+.panel-stage {
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding-block: clamp(0.25rem, 2vw, 1rem);
+}
+
+.content-panel {
+  width: min(92vw, 34rem);
+  height: min(72vh, 38rem);
+  max-width: 100%;
+  max-height: 100%;
+  overflow: auto;
+  border: 1px solid var(--panel-line);
+  border-radius: 1.8rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 247, 238, 0.88)),
+    var(--panel-bg);
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(24px);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior: contain;
+  transform-origin: center center;
+}
+
+.content-panel::-webkit-scrollbar {
+  display: none;
+}
+
+.panel-chrome {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.1rem 1rem;
+  border-bottom: 1px solid rgba(78, 59, 39, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 251, 246, 0.92), rgba(255, 248, 240, 0.76));
+  backdrop-filter: blur(16px);
+}
+
+.panel-brand {
+  min-width: 0;
+}
+
+.brand-mark,
+.section-kicker,
+.card-kicker,
+.contact-label,
+.timeline-label {
+  margin: 0;
+  color: var(--accent-ink);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.route-label {
+  margin: 0.2rem 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.45rem, 4vw, 2.35rem);
+  line-height: 1;
+}
+
+.route-meta {
+  display: grid;
+  justify-items: end;
+  gap: 0.25rem;
+  text-align: right;
+}
+
+.route-sequence {
+  color: var(--shell-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.route-status {
+  max-width: 13rem;
+  color: var(--shell-ink);
+  font-size: 0.92rem;
+  line-height: 1.2;
+}
+
+.panel-body {
+  position: relative;
+  padding: 1.15rem;
+}
+
+.panel-content {
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.panel-content.is-visible {
+  opacity: 1;
+}
+
+.hero-block {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.hero-block h2 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.7rem, 5vw, 3.2rem);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+}
+
+.hero-block .lead,
+.body-copy,
+.case-copy,
+.availability-copy {
+  margin: 0;
+  color: var(--shell-muted);
+  font-size: 0.98rem;
+  line-height: 1.65;
+}
+
+.hero-block .lead a,
+.body-copy a,
+.availability-copy a {
+  color: var(--accent-ink);
+  font-weight: 700;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.2em;
+}
+
+.metric-grid,
+.feature-strip,
+.case-grid,
+.story-grid,
+.contact-stack {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1.1rem;
+}
+
+.metric-grid,
+.feature-strip,
+.contact-stack {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.metric-card,
+.note-card,
+.case-card,
+.story-card,
+.contact-card,
+.availability-card {
+  padding: 1rem;
+  border: 1px solid rgba(78, 59, 39, 0.1);
+  border-radius: 1.3rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(255, 249, 243, 0.96));
+  box-shadow: 0 10px 28px rgba(67, 40, 17, 0.06);
+}
+
+.metric-card strong,
+.case-card h3,
+.story-card h3,
+.contact-card strong,
+.availability-card strong,
+.note-card h3 {
+  display: block;
+  margin-top: 0.45rem;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.metric-card .metric-value {
+  margin-top: 0.55rem;
+  display: block;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.8rem, 5vw, 2.8rem);
+  line-height: 1;
+}
+
+.metric-card p,
+.note-card p,
+.case-card p,
+.story-card p,
+.contact-card p,
+.availability-card p {
+  margin: 0.5rem 0 0;
+  color: var(--shell-muted);
+  line-height: 1.5;
+}
+
+.feature-strip .note-card {
+  background:
+    linear-gradient(180deg, rgba(255, 251, 247, 0.98), rgba(255, 244, 233, 0.92));
+}
+
+.case-card {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.case-card.wide {
+  background:
+    linear-gradient(130deg, rgba(255, 241, 232, 0.98), rgba(255, 250, 246, 0.92));
+}
+
+.case-chip,
+.pill-list span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.38rem 0.64rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.7rem;
+}
+
+.story-grid {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.timeline {
+  list-style: none;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.timeline li {
+  position: relative;
+  padding-left: 1.1rem;
+}
+
+.timeline li::before {
+  content: "";
+  position: absolute;
+  top: 0.32rem;
+  left: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 0.2rem rgba(211, 106, 68, 0.12);
+}
+
+.timeline strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.timeline p {
+  margin: 0.3rem 0 0;
+  color: var(--shell-muted);
+  line-height: 1.55;
+}
+
+.contact-card a {
+  color: var(--accent-ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.contact-card a:hover,
+.contact-card a:focus-visible {
+  text-decoration: underline;
+}
+
+.availability-card {
+  margin-top: 1.1rem;
+  background:
+    linear-gradient(135deg, rgba(40, 122, 114, 0.1), rgba(255, 255, 255, 0.94));
+}
+
+.availability-copy {
+  margin-top: 0.65rem;
+}
+
+.dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem;
+  padding: 0.45rem;
+  border: 1px solid var(--dock-line);
+  border-radius: 1.45rem;
+  background: var(--dock-bg);
+  box-shadow: 0 22px 42px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(18px);
+}
+
+.dock-link {
+  min-width: 0;
+  padding: 0.68rem 0.5rem 0.62rem;
+  border-radius: 1rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.42rem;
+  color: var(--dock-ink);
+  text-decoration: none;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.dock-link svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dock-link span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dock-link:hover,
+.dock-link:focus-visible {
+  color: var(--dock-active);
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.dock-link.is-active {
+  color: var(--dock-active);
+  background: rgba(255, 248, 240, 0.14);
+}
+
+.dock-link:focus-visible {
+  outline: 2px solid rgba(255, 250, 244, 0.56);
+  outline-offset: 2px;
+}
+
+.panel-measure-root {
+  position: fixed;
+  top: -200vh;
+  left: 0;
+  width: 100vw;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.measure-panel {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+::view-transition-old(panel-body),
+::view-transition-new(panel-body) {
+  animation-duration: 220ms;
+  animation-timing-function: ease;
+}
+
+::view-transition-old(panel-body) {
+  animation-name: panel-fade-out;
+}
+
+::view-transition-new(panel-body) {
+  animation-name: panel-fade-in;
+}
+
+@keyframes panel-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes panel-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (min-width: 40rem) {
+  .panel-chrome {
+    padding-inline: 1.35rem;
+  }
+
+  .panel-body {
+    padding: 1.35rem;
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .feature-strip,
+  .contact-stack {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .case-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .case-card.wide,
+  .availability-card {
+    grid-column: 1 / -1;
+  }
+
+  .story-grid {
+    grid-template-columns: 1.1fr 0.9fr;
+  }
+}
+
+@media (max-width: 34rem) {
+  .app-shell {
+    padding-inline:
+      max(0.8rem, calc(env(safe-area-inset-left) + 0.8rem))
+      max(0.8rem, calc(env(safe-area-inset-right) + 0.8rem));
+  }
+
+  .panel-chrome {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .route-meta {
+    justify-items: start;
+    text-align: left;
+  }
+}
+
+</style>
+</head>
+<body>
+  <main class="app-shell" data-app-shell>
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+
+    <section class="panel-stage" aria-label="View transition workspace">
+      <article class="content-panel" data-panel>
+        <header class="panel-chrome">
+          <div class="panel-brand">
+            <p class="brand-mark">DIESIGN-VIEWTRANSITIONS</p>
+            <h1 class="route-label" data-route-label>Home</h1>
+          </div>
+          <div class="route-meta">
+            <span class="route-sequence" data-route-sequence>01 / 04</span>
+            <strong class="route-status" data-route-status aria-live="polite">Studio overview</strong>
+          </div>
+        </header>
+
+        <div class="panel-body" data-panel-body></div>
+      </article>
+    </section>
+
+    <nav class="dock" aria-label="Primary sections">
+      <a class="dock-link is-active" href="?view=home" data-view-link="home" aria-current="page">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 11.5 12 5l8 6.5v7.5H14v-5h-4v5H4z" />
+        </svg>
+        <span>Home</span>
+      </a>
+      <a class="dock-link" href="?view=work" data-view-link="work">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 5h7v6H4zm9 0h7v6h-7zM4 13h7v6H4zm9 0h7v6h-7z" />
+        </svg>
+        <span>Work</span>
+      </a>
+      <a class="dock-link" href="?view=about" data-view-link="about">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 5.5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm-5 13c.5-2.7 2.5-4 5-4s4.5 1.3 5 4" />
+        </svg>
+        <span>About</span>
+      </a>
+      <a class="dock-link" href="?view=contact" data-view-link="contact">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 7.5h14v9H5zm0 0 7 5 7-5" />
+        </svg>
+        <span>Contact</span>
+      </a>
+    </nav>
+  </main>
+
+  <script>
+(() => {
+  const VIEW_ORDER = ["home", "work", "about", "contact"];
+  const PANEL_EASING = "cubic-bezier(0.87, 0, 0.13, 1)";
+  const FRAME_DURATION_MS = 620;
+
+  const routes = {
+    home: {
+      label: "Home",
+      status: "Studio overview",
+      widthFactor: 0.88,
+      heightFactor: 0.7,
+      render: () => `
+        <section class="hero-block">
+          <p class="section-kicker">Single surface / four states</p>
+          <h2>Fullscreen navigation without ever leaving the frame.</h2>
+          <p class="lead">
+            DIESIGN-VIEWTRANSITIONS keeps one centered panel alive while the URL, panel size, and
+            content rhythm change together. <a href="?view=work">Open work</a> or
+            <a href="?view=about">read the setup</a>.
+          </p>
+        </section>
+
+        <section class="metric-grid" aria-label="Route signals">
+          <article class="metric-card">
+            <p class="card-kicker">Routes</p>
+            <strong class="metric-value">04</strong>
+            <p>Home, work, about, and contact all live inside one persistent shell.</p>
+          </article>
+          <article class="metric-card">
+            <p class="card-kicker">Frame motion</p>
+            <strong class="metric-value">W + H</strong>
+            <p>The panel interpolates width and height together with no overshoot bounce.</p>
+          </article>
+          <article class="metric-card">
+            <p class="card-kicker">History</p>
+            <strong class="metric-value">URL</strong>
+            <p>Every tap writes <code>?view=</code> so back and forward navigation stay meaningful.</p>
+          </article>
+        </section>
+
+        <section class="feature-strip">
+          <article class="note-card">
+            <h3>Content stays readable</h3>
+            <p>
+              The panel remains the scroll container, so long views can move internally while the
+              dock stays pinned at the bottom edge.
+            </p>
+          </article>
+          <article class="note-card">
+            <h3>Transitions stay subtle</h3>
+            <p>
+              CSS View Transitions handle the content swap, while the frame itself is animated with
+              the Web Animations API.
+            </p>
+          </article>
+        </section>
+      `
+    },
+    work: {
+      label: "Work",
+      status: "Project selection",
+      widthFactor: 0.96,
+      heightFactor: 0.82,
+      render: () => `
+        <section class="hero-block">
+          <p class="section-kicker">Selected work</p>
+          <h2>A wider panel gives project cards enough air to breathe.</h2>
+          <p class="lead">
+            This route stretches horizontally for side-by-side previews, then compresses again on
+            tighter views. <a href="?view=contact">Jump to contact</a> when you are ready.
+          </p>
+        </section>
+
+        <section class="case-grid" aria-label="Project cards">
+          <article class="case-card wide">
+            <span class="case-chip">Interface systems</span>
+            <h3>Living archive for a design team</h3>
+            <p class="case-copy">
+              A panel-first navigation pattern that balanced dense internal references with a calm,
+              scroll-contained reading surface.
+            </p>
+            <div class="pill-list">
+              <span>Structured content</span>
+              <span>History API</span>
+              <span>Motion states</span>
+            </div>
+          </article>
+          <article class="case-card">
+            <span class="case-chip">Launch page</span>
+            <h3>Editorial product reveal</h3>
+            <p class="case-copy">
+              Tuned for mobile-first timing, especially when the frame changes aspect ratio between
+              stacked and gridded sections.
+            </p>
+          </article>
+          <article class="case-card">
+            <span class="case-chip">System prototype</span>
+            <h3>One panel, many densities</h3>
+            <p class="case-copy">
+              The shell maintains a single center of gravity while route templates vary in content
+              length, card density, and visual emphasis.
+            </p>
+          </article>
+        </section>
+      `
+    },
+    about: {
+      label: "About",
+      status: "Process notes",
+      widthFactor: 0.82,
+      heightFactor: 0.78,
+      render: () => `
+        <section class="hero-block">
+          <p class="section-kicker">How it works</p>
+          <h2>The route model is simple, but the panel feels alive.</h2>
+          <p class="lead">
+            Each view carries width and height factors, while natural content height keeps the
+            result grounded. <a href="?view=home">Return home</a> or continue into
+            <a href="?view=contact">contact</a>.
+          </p>
+        </section>
+
+        <section class="story-grid">
+          <article class="story-card">
+            <p class="timeline-label">Principles</p>
+            <h3>Motion follows content, not the other way around.</h3>
+            <p class="body-copy">
+              The panel never snaps between hard-coded presets. Instead, the next size is derived
+              from available stage space, route preferences, and the measured height of the new
+              content.
+            </p>
+            <p class="body-copy">
+              That keeps the morph grounded on both small touch screens and wider desktop layouts.
+            </p>
+          </article>
+          <article class="story-card">
+            <p class="timeline-label">Sequence</p>
+            <ol class="timeline">
+              <li>
+                <strong>Measure the next route</strong>
+                <p>Render the next template in a hidden panel to discover its natural size.</p>
+              </li>
+              <li>
+                <strong>Commit the content swap</strong>
+                <p>Use <code>document.startViewTransition</code> when the browser supports it.</p>
+              </li>
+              <li>
+                <strong>Animate the shell</strong>
+                <p>The frame morph runs through WAAPI with in-out-expo easing and no bounce.</p>
+              </li>
+            </ol>
+          </article>
+        </section>
+      `
+    },
+    contact: {
+      label: "Contact",
+      status: "Availability + links",
+      widthFactor: 0.74,
+      heightFactor: 0.62,
+      render: () => `
+        <section class="hero-block">
+          <p class="section-kicker">Reach out</p>
+          <h2>A tighter contact state brings the focus back to the call to action.</h2>
+          <p class="lead">
+            This route intentionally compresses into a narrower frame. If you want more context,
+            <a href="?view=work">browse work</a> first.
+          </p>
+        </section>
+
+        <section class="contact-stack">
+          <article class="contact-card">
+            <p class="contact-label">Email</p>
+            <strong><a href="mailto:hello@diesign.example">hello@diesign.example</a></strong>
+            <p>For pitches, product collaboration, and interface consulting.</p>
+          </article>
+          <article class="contact-card">
+            <p class="contact-label">Availability</p>
+            <strong>Booking for April 2026</strong>
+            <p>Short discovery calls are open on Tuesdays and Thursdays.</p>
+          </article>
+        </section>
+
+        <article class="availability-card">
+          <p class="contact-label">Next step</p>
+          <strong>Share a brief and expected launch window.</strong>
+          <p class="availability-copy">
+            A concise project note is enough to start. If you need a fuller walkthrough first,
+            revisit <a href="?view=about">the process notes</a>.
+          </p>
+        </article>
+      `
+    }
+  };
+
+  const panel = document.querySelector("[data-panel]");
+  const stage = document.querySelector(".panel-stage");
+  const bodyHost = document.querySelector("[data-panel-body]");
+  const routeLabel = document.querySelector("[data-route-label]");
+  const routeStatus = document.querySelector("[data-route-status]");
+  const routeSequence = document.querySelector("[data-route-sequence]");
+  const dockLinks = Array.from(document.querySelectorAll("[data-view-link]"));
+
+  if (!panel || !stage || !bodyHost || !routeLabel || !routeStatus || !routeSequence || !dockLinks.length) {
+    return;
+  }
+
+  history.scrollRestoration = "manual";
+
+  const measure = createMeasurePanel();
+  let activeView = "";
+  let frameAnimation = null;
+  let fadeFrame = 0;
+  let resizeFrame = 0;
+  let navigationToken = 0;
+
+  function resolveView(value) {
+    return Object.prototype.hasOwnProperty.call(routes, value) ? value : VIEW_ORDER[0];
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+  }
+
+  function sequenceText(view) {
+    return `${String(VIEW_ORDER.indexOf(view) + 1).padStart(2, "0")} / ${String(VIEW_ORDER.length).padStart(2, "0")}`;
+  }
+
+  function buildUrl(view) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", view);
+    return `${url.pathname}${url.search}${url.hash}`;
+  }
+
+  function createMeasurePanel() {
+    const root = document.createElement("div");
+    root.className = "panel-measure-root";
+    root.setAttribute("aria-hidden", "true");
+    root.innerHTML = `
+      <article class="content-panel measure-panel">
+        <header class="panel-chrome">
+          <div class="panel-brand">
+            <p class="brand-mark">DIESIGN-VIEWTRANSITIONS</p>
+            <h1 class="route-label">Measure</h1>
+          </div>
+          <div class="route-meta">
+            <span class="route-sequence">00 / 00</span>
+            <strong class="route-status">Measuring</strong>
+          </div>
+        </header>
+        <div class="panel-body"></div>
+      </article>
+    `;
+    document.body.appendChild(root);
+
+    return {
+      panel: root.querySelector(".measure-panel"),
+      body: root.querySelector(".panel-body"),
+      label: root.querySelector(".route-label"),
+      status: root.querySelector(".route-status"),
+      sequence: root.querySelector(".route-sequence")
+    };
+  }
+
+  function createPanelContent(view, allowViewTransitionName) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "panel-content";
+    wrapper.dataset.view = view;
+    if (allowViewTransitionName) {
+      wrapper.style.viewTransitionName = "panel-body";
+    }
+    wrapper.innerHTML = routes[view].render();
+    return wrapper;
+  }
+
+  function updateRouteMeta(view) {
+    routeLabel.textContent = routes[view].label;
+    routeStatus.textContent = routes[view].status;
+    routeSequence.textContent = sequenceText(view);
+    document.title = `${routes[view].label} | DIESIGN-VIEWTRANSITIONS`;
+  }
+
+  function updateDockState(view) {
+    for (const link of dockLinks) {
+      const isActive = link.dataset.viewLink === view;
+      link.classList.toggle("is-active", isActive);
+      if (isActive) {
+        link.setAttribute("aria-current", "page");
+      } else {
+        link.removeAttribute("aria-current");
+      }
+    }
+  }
+
+  function getPanelSize() {
+    const rect = panel.getBoundingClientRect();
+    return {
+      width: Math.round(rect.width),
+      height: Math.round(rect.height)
+    };
+  }
+
+  function applyPanelSize(size) {
+    panel.style.width = `${size.width}px`;
+    panel.style.height = `${size.height}px`;
+  }
+
+  function settleFrameAnimation() {
+    if (!frameAnimation) {
+      return;
+    }
+
+    const current = getPanelSize();
+    frameAnimation.cancel();
+    frameAnimation = null;
+    applyPanelSize(current);
+  }
+
+  function measureTargetSize(view) {
+    const route = routes[view];
+    const availableWidth = Math.max(stage.clientWidth, 280);
+    const availableHeight = Math.max(stage.clientHeight, 320);
+    const maxWidth = Math.min(availableWidth, 960);
+    const minWidth = Math.min(
+      maxWidth,
+      availableWidth < 480 ? Math.max(availableWidth * 0.68, 248) : 320
+    );
+    const width = Math.round(clamp(availableWidth * route.widthFactor, minWidth, maxWidth));
+
+    measure.label.textContent = route.label;
+    measure.status.textContent = route.status;
+    measure.sequence.textContent = sequenceText(view);
+    measure.panel.style.width = `${width}px`;
+    measure.body.replaceChildren(createPanelContent(view, false));
+
+    const naturalHeight = Math.ceil(measure.panel.getBoundingClientRect().height);
+    const minHeight = Math.min(availableHeight, availableWidth < 680 ? 360 : 420);
+    const maxHeight = Math.floor(
+      Math.min(availableHeight, Math.max(minHeight, availableHeight * route.heightFactor))
+    );
+    const height = Math.round(clamp(naturalHeight, minHeight, maxHeight));
+
+    return { width, height };
+  }
+
+  function animateFrame(targetSize, immediate) {
+    settleFrameAnimation();
+
+    const currentSize = getPanelSize();
+    if (!currentSize.width || !currentSize.height) {
+      applyPanelSize(targetSize);
+      return;
+    }
+
+    if (
+      immediate ||
+      (Math.abs(currentSize.width - targetSize.width) < 1 &&
+        Math.abs(currentSize.height - targetSize.height) < 1)
+    ) {
+      applyPanelSize(targetSize);
+      return;
+    }
+
+    applyPanelSize(currentSize);
+    const animation = panel.animate(
+      [
+        { width: `${currentSize.width}px`, height: `${currentSize.height}px` },
+        { width: `${targetSize.width}px`, height: `${targetSize.height}px` }
+      ],
+      {
+        duration: FRAME_DURATION_MS,
+        easing: PANEL_EASING,
+        fill: "forwards"
+      }
+    );
+
+    frameAnimation = animation;
+    animation.finished
+      .then(() => {
+        if (frameAnimation !== animation) {
+          return;
+        }
+        frameAnimation = null;
+        applyPanelSize(targetSize);
+      })
+      .catch(() => {
+        if (frameAnimation === animation) {
+          frameAnimation = null;
+        }
+      });
+  }
+
+  function queueFadeIn(content, token) {
+    cancelAnimationFrame(fadeFrame);
+    fadeFrame = requestAnimationFrame(() => {
+      if (token !== navigationToken) {
+        return;
+      }
+      content.classList.add("is-visible");
+    });
+  }
+
+  function commitView(view, token) {
+    updateRouteMeta(view);
+    updateDockState(view);
+
+    const content = createPanelContent(view, true);
+    bodyHost.replaceChildren(content);
+    panel.scrollTop = 0;
+    queueFadeIn(content, token);
+  }
+
+  function swapWithViewTransition(callback) {
+    if (typeof document.startViewTransition !== "function") {
+      callback();
+      return;
+    }
+
+    try {
+      document.startViewTransition(() => {
+        callback();
+      });
+    } catch (error) {
+      callback();
+    }
+  }
+
+  function renderView(nextView, options = {}) {
+    const view = resolveView(nextView);
+    const { historyMode = "push", immediate = false } = options;
+
+    if (view === activeView && historyMode === "push") {
+      panel.scrollTop = 0;
+      return;
+    }
+
+    const token = ++navigationToken;
+    const targetSize = measureTargetSize(view);
+
+    if (historyMode === "push") {
+      history.pushState({ view }, "", buildUrl(view));
+    } else if (historyMode === "replace") {
+      history.replaceState({ view }, "", buildUrl(view));
+    }
+
+    activeView = view;
+
+    if (immediate || !bodyHost.firstElementChild) {
+      commitView(view, token);
+      applyPanelSize(targetSize);
+      return;
+    }
+
+    animateFrame(targetSize, false);
+    swapWithViewTransition(() => {
+      commitView(view, token);
+    });
+  }
+
+  function syncCurrentRouteSize() {
+    if (!activeView) {
+      return;
+    }
+
+    const targetSize = measureTargetSize(activeView);
+    animateFrame(targetSize, true);
+  }
+
+  function requestSyncCurrentRouteSize() {
+    cancelAnimationFrame(resizeFrame);
+    resizeFrame = requestAnimationFrame(() => {
+      syncCurrentRouteSize();
+    });
+  }
+
+  function handleNavigationClick(event) {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+
+    const link = event.target.closest("a[href]");
+    if (!link || link.target || link.hasAttribute("download")) {
+      return;
+    }
+
+    const url = new URL(link.href, window.location.href);
+    if (url.origin !== window.location.origin || url.pathname !== window.location.pathname) {
+      return;
+    }
+
+    const requestedView = url.searchParams.get("view");
+    if (!requestedView || !Object.prototype.hasOwnProperty.call(routes, requestedView)) {
+      return;
+    }
+
+    event.preventDefault();
+    renderView(requestedView, { historyMode: "push" });
+  }
+
+  document.addEventListener("click", handleNavigationClick);
+
+  window.addEventListener("popstate", (event) => {
+    const stateView = typeof event.state?.view === "string" ? event.state.view : null;
+    const queryView = new URL(window.location.href).searchParams.get("view");
+    renderView(queryView || stateView || VIEW_ORDER[0], { historyMode: "none" });
+  });
+
+  window.addEventListener("resize", requestSyncCurrentRouteSize, { passive: true });
+  window.addEventListener("orientationchange", requestSyncCurrentRouteSize, { passive: true });
+
+  if (typeof ResizeObserver === "function") {
+    const observer = new ResizeObserver(() => {
+      requestSyncCurrentRouteSize();
+    });
+    observer.observe(stage);
+  }
+
+  if (document.fonts && typeof document.fonts.ready?.then === "function") {
+    document.fonts.ready.then(() => {
+      requestSyncCurrentRouteSize();
+    });
+  }
+
+  const initialView = resolveView(new URL(window.location.href).searchParams.get("view"));
+  renderView(initialView, { historyMode: "replace", immediate: true });
+  console.log("[agency] DIESIGN-VIEWTRANSITIONS initialized");
+})();
+
+</script>
+</body>
+</html>
+

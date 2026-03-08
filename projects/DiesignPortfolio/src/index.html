@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f3ebdf" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23f3ebdf'/%3E%3Cpath d='M18 18h28v28H18z' fill='none' stroke='%23d36a44' stroke-width='4'/%3E%3Cpath d='M32 24v16M24 32h16' stroke='%238f3819' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <title>DIESIGN-VIEWTRANSITIONS</title>
+  <link rel="stylesheet" href="./css/main.min.css" />
+</head>
+<body>
+  <main class="app-shell" data-app-shell>
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+
+    <section class="panel-stage" aria-label="View transition workspace">
+      <article class="content-panel" data-panel>
+        <header class="panel-chrome">
+          <div class="panel-brand">
+            <p class="brand-mark">DIESIGN-VIEWTRANSITIONS</p>
+            <h1 class="route-label" data-route-label>Home</h1>
+          </div>
+          <div class="route-meta">
+            <span class="route-sequence" data-route-sequence>01 / 04</span>
+            <strong class="route-status" data-route-status aria-live="polite">Studio overview</strong>
+          </div>
+        </header>
+
+        <div class="panel-body" data-panel-body></div>
+      </article>
+    </section>
+
+    <nav class="dock" aria-label="Primary sections">
+      <a class="dock-link is-active" href="?view=home" data-view-link="home" aria-current="page">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 11.5 12 5l8 6.5v7.5H14v-5h-4v5H4z" />
+        </svg>
+        <span>Home</span>
+      </a>
+      <a class="dock-link" href="?view=work" data-view-link="work">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 5h7v6H4zm9 0h7v6h-7zM4 13h7v6H4zm9 0h7v6h-7z" />
+        </svg>
+        <span>Work</span>
+      </a>
+      <a class="dock-link" href="?view=about" data-view-link="about">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 5.5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm-5 13c.5-2.7 2.5-4 5-4s4.5 1.3 5 4" />
+        </svg>
+        <span>About</span>
+      </a>
+      <a class="dock-link" href="?view=contact" data-view-link="contact">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 7.5h14v9H5zm0 0 7 5 7-5" />
+        </svg>
+        <span>Contact</span>
+      </a>
+    </nav>
+  </main>
+
+  <script src="./js/main.min.js"></script>
+</body>
+</html>
