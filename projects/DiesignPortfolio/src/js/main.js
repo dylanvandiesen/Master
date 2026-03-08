@@ -5,8 +5,8 @@
     home: {
       label: "Home",
       status: "Studio overview",
-      widthFactor: 0.88,
-      heightFactor: 0.7,
+      widthFactor: 0.78,
+      heightFactor: 0.58,
       render: () => `
         <section class="hero-block">
           <p class="section-kicker">Single surface / four states</p>
@@ -57,8 +57,8 @@
     work: {
       label: "Work",
       status: "Project selection",
-      widthFactor: 0.96,
-      heightFactor: 0.82,
+      widthFactor: 0.98,
+      heightFactor: 0.88,
       render: () => `
         <section class="hero-block">
           <p class="section-kicker">Selected work</p>
@@ -105,8 +105,8 @@
     about: {
       label: "About",
       status: "Process notes",
-      widthFactor: 0.82,
-      heightFactor: 0.78,
+      widthFactor: 0.86,
+      heightFactor: 0.74,
       render: () => `
         <section class="hero-block">
           <p class="section-kicker">How it works</p>
@@ -154,8 +154,8 @@
     contact: {
       label: "Contact",
       status: "Availability + links",
-      widthFactor: 0.74,
-      heightFactor: 0.62,
+      widthFactor: 0.66,
+      heightFactor: 0.52,
       render: () => `
         <section class="hero-block">
           <p class="section-kicker">Reach out</p>
@@ -245,7 +245,9 @@
             <strong class="route-status">Measuring</strong>
           </div>
         </header>
-        <div class="panel-body"></div>
+        <div class="panel-viewport">
+          <div class="panel-body"></div>
+        </div>
       </article>
     `;
     document.body.appendChild(root);
