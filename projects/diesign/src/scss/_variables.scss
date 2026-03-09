@@ -1,0 +1,262 @@
+$container-breakpoints: (
+  xs: 0,
+  sm: 576px,
+  md: 768px,
+  lg: 992px,
+  xl: 1200px
+);
+
+/* ===============================
+   GLOBAL VARIABLES
+   =============================== */
+
+:root, [popover]:root {
+  --app-height: 100%;
+  
+  interpolate-size: allow-keywords;
+  
+  --spacing-xs: .25rem;
+  --spacing-sm: .5rem;
+  --spacing-ms: .75rem;
+  --spacing-md: 1rem;
+  --spacing-ml: 1.25rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 3rem;
+  
+  --p-h: 285; --p-s: 96%; --p-l: 65%; --p-a: 1; 
+
+  --primary: hsla(var(--p-h), var(--p-s), var(--p-l), var(--p-a));
+  --primary-80: hsla(var(--p-h), var(--p-s), var(--p-l), .8);
+  --primary-70: hsla(var(--p-h), var(--p-s), var(--p-l), .7);
+  --primary-60: hsla(var(--p-h), var(--p-s), var(--p-l), .6);
+  --primary-40: hsla(var(--p-h), var(--p-s), var(--p-l), .4);
+  --primary-30: hsla(var(--p-h), var(--p-s), var(--p-l), .3);
+  --primary-0: hsla(var(--p-h), var(--p-s), var(--p-l), 0);
+  --primary-hex: #c550fc;
+
+  --primary-dark: hsla(var(--p-h), var(--p-s), 20%, var(--p-a)); 
+  --primary-dark-99: hsla(var(--p-h), var(--p-s), 20%, .99);
+  --primary-dark-98: hsla(var(--p-h), var(--p-s), 20%, .98);
+  --primary-dark-95: hsla(var(--p-h), var(--p-s), 20%, .95);
+  --primary-dark-90: hsla(var(--p-h), var(--p-s), 20%, .9);
+  --primary-dark-80: hsla(var(--p-h), var(--p-s), 20%, .8);
+  --primary-dark-70: hsla(var(--p-h), var(--p-s), 20%, .7);
+  --primary-dark-60: hsla(var(--p-h), var(--p-s), 20%, .6);
+  --primary-dark-50: hsla(var(--p-h), var(--p-s), 20%, .5);
+  --primary-dark-40: hsla(var(--p-h), var(--p-s), 20%, .4);
+  --primary-dark-30: hsla(var(--p-h), var(--p-s), 20%, .3);
+  --primary-dark-20: hsla(var(--p-h), var(--p-s), 20%, .2);
+  --primary-dark-10: hsla(var(--p-h), var(--p-s), 20%, .1);
+  --primary-dark-0: hsla(var(--p-h), var(--p-s), 20%, 0);
+
+  --primary-darker: hsla(var(--p-h), var(--p-s), 5%, var(--p-a)); 
+  --primary-darker-99: hsla(var(--p-h), var(--p-s), 5%, .99);
+  --primary-darker-98: hsla(var(--p-h), var(--p-s), 5%, .98);
+  --primary-darker-95: hsla(var(--p-h), var(--p-s), 5%, .95);
+  --primary-darker-90: hsla(var(--p-h), var(--p-s), 5%, .9);
+  --primary-darker-80: hsla(var(--p-h), var(--p-s), 5%, .8);
+  --primary-darker-70: hsla(var(--p-h), var(--p-s), 5%, .7);
+  --primary-darker-40: hsla(var(--p-h), var(--p-s), 5%, .4);
+  --primary-darker-30: hsla(var(--p-h), var(--p-s), 5%, .3);
+  --primary-darker-20: hsla(var(--p-h), var(--p-s), 5%, .2);
+  --primary-darker-10: hsla(var(--p-h), var(--p-s), 5%, .1);
+  --primary-darker-05: hsla(var(--p-h), var(--p-s), 5%, .05);
+  --primary-darker-0: hsla(var(--p-h), var(--p-s), 5%, 0);
+  
+  --primary-light: hsla(var(--p-h), var(--p-s), 80%, var(--p-a)); 
+  --primary-light-90: hsla(var(--p-h), var(--p-s), 80%, .9);
+  --primary-light-80: hsla(var(--p-h), var(--p-s), 80%, .8);
+  --primary-light-70: hsla(var(--p-h), var(--p-s), 80%, .7);
+  --primary-light-60: hsla(var(--p-h), var(--p-s), 80%, .6);
+  --primary-light-50: hsla(var(--p-h), var(--p-s), 80%, .5);
+  --primary-light-40: hsla(var(--p-h), var(--p-s), 80%, .4);
+  --primary-light-30: hsla(var(--p-h), var(--p-s), 80%, .3);
+  --primary-light-20: hsla(var(--p-h), var(--p-s), 80%, .2);
+  --primary-light-10: hsla(var(--p-h), var(--p-s), 80%, .1);
+  --primary-light-05: hsla(var(--p-h), var(--p-s), 80%, .05);
+
+  --pop-nav-icon-color: red;
+  
+  --accent: hsla(285, 96%, 80%, 1); 
+  --white: hsla(0, 0%, 100%, 1);
+  --black: hsla(0, 0%, 0%, 1); 
+
+  --body-font-family: 'Exo 2', Arial, sans-serif;
+  --heading-font-family: 'jaapokki', Arial, sans-serif;
+  --font-size: 16px;
+  --line-height: 1.6rem;
+
+  --h2-font-size-xs: 1rem;
+  --h2-font-size-md: 1.25rem;
+  --h2-font-size-lg: 1.5rem;
+  --h2-font-size-xl: 1.875rem;
+}
+
+/* ===============================
+   NORMALIZE
+   =============================== */
+
+*,
+::before,
+::after {
+  box-sizing: border-box;
+}
+
+[popover]::-webkit-backdrop {background:transparent; border:none; padding: 0;}
+
+[popover], [popover]::backdrop, dialog {background:transparent; border:none; padding: 0;}
+
+.flicker-fix {
+  // transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+          backface-visibility: hidden;
+}
+picture,img {
+  // -webkit-user-select: none;
+  //    -moz-user-select: none;
+  //     -ms-user-select: none;
+  //         user-select: none;
+          pointer-events: none;
+}
+
+.ripple.wrapper {
+  position: absolute;
+  inset:-1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  border-radius: inherit;
+  z-index:0;
+  overflow: hidden;
+  // opacity: 0.4;
+  // mix-blend-mode: plus-lighter;
+  // isolation: isolate;
+}
+.ripple.wrapper + * {
+  z-index:20;
+  pointer-events: none;
+}
+// PROJECTBESCHRIJVINGEN
+/* Browser supports interpolate-size */
+@supports (interpolate-size: allow-keywords) {
+  .project-pop figure:first-child [open]::details-content {
+
+    
+    // height: 100%;
+    height: auto;
+    // height: fit-content;
+    // min-height: fit-content;
+    opacity: 1;
+    transform: translateY(0);
+    content-visibility:visible;
+  }
+}
+figure:first-child summary::marker {
+  content: '';
+  display: none;
+}
+figure:first-child .project-content {
+  @extend .flicker-fix;
+  opacity:0 !important;
+  // will-change: opacity, height;
+  // transition: opacity, height;
+    will-change: opacity;
+  transition: opacity;
+  transition-duration: .8s;
+  transition-delay: .1s;
+  // content-visibility: auto;
+  // content-visibility:hidden;
+  contain:layout;
+
+}
+[popover]:popover-open figure:first-child .project-content {
+  opacity: 1 !important;
+  // content-visibility:visible;
+}
+@starting-style {
+  [popover]:popover-open figure:first-child .project-content {
+    opacity: 0 !important;
+    // content-visibility:hidden;
+  }
+}
+// [popover]:not(:popover-open) .project-content {
+//   display: none !important;
+//   opacity:0 !important;
+// }
+figure:first-child {
+  summary {
+    position: relative;
+    line-height: 1.125rem;
+    border-radius: inherit;
+    // overflow: clip;
+    // height: 14px;
+    span {
+      position: relative;
+      z-index: 1;
+      pointer-events: none;
+    }
+  }
+  summary::after {
+    content: '';
+    pointer-events: none;
+    // display: inline-flex;
+    @extend .flicker-fix;
+    position: absolute;
+    inset: 0 0 0 auto;
+    background: transparent url('../images/icons/caret-right.svg') no-repeat center center;
+    background-size: contain;
+    width: 14px;
+    height: 14px;
+    z-index: 2;
+    will-change: transform;
+    transition: transform;
+    transition-duration: .8s;
+    transition-delay: .0s;
+    // transition-timing-function: cubic-bezier(0.785, 0.135, 0.15, 0.86); 
+    transition-timing-function: cubic-bezier(0.68, -0.55, 0.265, 1.55); 
+    transform:  rotate(0deg);
+
+
+  }
+  details[open] summary::after {
+    transform:  rotate(90deg);
+  }
+  ::details-content {
+    // content: '';
+    @extend .flicker-fix;
+    will-change: transform, opacity, height, content-visibility;
+    transition: transform, opacity, height, content-visibility allow-discrete;
+    transition-duration: .8s;
+    transition-delay: .1s;
+    // transition-timing-function: cubic-bezier(0.785, 0.135, 0.15, 0.86); 
+    // transition-timing-function: ease-out; 
+    // transition-timing-function: cubic-bezier(0.6, 0.04, 0.98, 0.335); 
+    transition-timing-function: cubic-bezier(0.445, 0.05, 0.55, 0.95); 
+    height: 0;
+    opacity: 0;
+    transform:  translateY(-2.5dvh);
+    overflow: hidden;
+    content-visibility:hidden;
+  }
+}
+
+@starting-style {
+  ::details-content {
+    height: 0;
+    opacity: 0;
+    transform:  translateY(-2.5dvh);
+    content-visibility:hidden;
+  }
+}
+
+/* ===============================
+   CLASSES TO EXTEND
+   =============================== */
+
+.heading-base {
+  font-family: var(--heading-font-family);
+  text-transform: uppercase;
+}
+// sds{
+
+//   transition: cubic-bezier(0.075, 0.82, 0.165, 1)
+// }

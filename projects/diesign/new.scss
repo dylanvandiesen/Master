@@ -1,0 +1,135 @@
+
+/* ===============================
+   Configuration: Variables & Mixins
+   =============================== */
+
+   :root {
+    --bottom-width: 2048px;
+    --aspect-ratio-bottom: 2048 / 855;
+  }
+  
+  $bottom-width: if(var(--bottom-width) != null, var(--bottom-width), 2048px);
+  $aspect-ratio-bottom: var(--aspect-ratio-bottom, 2048 / 855);
+  
+  // Cloud size configurations
+  $cloud-sizes: (
+    bg-cloud1: (width: 750, height: 200),
+    bg-cloud2: (width: 800, height: 220),
+    bg-cloud3: (width: 850, height: 240)
+  );
+  
+  // Cloud filters configuration
+  $cloud-filters: (
+    base: "-filter-base",
+    back: "-filter-back",
+    mid: "-filter-mid",
+    front: "-filter-front"
+  );
+  
+  // Cloud colors
+  $cloud-layer-colors: (
+    bg-cloud1: (
+      base: rgba(255, 255, 255, 0.9),
+      back: rgba(215, 215, 215, 0.8),
+      mid: rgba(180, 180, 220, 0.7),
+      front: rgba(160, 160, 200, 0.6)
+    ),
+    bg-cloud2: (
+      base: rgba(245, 245, 255, 0.85),
+      back: rgba(200, 200, 255, 0.75),
+      mid: rgba(170, 170, 230, 0.65),
+      front: rgba(150, 150, 210, 0.55)
+    ),
+    bg-cloud3: (
+      base: rgba(235, 235, 255, 0.8),
+      back: rgba(190, 190, 240, 0.7),
+      mid: rgba(160, 160, 220, 0.6),
+      front: rgba(140, 140, 200, 0.5)
+    )
+  );
+  
+  // Cloud animation settings
+  $cloud-animation-config: (
+    bg-cloud1: (duration: 30s, delay: 0s, easing: ease-in-out, direction: alternate, repeat: infinite),
+    bg-cloud2: (duration: 40s, delay: 5s, easing: linear, direction: alternate-reverse, repeat: infinite),
+    bg-cloud3: (duration: 50s, delay: 2s, easing: ease-in, direction: normal, repeat: infinite)
+  );
+  
+  // Mixin for cloud animation
+  @mixin cloud-animation($name) {
+    $config: map-get($cloud-animation-config, $name);
+    @if $config {
+      animation: cloud-move 
+        map-get($config, duration) 
+        map-get($config, easing) 
+        map-get($config, delay) 
+        map-get($config, direction) 
+        map-get($config, repeat);
+    } @else {
+      @warn "Animation configuration for #{$name} not found.";
+    }
+  }
+  
+  // Mixin for dynamic cloud styling
+  @mixin cloud-style($name, $size, $colors) {
+    @if not $size or not $colors {
+      @warn "Missing size or color configuration for #{$name}.";
+      // @return;
+    }
+    
+    $width: map-get($size, width);
+    $height: map-get($size, height);
+  
+    width: auto;
+    aspect-ratio: #{$width} / #{$height};
+    max-width: calc(#{$width} / #{$bottom-width} * 100%);
+    @include cloud-animation($name);
+  
+    @each $layer, $color in $colors {
+      .#{$name}-#{$layer} {
+        background: $color;
+        filter: url(#{$name}#{map-get($cloud-filters, $layer)});
+      }
+    }
+  }
+  
+  /* ===============================
+     Main Styles
+     =============================== */
+  
+  .bg-clouds {
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    inset: auto 0 0 auto;
+    width: 100vw;
+    height: 100vh;
+  
+    .bottom {
+      position: relative;
+      width: 100%;
+      height: auto;
+      aspect-ratio: #{$aspect-ratio-bottom};
+  
+      @each $cloud, $size in $cloud-sizes {
+        $colors: map-get($cloud-layer-colors, $cloud);
+        
+        ##{$cloud} {
+          position: absolute;
+          @include cloud-style($cloud, $size, $colors);
+        }
+      }
+    }
+  }
+  
+  /* ===============================
+     Animations
+     =============================== */
+  
+  @keyframes cloud-move {
+    0% { transform: translateX(0); opacity: 1; }
+    50% { transform: translateX(10vw); opacity: 0.8; }
+    100% { transform: translateX(-5vw); opacity: 1; }
+  }
+  

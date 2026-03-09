@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, viewport-fit=cover, interactive-widget=resizes-content">
+    <meta name="robots" content="index, nofollow">
+
+
+    <% if (process.env.NODE_ENV === 'production' && manifest && manifest['preloader.css']) { %>
+      <link rel="preload" href="<%= manifest['preloader.css'] %>" as="style">
+    <% } else { %>
+      <link rel="preload" href="scss/preloader.scss" as="style">
+    <% } %>
+  
+    <% if (process.env.NODE_ENV === 'production' && manifest && manifest['preloader.js']) { %>
+      <link rel="preload" href="<%= manifest['preloader.js'] %>" as="script">
+    <% } else { %>
+      <link rel="preload" href="js/preloader.js" as="script">
+    <% } %>
+    
+      <link rel="preload" href="fonts/jaapokkisubtract-regular.woff2" as="font" type="font/woff2" crossorigin>
+      <link rel="preload" href="fonts/exo-2-v24-latin-300.woff2" as="font" type="font/woff2" crossorigin>
+      <link rel="preload" href="fonts/exo-2-v24-latin-200.woff2" as="font" type="font/woff2" crossorigin>
+      <link rel="preload" href="images/layer1.avif" as="image" type="image/avif"> 
+      <link rel="prefetch" href="images/sky.avif" as="image" type="image/avif"> 
+      <link rel="expect" href="images/layer2.avif" as="image" type="image/avif"> 
+      <link rel="expect" href="images/layer3.avif" as="image" type="image/avif"> 
+      <link rel="expect" href="images/layer4.avif" as="image" type="image/avif"> 
+ 
+    <%/* <meta http-equiv="refresh" content="0; url=index.html?v=2">*/%>
+    <meta property="og:title" content="DIESIGN | Designer & front-end astronaut">
+    <meta property="og:description" content="Ik ben dylan van diesen, een ervaren auto­didact met liefde voor design en front-end development. Al sinds mijn twaalf­de spen­deer ik het liefst uren ach­ter de com­puter om mezelf nieuwe tech­nieken en vaardig­heden aan te leren. In de jaren hierop volgend heb ik mijn crea­tivi­teit en ken­nis nog verder uit kun­nen brei­den door mijn werk bij ui­teen­lopen­de media­bureaus en het leiden van mijn eigen multi­media­bedrijf.">
+    <meta property="og:image" content="/images/social-intro.jpg">
+    <meta property="og:url" content="https://www.diesign.space">
+    <meta property="og:site_name" content="DIESIGN">
+    
+    <link rel="apple-touch-icon" sizes="180x180" href="favicons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicons/favicon-16x16.png">
+    <link rel="manifest" href="favicons/site.webmanifest">
+    <link rel="mask-icon" href="favicons/safari-pinned-tab.svg" color="hsl(285,96%,20%)">
+    <link rel="shortcut icon" href="favicons/favicon.ico">
+    <meta name="msapplication-TileColor" content="hsl(285,96%,20%)">
+    <meta name="msapplication-config" content="favicons/browserconfig.xml">
+    <meta name="theme-color" content="hsl(285,96%,20%)">
+    <title>&lt;DIESIGN/&gt; Designer & front-end astronaut</title>
+    <meta name="Title" content="&lt;DIESIGN/&gt; - Designer & front-end astronaut">
+    <meta name="Description" content="Ik ben Dylan van Diesen, een ervaren auto­didact met liefde voor design en front-end development">
+    
+    <% if (process.env.NODE_ENV === 'production' && manifest && manifest['preloader.css']) { %>
+      <link href="<%= manifest['preloader.css'] %>" rel="stylesheet">
+    <% } %>
+
+    <% if (process.env.NODE_ENV === 'production' && manifest && manifest['preloader.js']) { %>
+      <script src="<%= manifest['preloader.js'] %>"></script>
+    <% } else { %>
+      <script src="js/preloader.js" ></script>
+    <% } %>
+
+  </head>
+  <body>
+    <div id="app" class="content-container" style="display:none;">
+
+      <div class="logo-container" >
+        <svg id="logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1156.65 212.77">
+          <path d="M551.77,83.46c-1.79-.6-3.49-1.19-5.88-1.79C527.17,77,519.8,71.11,519.5,60.56c-.3-6.78,1.69-10,3.48-11.76,5.18-5.57,15.54-7.67,18.13-7.67,17.83,0,26.39,5.58,39.54,14L588,59.86,609.43,25l-6.77-4.38C587.72,11,571,.1,541.11.1c-10.56,0-32.57,4.38-47.81,20.22-10.55,11.15-15.83,25.49-14.94,41.93.9,19.62,10,35.45,26.4,46.31,11.75,7.87,26.09,11,32.57,13.15l.89.5c21.32,7.27,34,17.52,34,28.68,0,5.28-5.58,20.82-22.61,20.82-9.07,0-33.37,0-55.08-23.21l-29.88,28.19a114.81,114.81,0,0,0,49,31.07,122.23,122.23,0,0,0,36.06,5,62.54,62.54,0,0,0,47.21-21.12c10.25-11.45,16.43-26.39,16.43-40.73,0-14.64-5.58-28.39-16.14-40.14C586.63,99.3,571.39,90.24,551.77,83.46Z" fill="hsl(285,96%,65%)"/>
+          <path d="M130.47,32.77a102.79,102.79,0,0,0-32.57-22A102.72,102.72,0,0,0,58.07,2.89H0V208.16H16.73v.2H58.07a98,98,0,0,0,39.83-8.17,98.15,98.15,0,0,0,32.57-22,93.78,93.78,0,0,0,22-32.57,98.09,98.09,0,0,0,8.17-40.14,98,98,0,0,0-8.17-39.84A97.73,97.73,0,0,0,130.47,32.77ZM58.07,167.42H41V44H58a61.59,61.59,0,0,1,61.55,61.55C119.62,139.54,92,167.42,58.07,167.42Z" fill="#fff"/>
+          <rect x="203.18" y="2.89" width="41.03" height="205.17" fill="#fff"/>
+          <rect x="294.01" y="82.07" width="113.44" height="41.03" fill="#fff"/>
+          <rect x="294.01" y="167.42" width="136.05" height="41.03" fill="#fff"/>
+          <rect x="294.01" y="2.89" width="136.95" height="41.13" fill="#fff"/>
+          <rect x="655.78" y="2.89" width="41.03" height="205.17" fill="#fff"/>
+          <path d="M861.54,122.6h46.32c-7.67,27.59-33.17,49-63,49a64,64,0,0,1-46-19.62,65.15,65.15,0,0,1-18.43-46.32A63.84,63.84,0,0,1,799.65,60a65,65,0,0,1,46-19h.6a64.83,64.83,0,0,1,36,11.46l29.58-29A105.74,105.74,0,0,0,846.65,0h-.89A106.37,106.37,0,0,0,739.39,105.27c-.6,58.87,46.31,106.08,105.27,106.67h.3c55.08,0,102-44.82,102-109.35V81.77H861.6Z" fill="#fff"/>
+          <polygon points="1115.62 2.89 1115.62 117.82 1002.18 2.89 989.33 2.89 989.33 208.46 1030.36 208.46 1030.36 88.54 1145.89 208.46 1145.89 208.36 1156.65 208.36 1156.65 2.89 1115.62 2.89" fill="#fff"/>
+        </svg>
+      </div>
+
+      <div class="tab-panes">
+        <div id="home" class="tab-pane-container">
+          <div class="spacer">
+            <div class="content-scroller">
+              <div id="home-tab" class="tab-pane active" role="tabpanel" aria-labelledby="home-tab">
+                <div class="intro-container">
+                  <svg class="diesign-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2200 212.74">
+                    <path class="logo-letter-01-d" d="M130.47,32.77a102.85,102.85,0,0,0-32.57-22A102.57,102.57,0,0,0,58.07,2.89H0V208.16H16.73v.2H58.07a98,98,0,0,0,39.83-8.17,98.12,98.12,0,0,0,32.57-22,93.82,93.82,0,0,0,22-32.57,98.06,98.06,0,0,0,8.17-40.14,98,98,0,0,0-8.17-39.84A97.82,97.82,0,0,0,130.47,32.77ZM58.07,167.42H41V44h17a61.59,61.59,0,0,1,61.55,61.55C119.62,139.54,92,167.42,58.07,167.42Z"></path>
+                    <rect class="logo-letter-02-i" x="203.18" y="2.89" width="41.03" height="205.17"></rect>
+                    <g class="logo-letter-03-e" >
+                      <rect x="294.01" y="2.89" width="136.95" height="41.13"></rect>
+                      <rect x="294.01" y="82.07" width="113.44" height="41.03"></rect>
+                      <rect x="294.01" y="167.42" width="136.05" height="41.03"></rect>
+                    </g>
+                    <path class="logo-letter-04-s" d="M551.77,83.46c-1.79-.6-3.49-1.19-5.88-1.79C527.17,77,519.8,71.11,519.5,60.56c-.3-6.78,1.69-10,3.48-11.76,5.18-5.57,15.54-7.67,18.13-7.67,17.83,0,26.39,5.58,39.54,14L588,59.86,609.43,25l-6.77-4.38C587.72,11,571,.1,541.11.1c-10.56,0-32.57,4.38-47.81,20.22-10.55,11.15-15.83,25.49-14.94,41.93.9,19.62,10,35.45,26.4,46.31,11.75,7.87,26.09,11,32.57,13.15l.89.5c21.32,7.27,34,17.52,34,28.68,0,5.28-5.58,20.82-22.61,20.82-9.07,0-33.37,0-55.08-23.21l-29.88,28.19a114.78,114.78,0,0,0,49,31.07,122.22,122.22,0,0,0,36.06,5,62.57,62.57,0,0,0,47.21-21.12c10.25-11.45,16.43-26.39,16.43-40.73,0-14.64-5.58-28.39-16.14-40.14C586.63,99.3,571.39,90.24,551.77,83.46Z"></path>
+                    <g class="logo-letter-05-e" >
+                      <rect x="659.23" y="2.89" width="136.95" height="41.13"></rect>
+                      <rect x="659.23" y="82.07" width="113.44" height="41.03"></rect>
+                      <rect x="659.23" y="167.42" width="136.05" height="41.03"></rect>
+                    </g>
+                    <polygon class="logo-letter-06-n" points="970.87 117.82 857.43 2.89 844.58 2.89 844.58 208.46 885.62 208.46 885.62 88.54 1001.15 208.46 1001.15 208.36 1011.91 208.36 1011.91 2.89 970.87 2.89 970.87 117.82"></polygon>
+                    <path class="logo-letter-07-d" d="M1264.09,29.88A100.75,100.75,0,0,0,1191.68,0h-58.07V205.17h16.74v.3h41.33a102.67,102.67,0,0,0,72.41-30.18,93.82,93.82,0,0,0,22-32.57,98.2,98.2,0,0,0,8.16-40.13,98.16,98.16,0,0,0-8.16-39.84A97.86,97.86,0,0,0,1264.09,29.88Zm-72.41,134.55h-17V41h17a61.59,61.59,0,0,1,61.55,61.56C1253.23,136.55,1225.64,164.43,1191.68,164.43Z"></path>
+                    <g class="logo-letter-08-e" >
+                      <rect x="1337.39" y="2.89" width="136.95" height="41.13"></rect>
+                      <polygon points="1450.83 82.07 1337.39 82.07 1337.39 82.07 1337.39 123.1 1450.83 123.1 1450.83 82.07"></polygon>
+                      <rect x="1337.39" y="167.42" width="136.05" height="41.03"></rect>
+                    </g>
+                    <path class="logo-letter-09-s" d="M1595.15,83.46c-1.8-.6-3.49-1.19-5.88-1.79-18.72-4.68-26.09-10.56-26.39-21.11-.3-6.78,1.69-10,3.48-11.76,5.18-5.57,15.54-7.67,18.13-7.67,17.83,0,26.39,5.58,39.54,14l7.37,4.68L1652.81,25,1646,20.62C1631.1,11,1614.37.1,1584.49.1c-10.56,0-32.57,4.38-47.81,20.22-10.55,11.15-15.83,25.49-14.94,41.93.9,19.62,10,35.45,26.4,46.31,11.75,7.87,26.09,11,32.57,13.15l.89.5c21.32,7.27,34,17.52,34,28.68,0,5.28-5.57,20.82-22.6,20.82-9.07,0-33.37,0-55.08-23.21L1508,176.69a114.78,114.78,0,0,0,49,31.07,122.22,122.22,0,0,0,36.06,5,62.54,62.54,0,0,0,47.2-21.12c10.26-11.45,16.44-26.39,16.44-40.73,0-14.64-5.58-28.39-16.14-40.14C1630,99.3,1614.77,90.24,1595.15,83.46Z"></path>
+                    <rect class="logo-letter-10-i" x="1699.13" y="2.89" width="41.03" height="205.17"></rect>
+                    <path class="logo-letter-11-g" d="M1904.89,122.6h46.32c-7.67,27.59-33.17,49-63,49a64,64,0,0,1-46-19.62,65.13,65.13,0,0,1-18.43-46.32A63.81,63.81,0,0,1,1843,60a65,65,0,0,1,46-19h.6a64.84,64.84,0,0,1,36,11.46l29.58-29A105.75,105.75,0,0,0,1890,0h-.89a106.37,106.37,0,0,0-106.37,105.27c-.6,58.87,46.31,106.08,105.27,106.67h.3c55.08,0,102-44.82,102-109.35V81.77h-85.36Z"></path>
+                    <polygon class="logo-letter-12-n" points="2158.97 2.89 2158.97 117.82 2045.53 2.89 2032.68 2.89 2032.68 208.46 2073.71 208.46 2073.71 88.54 2189.24 208.46 2189.24 208.36 2200 208.36 2200 2.89 2158.97 2.89"></polygon>
+                  </svg>
+                  <h3>Designer &amp; front-end astronaut</h3>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="work" class="tab-pane-container">
+          <div class="spacer">
+            <div class="content-bg"></div>
+            <div class="content-scroller">
+              <div id="work-tab" class="tab-pane" role="tabpanel" aria-labelledby="work-tab">
+                <div class="content-wrapper">
+                  <div class="thumbnails">
+                    <div class="thumbnail">
+      
+                        <button popovertarget="bl-project" class="pop-btn open">
+                          <div class="hoverBox">
+                            <i class="fas fa-eye fa-2x"></i>
+                          </div>
+                          <picture class="d-viewport-only" data-src="true">
+                            <source data-srcset="images/portfolio/thumb-bl.avif" type="image/avif">
+                            <source data-srcset="images/portfolio/thumb-bl.webp" type="image/webp">
+                            <source data-srcset="images/portfolio/thumb-bl.jpg" type="image/jpeg"> 
+                            <img loading="lazy" data-src="images/portfolio/thumb-bl.jpg" alt="" width="1000" height="660">
+                          </picture>
+                          <div class="rippleJS"></div>
+                        </button>
+  
+                    </div>
+                    <div class="thumbnail">
+                      <a id="modalLink-fs">
+                        <div class="hoverBox">
+                          <i class="fas fa-eye fa-2x"></i>
+                        </div>
+                        <picture class="d-viewport-only" data-src="true">
+                          <source data-srcset="images/portfolio/thumb-fs.avif" type="image/avif">
+                          <source data-srcset="images/portfolio/thumb-fs.webp" type="image/webp">
+                          <source data-srcset="images/portfolio/thumb-fs.jpg" type="image/jpeg"> 
+                          <img loading="lazy" data-src="images/portfolio/thumb-fs.jpg" alt="" width="1000" height="660">
+                        </picture>
+                        <div class="rippleJS"></div>
+                      </a>
+                    </div>
+                    <div class="thumbnail">
+                      <a id="modalLink-su">
+                        <div class="hoverBox">
+                          <i class="fas fa-eye fa-2x"></i>
+                        </div>
+                        <picture class="d-viewport-only" data-src="true">
+                          <source data-srcset="images/portfolio/thumb-su.avif" type="image/avif">
+                          <source data-srcset="images/portfolio/thumb-su.webp" type="image/webp">
+                          <source data-srcset="images/portfolio/thumb-su.jpg" type="image/jpeg">
+                          <img loading="lazy" data-src="images/portfolio/thumb-su.jpg" alt="" width="1000" height="660">
+                        </picture>
+                        <div class="rippleJS"></div>
+                      </a>
+                    </div>
+                    <div class="thumbnail">
+                      <a id="modalLink-tt">
+                        <div class="hoverBox">
+                          <i class="fas fa-eye fa-2x"></i>
+                        </div>
+                        <picture class="d-viewport-only" data-src="true">
+                          <source data-srcset="images/portfolio/thumb-tt.avif" type="image/avif">
+                          <source data-srcset="images/portfolio/thumb-tt.webp" type="image/webp">
+                          <source data-srcset="images/portfolio/thumb-tt.jpg" type="image/jpeg"> 
+                          <img loading="lazy" data-src="images/portfolio/thumb-tt.jpg" alt="" width="1000" height="660">
+                        </picture>
+                        <div class="rippleJS"></div>
+                      </a>
+                    </div>
+                    <div class="thumbnail">
+                      <a id="modalLink-mo">
+                        <div class="hoverBox">
+                          <i class="fas fa-eye fa-2x"></i>
+                        </div>
+                        <picture class="d-viewport-only" data-src="true">
+                          <source data-srcset="images/portfolio/thumb-mo.avif" type="image/avif">
+                          <source data-srcset="images/portfolio/thumb-mo.webp" type="image/webp">
+                          <source data-srcset="images/portfolio/thumb-mo.jpg" type="image/jpeg">
+                          <img loading="lazy" data-src="images/portfolio/thumb-mo.jpg" alt="" width="1000" height="660">
+                        </picture>
+                        <div class="rippleJS"></div>
+                      </a>
+                    </div>
+                    <div class="thumbnail">
+                      <a id="modalLink-ni">
+                        <div class="hoverBox">
+                          <i class="fas fa-eye fa-2x"></i>
+                        </div>
+                        <picture class="d-viewport-only" data-src="true">
+                          <source data-srcset="images/portfolio/thumb-ni.avif" type="image/avif">
+                          <source data-srcset="images/portfolio/thumb-ni.webp" type="image/webp">
+                          <source data-srcset="images/portfolio/thumb-ni.jpg" type="image/jpeg">
+                          <img loading="lazy" data-src="images/portfolio/thumb-ni.jpg" alt="" width="1000" height="660">
+                        </picture>
+                        <div class="rippleJS"></div>
+                      </a>
+                    </div>
+                    <div class="thumbnail">
+                      <a id="modalLink-mm">
+                        <div class="hoverBox">
+                          <h4>Front-end</h4>
+                          <i class="fas fa-eye fa-2x"></i>
+                        </div>
+                        <picture class="d-viewport-only" data-src="true">
+                          <source data-srcset="images/portfolio/thumb-mm.avif" type="image/avif">
+                          <source data-srcset="images/portfolio/thumb-mm.webp" type="image/webp">
+                          <source data-srcset="images/portfolio/thumb-mm.jpg" type="image/jpeg">
+                          <img loading="lazy" data-src="images/portfolio/thumb-mm.jpg" alt="" width="1000" height="660">
+                        </picture>
+                        <div class="rippleJS"></div>
+                      </a>
+                    </div>
+                    <div class="thumbnail">
+                      <a id="modalLink-jhp">
+                        <div class="hoverBox">
+                          <i class="fas fa-eye fa-2x"></i>
+                        </div>
+                        <picture class="d-viewport-only" data-src="true">
+                          <source data-srcset="images/portfolio/thumb-jhp.avif" type="image/avif">
+                          <source data-srcset="images/portfolio/thumb-jhp.webp" type="image/webp">
+                          <source data-srcset="images/portfolio/thumb-jhp.jpg" type="image/jpeg">
+                          <img loading="lazy" data-src="images/portfolio/thumb-jhp.jpg" alt="" width="1000" height="660">
+                        </picture>
+                        <div class="rippleJS"></div>
+                      </a>
+                    </div>
+                    <div class="thumbnail">
+                      <a id="modalLink-tb">
+                        <div class="hoverBox">
+                          <i class="fas fa-eye fa-2x"></i>
+                        </div>
+                        <picture class="d-viewport-only" data-src="true">
+                          <source data-srcset="images/portfolio/thumb-tb.avif" type="image/avif">
+                          <source data-srcset="images/portfolio/thumb-tb.webp" type="image/webp">
+                          <source data-srcset="images/portfolio/thumb-tb.jpg" type="image/jpeg">
+                          <img loading="lazy" data-src="images/portfolio/thumb-tb.jpg" alt="" width="1000" height="660">
+                        </picture>
+                        <div class="rippleJS"></div>
+                      </a>
+                    </div>
+                    <div class="thumbnail">
+                      <a id="modalLink-erm">
+                        <div class="hoverBox">
+                          <i class="fas fa-eye fa-2x"></i>
+                        </div>
+                        <picture class="d-viewport-only" data-src="true">
+                          <source data-srcset="images/portfolio/thumb-erm.avif" type="image/avif">
+                          <source data-srcset="images/portfolio/thumb-erm.webp" type="image/webp">
+                          <source data-srcset="images/portfolio/thumb-erm.jpg" type="image/jpeg">
+                          <img loading="lazy" data-src="images/portfolio/thumb-erm.jpg" alt="" width="1000" height="660">
+                        </picture>
+                        <div class="rippleJS"></div>
+                      </a>
+                    </div>
+                    <div class="thumbnail">
+                      <a id="modalLink-vdolw">
+                        <div class="hoverBox">
+                          <i class="fas fa-eye fa-2x"></i>
+                        </div>
+                        <picture class="d-viewport-only" data-src="true">
+                          <source data-srcset="images/portfolio/thumb-vdolw.avif" type="image/avif">
+                          <source data-srcset="images/portfolio/thumb-vdolw.webp" type="image/webp">
+                          <source data-srcset="images/portfolio/thumb-vdolw.jpg" type="image/jpeg">
+                          <img loading="lazy" data-src="images/portfolio/thumb-vdolw.jpg" alt="" width="1000" height="660">
+                        </picture>
+                        <div class="rippleJS"></div>
+                      </a>
+                    </div>
+                    <div class="thumbnail">
+                      <a id="modalLink-mkdb">
+                        <div class="hoverBox">
+                          <i class="fas fa-eye fa-2x"></i>
+                        </div>
+                        <picture class="d-viewport-only" data-src="true">
+                          <source data-srcset="images/portfolio/thumb-mkdb.avif" type="image/avif">
+                          <source data-srcset="images/portfolio/thumb-mkdb.webp" type="image/webp">
+                          <source data-srcset="images/portfolio/thumb-mkdb.jpg" type="image/jpeg">
+                          <img loading="lazy" data-src="images/portfolio/thumb-mkdb.jpg" alt="" width="1000" height="660">
+                        </picture>
+                        <div class="rippleJS"></div>
+                      </a>
+                    </div>
+                    <div class="thumbnail">
+                      <a id="modalLink-bdwp">
+                        <div class="hoverBox">
+                          <i class="fas fa-eye fa-2x"></i>
+                        </div>
+                        <picture class="d-viewport-only" data-src="true">
+                          <source data-srcset="images/portfolio/thumb-bdwp.avif" type="image/avif">
+                          <source data-srcset="images/portfolio/thumb-bdwp.webp" type="image/webp">
+                          <source data-srcset="images/portfolio/thumb-bdwp.jpg" type="image/jpeg">
+                          <img loading="lazy" data-src="images/portfolio/thumb-bdwp.jpg" alt="" width="1000" height="660">
+                        </picture>
+                        <div class="rippleJS"></div>
+                      </a>
+                    </div>
+                    <div class="thumbnail">
+                      <a id="modalLink-cfp">
+                        <div class="hoverBox">
+                          <i class="fas fa-eye fa-2x"></i>
+                        </div>
+                        <picture class="d-viewport-only" data-src="true">
+                          <source data-srcset="images/portfolio/thumb-cfp.avif" type="image/avif">
+                          <source data-srcset="images/portfolio/thumb-cfp.webp" type="image/webp">
+                          <source data-srcset="images/portfolio/thumb-cfp.jpg" type="image/jpeg">
+                          <img loading="lazy" data-src="images/portfolio/thumb-cfp.jpg" alt="" width="1000" height="660">
+                        </picture>
+                        <div class="rippleJS"></div>
+                      </a>
+                    </div>
+                    <div class="thumbnail">
+                      <a id="modalLink-wap">
+                        <div class="hoverBox">
+                          <i class="fas fa-eye fa-2x"></i>
+                        </div>
+                        <picture class="d-viewport-only" data-src="true">
+                          <source srcset="images/portfolio/thumb-wap.avif" type="image/avif">
+                          <source srcset="images/portfolio/thumb-wap.webp" type="image/webp">
+                          <source srcset="images/portfolio/thumb-wap.jpg" type="image/jpeg">
+                          <img loading="lazy" data-src="images/portfolio/thumb-wap.jpg" alt="" width="1000" height="660">
+                        </picture>
+                        <div class="rippleJS"></div>
+                      </a>
+                    </div>
+                    <div class="thumbnail">
+                      <a id="modalLink-mima">
+                        <div class="hoverBox">
+                          <i class="fas fa-eye fa-2x"></i>
+                        </div>
+                        <picture class="d-viewport-only" data-src="true">
+                          <source srcset="images/portfolio/thumb-mima.avif" type="image/avif">
+                          <source srcset="images/portfolio/thumb-mima.webp" type="image/webp">
+                          <source srcset="images/portfolio/thumb-mima.jpg" type="image/jpeg">
+                          <img loading="lazy" data-src="images/portfolio/thumb-mima.jpg" alt="" width="1000" height="660">
+                        </picture>
+                        <div class="rippleJS"></div>
+                      </a>
+                    </div>
+                  </div>
+
+
+
+                </div>
+              </div>
+            </div>
+          </div>
+                <div id="bl-project" class="project-pop" popover>
+                    <div class="star-bg"></div>
+                    <div class="bg-overlay"></div>
+                    <div class="oversnap-scroller">
+                      <div class="oversnap-body">
+                        <figure>
+                          <picture class="d-viewport-only" data-src="false">
+                            <source srcset="images/portfolio/thumb-bl.avif" type="image/avif">
+                            <source srcset="images/portfolio/thumb-bl.webp" type="image/webp">
+                            <source srcset="images/portfolio/thumb-bl.jpg" type="image/jpeg"> 
+                            <img src="images/portfolio/thumb-bl.jpg" alt="" width="1000" height="660">
+                          </picture>
+                        </figure>
+                        <figure>
+                          <video class="desk" width="1920" height="1080" controls autoplay loop muted controlslist="play nodownload noplaybackrate" disableremoteplayback disablepictureinpicture >
+                            <source src="videos/bl-01-desk.mp4" type="video/mp4">
+                            <source src="videos/bl-01-desk.webm" type="video/webm">
+                            Your browser does not support the video tag.
+                          </video>
+                        </figure>
+                        <figure>
+                          <video class="mob" width="730" height="1624" controls autoplay loop muted controlslist="play nodownload noplaybackrate" disableremoteplayback disablepictureinpicture >
+                            <source src="videos/bl-02-mob.mp4" type="video/mp4">
+                            <source src="videos/bl-02-mob.webm" type="video/webm">
+                            Your browser does not support the video tag.
+                          </video>
+                        </figure>
+                        <figure>
+                          <picture class="d-viewport-only" data-src="false">
+                            <source srcset="images/portfolio/bl-03.avif" type="image/avif">
+                            <source srcset="images/portfolio/bl-03.webp" type="image/webp">
+                            <source srcset="images/portfolio/bl-03.jpg" type="image/jpeg"> 
+                            <img src="images/portfolio/bl-03.jpg" alt="" width="1920" height="4213">
+                          </picture>
+                        </figure>
+                        <figure>
+                          <picture class="d-viewport-only" data-src="false">
+                            <source srcset="images/portfolio/bl-04.avif" type="image/avif">
+                            <source srcset="images/portfolio/bl-04.webp" type="image/webp">
+                            <source srcset="images/portfolio/bl-04.jpg" type="image/jpeg"> 
+                            <img src="images/portfolio/bl-04.jpg" alt="" width="734" height="8947">
+                          </picture>
+                        </figure>
+                      </div>
+                    </div>
+                    <ul class="pop-nav">
+                      <li>
+                        <button class="icon prev"><div class="rippleJS"></div></button>
+                      </li>
+                      <li>
+                        <button popovertarget="bl-project" class="icon close"><div class="rippleJS"></div></button>
+                      </li>
+                      <li>
+                        <button class="icon next"><div class="rippleJS"></div></button>
+                      </li>
+                    </ul>
+                  </div>
+        </div>
+        <div id="about" class="tab-pane-container">
+          <div class="spacer">
+            <div class="content-bg"></div>
+            <div class="content-scroller">
+              <div id="about-tab" class="tab-pane content" role="tabpanel" aria-labelledby="about-tab">
+                <div class="content-wrapper">
+
+                  <div class="profile-pic"><div class="rippleJS fill"></div></div>
+                  <h2>Ik ben Dylan van Diesen, een ervaren auto&shy;didact met liefde voor design en front-end development</h2>
+
+                  <p>Al sinds mijn twaalf&shy;de spen&shy;deer ik het liefst uren ach&shy;ter de com&shy;puter om mezelf nieuwe tech&shy;nieken en vaardig&shy;heden aan te leren. In de jaren hierop volgend heb ik mijn crea&shy;tivi&shy;teit en ken&shy;nis nog verder uit kun&shy;nen brei&shy;den door mijn werk bij ui&shy;teen&shy;lopen&shy;de media&shy;bureaus en het leiden van mijn eigen multi&shy;media&shy;bedrijf.</p>
+
+                  <p>Nu, 21 jaar later heb ik me&shy;zelf ont&shy;wikk&shy;eld tot een multi&shy;media desig&shy;ner die zijn crea&shy;tivi&shy;teit en kennis op meer&shy;dere gebieden kan toe&shy;pas&shy;sen. Van gra&shy;fisch ont&shy;werp tot UX/UI design en van mark&shy;eting&shy;advies tot het sales&shy;gesprek. Ik heb hier&shy;door dan ook al vele pro&shy;jecten succes&shy;vol bege&shy;leid en uitge&shy;voerd. Door mijn lief&shy;de voor com&shy;puters, techno&shy;logie en design ben ik ex&shy;pert gewor&shy;den op het gebied van multi&shy;media&shy;tech&shy;nolo&shy;gieën en appli&shy;caties. Ook ben ik in begin 2016 de uit&shy;daging aange&shy;gaan om me&shy;zelf tot profess&shy;ioneel ni&shy;veau te ont&shy;wikke&shy;len op het ge&shy;bied van front-end deve&shy;lop&shy;ment!</p>
+
+                  <p>Op de werk&shy;vloer word ik om&shy;schreven als iem&shy;and die hard werkt, lo&shy;yaal is en een goe&shy;de dosis humor bevat. Ik ben dan ook op zoek naar een uit&shy;daging voor lange&shy;re tijd met een open en geze&shy;llige werk&shy;sfeer waar&shy;bij ik me&shy;zelf ver&shy;der kan ontwik&shy;kelen.</p>
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="contact" class="tab-pane-container">
+          <div class="spacer">
+            <div class="content-bg"></div>
+            <div class="content-scroller">
+              <div id="contact-tab" class="tab-pane content" role="tabpanel" aria-labelledby="contact-tab">
+                <div class="content-wrapper">
+                  <div class="contact-options">
+                    <a href="tel:0633835576" class="contact-option">
+                      <i class="fas fa-3x fa-satellite"></i>
+                      <span>Bel 06 338 355 76</span>
+                      <div class="rippleJS"></div>
+                    </a>
+                    <a href="/curriculum-vitae-dylan-van-diesen.pdf" target="_blank" class="contact-option">
+                      <i class="fas fa-3x fa-user-astronaut"></i>
+                      <span>Curricu&shy;lum Vitae</span>
+                      <div class="rippleJS"></div>
+                    </a>
+                    <a href="https://www.linkedin.com/in/dylanvandiesen/" target="_blank" rel="noopener"  class="contact-option">
+                      <i class="fab fa-3x fa-linkedin"></i>
+                      <span>Mijn Linkedin</span>
+                      <div class="rippleJS"></div>
+                    </a>
+                  </div>
+                  <h2>Kom in contact <i class="fas fa-hand-spock"></i></h2>
+                  <form name="contact-form" action="https://formsubmit.co/dylanvandiesen@gmail.com" method="POST" >
+                      <div class="form-group">
+                        <label for="contact-name">Naam</label>
+                        <input type="text" name="name" class="form-control" id="contact-name" placeholder="Vul hier uw naam in" autocomplete="on" required="true">
+                      </div>
+                      <div class="form-group">
+                        <label for="contact-email">E-mailadres</label>
+                        <input type="email" name="email" class="form-control" id="contact-email" placeholder="Vul hier uw e-mailadres in" autocomplete="on" required="true">
+                      </div>
+                      <div class="form-group">
+                        <label for="contact-telephone">Telefoonnummer</label>
+                        <input type="tel" name="tel" class="form-control" id="contact-telephone" placeholder="Vul hier uw telefoonnummer in" autocomplete="on" required="true">
+                      </div>
+                      <div class="form-group">
+                        <label for="contact-message">Bericht</label>
+                        <textarea name="message" class="form-control" id="contact-message" rows="2" max-rows="5" placeholder="Schrijf een bericht" required="true"></textarea>
+                      </div>
+
+                      <button type="submit" class="btn btn-primary">Versturen <i class="fas fa-paper-plane"></i><div class="rippleJS"></div></button>
+                    </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <nav class="nav-main">
+        <ul class="nav nav-tabs " id="myTab" role="tablist">
+          <li class="nav-item">
+            <input type="radio" id="nav-home" name="d-tabs" checked>
+            <label class="nav-link" for="nav-home"> 
+              <div class="icon globe"></div>
+              <span>Home</span>
+              <div class="rippleJS"></div>
+            </label>
+          </li>
+          <li class="nav-item">
+            <input type="radio" id="nav-work" name="d-tabs">
+            <label class="nav-link" for="nav-work"> 
+                <div class="icon rocket"></div>
+                <span>Work</span>
+                <div class="rippleJS"></div>
+            </label>
+          </li>
+          <li class="nav-item">
+            <input type="radio" id="nav-about" name="d-tabs">
+            <label class="nav-link" for="nav-about"> 
+                <div class="icon astronaut"></div>
+                <span>About</span>
+                <div class="rippleJS"></div>
+            </label>
+          </li>
+
+          <li class="nav-item">
+            <input type="radio" id="nav-contact" name="d-tabs">
+            <label class="nav-link" for="nav-contact"> 
+              <div class="icon spock"></div>
+              <span>Contact</span>
+              <div class="rippleJS"></div>
+            </label>
+          </li>
+        </ul>
+      </nav>
+
+      <div id="stage" class="stage" data-scalar-y="8">
+        <div class="bg-container" data-depth="0.05">
+          <div id="bg"></div>
+          <div id="stars"></div>
+          <div id="meteorites"></div>
+
+          <% /* 
+            <svg id="bg-cloud1-filters" image-rendering="optimizeQuality" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" width="0" height="0" viewBox="0 0 0 0">
+              <defs>
+                <filter id="bg-cloud1-filter-base">
+                  <feTurbulence type="turbulence" baseFrequency="0.001 0.008" numOctaves="6" seed="8518" stitchTiles="noStitch">
+                    <animate attributeName="baseFrequency" attributeType="XML" values="0.001 0.008; 0.00025 0.0085" keyTimes="0;1" dur="60s" repeatCount="indefinite" />
+                    <!-- <animate attributeName="seed" values="8518;8519,8520" keyTimes="0;0.5;1" dur="60s" repeatCount="indefinite" /> -->
+                    <!-- <feColorMatrix in="turbulence" type="hueRotate" values="0" result="cloud">
+                      <animate attributeName="values" from="0" to="360" dur="60s" repeatCount="indefinite"/>
+                    </feColorMatrix> -->
+                  </feTurbulence>
+                  <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="200">
+                    <animate attributeName="scale" values="200;400" keyTimes="0;1" dur="60s" repeatCount="indefinite" />
+                  </feDisplacementMap>
+                  <!-- <feGaussianBlur in="turbulence" stdDeviation="0">
+                    <animate attributeName="stdDeviation" values="0;0" dur="60s" repeatCount="indefinite"/>
+                  </feGaussianBlur> -->
+                </filter>
+                <filter id="bg-cloud1-filter-back">
+                  <feTurbulence type="turbulence" baseFrequency="0.001 0.008" numOctaves="6" seed="8518" stitchTiles="noStitch">
+                    <animate attributeName="baseFrequency" attributeType="XML" values="0.001 0.008; 0.00025 0.0085" keyTimes="0;1" dur="60s" repeatCount="indefinite" />
+                  </feTurbulence>
+                  <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="200">
+                    <animate attributeName="scale" values="200;400" keyTimes="0;1" dur="60s" repeatCount="indefinite" />
+                  </feDisplacementMap>
+                </filter>
+                <filter id="bg-cloud1-filter-mid">
+                  <feTurbulence type="turbulence" baseFrequency="0.001 0.008" numOctaves="5" seed="8518" stitchTiles="noStitch">
+                    <animate attributeName="baseFrequency" attributeType="XML" values="0.001 0.008; 0.00025 0.0085" keyTimes="0;1" dur="60s" repeatCount="indefinite" />
+                  </feTurbulence>
+                  <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="200">
+                    <animate attributeName="scale" values="200;400" keyTimes="0;1" dur="60s" repeatCount="indefinite" />
+                  </feDisplacementMap>
+                </filter>
+                <filter id="bg-cloud1-filter-front">
+                  <feTurbulence type="turbulence" baseFrequency="0.001 0.008" numOctaves="4" seed="8518" stitchTiles="noStitch">
+                    <animate attributeName="baseFrequency" attributeType="XML" values="0.001 0.008; 0.00025 0.0085" keyTimes="0;1" dur="60s" repeatCount="indefinite" />
+                  </feTurbulence>
+                  <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="200">
+                    <animate attributeName="scale" values="200;500" keyTimes="0;1" dur="60s" repeatCount="indefinite" />
+                  </feDisplacementMap>
+                </filter>
+              </defs>
+            </svg>
+            <div class="bg-clouds">
+              <div class="bottom">
+                <div id="bg-cloud1" class="bg-cloud" >
+                  <div class="bg-cloud1-base"></div>
+                  <div class="bg-cloud1-back"></div>
+                  <div class="bg-cloud1-mid"></div>
+                  <div class="bg-cloud1-front"></div>
+                </div>
+              </div>
+            </div>
+          */ %>
+
+        </div>
+        <div class="mbg-container" data-depth="0.075">
+          <div id="mbg"></div>
+        </div>
+        <div class="mg-container" data-depth="0.1">
+          <div id="mg"></div>
+          <% /*
+            <svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" class="clouds2" fill-rule="evenodd" clip-rule="evenodd" image-rendering="optimizeQuality" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" viewBox="0 0 1200 300">
+                <defs>
+                <filter id="clouds2-filter" filterUnits="userSpaceOnUse">
+                    <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="5" seed="2" result="noise1">
+                    <animate attributeName="baseFrequency" values="0.01; 0.015; 0.01" dur="20s" repeatCount="indefinite" />
+                    </feTurbulence>
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="10" />
+                    <feDisplacementMap in="blur1" scale="20" in2="noise1" result="cloud1">
+                    <animate attributeName="scale" values="20; 25; 20" dur="20s" repeatCount="indefinite" />
+                    </feDisplacementMap>
+                    <feMerge>
+                    <feMergeNode in="cloud1" />
+                    </feMerge>
+                </filter>
+                </defs>
+                <g fill="#FFF" stroke="#FFF" stroke-width="60" filter="url(#clouds2-filter)" opacity="0.8">
+                <path d="M50 60 Q 70 40, 110 60 T 170 60 Q 190 40, 230 60 T 290 60 Q 310 40, 350 60 T 410 60" />
+                </g>
+            </svg> 
+          */ %>
+        </div>
+
+        <div class="fg-container" data-depth="0.15" data-friction-y="0.001">
+          <div id="fg"></div>
+          <div id="dust"></div>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

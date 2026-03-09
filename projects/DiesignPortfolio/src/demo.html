@@ -7,630 +7,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23f3ebdf'/%3E%3Cpath d='M18 18h28v28H18z' fill='none' stroke='%23d36a44' stroke-width='4'/%3E%3Cpath d='M32 24v16M24 32h16' stroke='%238f3819' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E" />
   <title>DIESIGN-VIEWTRANSITIONS</title>
   <style>
-:root {
-  color-scheme: light;
-  --shell-bg: #f3ebdf;
-  --shell-ink: #1f1913;
-  --shell-muted: #6d6358;
-  --panel-bg: rgba(255, 250, 244, 0.88);
-  --panel-line: rgba(78, 59, 39, 0.14);
-  --panel-shadow: 0 28px 90px rgba(67, 40, 17, 0.16);
-  --accent: #d36a44;
-  --accent-soft: rgba(211, 106, 68, 0.14);
-  --accent-ink: #8f3819;
-  --teal: #287a72;
-  --dock-bg: rgba(28, 22, 18, 0.9);
-  --dock-line: rgba(255, 244, 230, 0.08);
-  --dock-ink: rgba(255, 246, 235, 0.78);
-  --dock-active: #fffaf3;
-  --expo: cubic-bezier(0.87, 0, 0.13, 1);
-}
-
-@property --panel-width {
-  syntax: "<length>";
-  inherits: false;
-  initial-value: 34rem;
-}
-
-@property --panel-height {
-  syntax: "<length>";
-  inherits: false;
-  initial-value: 38rem;
-}
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  height: 100%;
-}
-
-html {
-  background:
-    radial-gradient(circle at top left, rgba(214, 158, 100, 0.18), transparent 42%),
-    linear-gradient(180deg, #f7f0e6 0%, #efe6d8 100%);
-}
-
-body {
-  margin: 0;
-  min-height: 100vh;
-  min-height: 100svh;
-  min-height: 100dvh;
-  overflow: hidden;
-  color: var(--shell-ink);
-  font-family: "Trebuchet MS", "Avenir Next", "Segoe UI", sans-serif;
-  background: transparent;
-}
-
-a {
-  color: inherit;
-}
-
-button,
-a {
-  -webkit-tap-highlight-color: transparent;
-}
-
-.app-shell {
-  position: relative;
-  isolation: isolate;
-  min-height: 100vh;
-  min-height: 100svh;
-  min-height: 100dvh;
-  padding:
-    max(1rem, env(safe-area-inset-top))
-    max(1rem, calc(env(safe-area-inset-right) + 1rem))
-    max(1rem, calc(env(safe-area-inset-bottom) + 1rem))
-    max(1rem, calc(env(safe-area-inset-left) + 1rem));
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: clamp(0.85rem, 2.6vw, 1.4rem);
-}
-
-.ambient {
-  position: absolute;
-  border-radius: 999px;
-  filter: blur(24px);
-  opacity: 0.75;
-  pointer-events: none;
-  z-index: -1;
-}
-
-.ambient-one {
-  width: min(52vw, 28rem);
-  height: min(52vw, 28rem);
-  top: 8%;
-  left: -4rem;
-  background: radial-gradient(circle, rgba(211, 106, 68, 0.32), rgba(211, 106, 68, 0));
-}
-
-.ambient-two {
-  width: min(42vw, 24rem);
-  height: min(42vw, 24rem);
-  right: -3rem;
-  bottom: 11%;
-  background: radial-gradient(circle, rgba(40, 122, 114, 0.24), rgba(40, 122, 114, 0));
-}
-
-.panel-stage {
-  min-height: 0;
-  display: grid;
-  place-items: center;
-  padding-block: clamp(0.25rem, 2vw, 1rem);
-}
-
-.content-panel {
-  width: var(--panel-width);
-  height: var(--panel-height);
-  max-width: 100%;
-  max-height: 100%;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  overflow: hidden;
-  border: 1px solid var(--panel-line);
-  border-radius: 1.8rem;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 247, 238, 0.88)),
-    var(--panel-bg);
-  box-shadow: var(--panel-shadow);
-  backdrop-filter: blur(24px);
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  overscroll-behavior: contain;
-  transform-origin: center center;
-  will-change: width, height;
-  transition:
-    width 620ms var(--expo),
-    height 620ms var(--expo),
-    --panel-width 620ms var(--expo),
-    --panel-height 620ms var(--expo);
-}
-
-.content-panel.is-sizing-immediate {
-  transition: none;
-}
-
-.panel-chrome {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.1rem 1.1rem 1rem;
-  border-bottom: 1px solid rgba(78, 59, 39, 0.08);
-  background:
-    linear-gradient(180deg, rgba(255, 251, 246, 0.92), rgba(255, 248, 240, 0.76));
-  backdrop-filter: blur(16px);
-}
-
-.panel-brand {
-  min-width: 0;
-}
-
-.brand-mark,
-.section-kicker,
-.card-kicker,
-.contact-label,
-.timeline-label {
-  margin: 0;
-  color: var(--accent-ink);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.route-label {
-  margin: 0.2rem 0 0;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(1.45rem, 4vw, 2.35rem);
-  line-height: 1;
-}
-
-.route-meta {
-  display: grid;
-  justify-items: end;
-  gap: 0.25rem;
-  text-align: right;
-}
-
-.route-sequence {
-  color: var(--shell-muted);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.route-status {
-  max-width: 13rem;
-  color: var(--shell-ink);
-  font-size: 0.92rem;
-  line-height: 1.2;
-}
-
-.panel-body {
-  position: relative;
-  padding: 1.15rem;
-}
-
-.panel-viewport {
-  position: relative;
-  min-height: 0;
-  overflow: hidden;
-  border-radius: 0 0 calc(1.8rem - 1px) calc(1.8rem - 1px);
-  isolation: isolate;
-  contain: layout paint style;
-}
-
-.panel-scroll {
-  height: 100%;
-  overflow: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.panel-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.panel-content {
-  opacity: 0;
-  view-transition-name: panel-content;
-  transition: opacity 220ms ease;
-  will-change: opacity;
-  contain: layout paint style;
-  content-visibility: auto;
-  contain-intrinsic-size: auto 44rem;
-}
-
-.panel-content.is-visible {
-  opacity: 1;
-}
-
-.hero-block {
-  display: grid;
-  gap: 0.9rem;
-}
-
-.hero-block h2 {
-  margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(1.7rem, 5vw, 3.2rem);
-  line-height: 0.98;
-  letter-spacing: -0.03em;
-}
-
-.hero-block .lead,
-.body-copy,
-.case-copy,
-.availability-copy {
-  margin: 0;
-  color: var(--shell-muted);
-  font-size: 0.98rem;
-  line-height: 1.65;
-}
-
-.hero-block .lead a,
-.body-copy a,
-.availability-copy a {
-  color: var(--accent-ink);
-  font-weight: 700;
-  text-decoration-thickness: 0.08em;
-  text-underline-offset: 0.2em;
-}
-
-.metric-grid,
-.feature-strip,
-.case-grid,
-.story-grid,
-.contact-stack {
-  display: grid;
-  gap: 0.9rem;
-  margin-top: 1.1rem;
-}
-
-.metric-grid,
-.feature-strip,
-.contact-stack {
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-}
-
-.metric-card,
-.note-card,
-.case-card,
-.story-card,
-.contact-card,
-.availability-card {
-  padding: 1rem;
-  border: 1px solid rgba(78, 59, 39, 0.1);
-  border-radius: 1.3rem;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(255, 249, 243, 0.96));
-  box-shadow: 0 10px 28px rgba(67, 40, 17, 0.06);
-}
-
-.metric-card strong,
-.case-card h3,
-.story-card h3,
-.contact-card strong,
-.availability-card strong,
-.note-card h3 {
-  display: block;
-  margin-top: 0.45rem;
-  font-size: 1rem;
-  line-height: 1.2;
-}
-
-.metric-card .metric-value {
-  margin-top: 0.55rem;
-  display: block;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(1.8rem, 5vw, 2.8rem);
-  line-height: 1;
-}
-
-.metric-card p,
-.note-card p,
-.case-card p,
-.story-card p,
-.contact-card p,
-.availability-card p {
-  margin: 0.5rem 0 0;
-  color: var(--shell-muted);
-  line-height: 1.5;
-}
-
-.feature-strip .note-card {
-  background:
-    linear-gradient(180deg, rgba(255, 251, 247, 0.98), rgba(255, 244, 233, 0.92));
-}
-
-.case-card {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.case-card.wide {
-  background:
-    linear-gradient(130deg, rgba(255, 241, 232, 0.98), rgba(255, 250, 246, 0.92));
-}
-
-.case-chip,
-.pill-list span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.38rem 0.64rem;
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent-ink);
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.pill-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin-top: 0.7rem;
-}
-
-.story-grid {
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-}
-
-.timeline {
-  list-style: none;
-  margin: 0.8rem 0 0;
-  padding: 0;
-  display: grid;
-  gap: 0.9rem;
-}
-
-.timeline li {
-  position: relative;
-  padding-left: 1.1rem;
-}
-
-.timeline li::before {
-  content: "";
-  position: absolute;
-  top: 0.32rem;
-  left: 0;
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 999px;
-  background: var(--accent);
-  box-shadow: 0 0 0 0.2rem rgba(211, 106, 68, 0.12);
-}
-
-.timeline strong {
-  display: block;
-  font-size: 0.95rem;
-}
-
-.timeline p {
-  margin: 0.3rem 0 0;
-  color: var(--shell-muted);
-  line-height: 1.55;
-}
-
-.contact-card a {
-  color: var(--accent-ink);
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.contact-card a:hover,
-.contact-card a:focus-visible {
-  text-decoration: underline;
-}
-
-.availability-card {
-  margin-top: 1.1rem;
-  background:
-    linear-gradient(135deg, rgba(40, 122, 114, 0.1), rgba(255, 255, 255, 0.94));
-}
-
-.availability-copy {
-  margin-top: 0.65rem;
-}
-
-.dock {
-  position: sticky;
-  bottom: 0;
-  z-index: 4;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.45rem;
-  padding: 0.45rem;
-  border: 1px solid var(--dock-line);
-  border-radius: 1.45rem;
-  background: var(--dock-bg);
-  box-shadow: 0 22px 42px rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(18px);
-}
-
-.dock-link {
-  min-width: 0;
-  padding: 0.68rem 0.5rem 0.62rem;
-  border-radius: 1rem;
-  display: grid;
-  justify-items: center;
-  gap: 0.42rem;
-  color: var(--dock-ink);
-  text-decoration: none;
-  transition:
-    background-color 180ms ease,
-    color 180ms ease,
-    transform 180ms ease;
-}
-
-.dock-link svg {
-  width: 1.05rem;
-  height: 1.05rem;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.dock-link span {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.dock-link:hover,
-.dock-link:focus-visible {
-  color: var(--dock-active);
-  background: rgba(255, 255, 255, 0.08);
-  transform: translateY(-1px);
-}
-
-.dock-link.is-active {
-  color: var(--dock-active);
-  background: rgba(255, 248, 240, 0.14);
-}
-
-.dock-link:focus-visible {
-  outline: 2px solid rgba(255, 250, 244, 0.56);
-  outline-offset: 2px;
-}
-
-.panel-measure-root {
-  position: fixed;
-  top: -200vh;
-  left: 0;
-  width: 100vw;
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.measure-panel {
-  height: auto !important;
-  max-height: none !important;
-  overflow: visible !important;
-  display: block !important;
-  transition: none !important;
-  will-change: auto !important;
-}
-
-.measure-panel .panel-viewport,
-.measure-panel .panel-scroll {
-  contain: none;
-  overflow: visible;
-}
-
-.measure-panel .panel-content {
-  view-transition-name: none;
-  contain: none;
-  content-visibility: visible;
-}
-
-::view-transition-group(panel-content),
-::view-transition-image-pair(panel-content),
-::view-transition-old(panel-content),
-::view-transition-new(panel-content) {
-  overflow: hidden;
-  border-radius: 0 0 calc(1.8rem - 1px) calc(1.8rem - 1px);
-  clip-path: inset(0 round 0 0 calc(1.8rem - 1px) calc(1.8rem - 1px));
-}
-
-::view-transition-group(panel-content) {
-  animation-duration: 220ms;
-  animation-timing-function: ease;
-  isolation: isolate;
-}
-
-::view-transition-old(panel-content),
-::view-transition-new(panel-content) {
-  animation-duration: 220ms;
-  animation-timing-function: ease;
-  mix-blend-mode: normal;
-}
-
-::view-transition-old(panel-content) {
-  animation-name: panel-fade-out;
-}
-
-::view-transition-new(panel-content) {
-  animation-name: panel-fade-in;
-}
-
-@keyframes panel-fade-in {
-  from {
-    opacity: 0;
-  }
-}
-
-@keyframes panel-fade-out {
-  to {
-    opacity: 0;
-  }
-}
-
-@media (min-width: 40rem) {
-  .panel-chrome {
-    padding-inline: 1.35rem;
-  }
-
-  .panel-body {
-    padding: 1.35rem;
-  }
-
-  .metric-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .feature-strip,
-  .contact-stack {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .case-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .case-card.wide,
-  .availability-card {
-    grid-column: 1 / -1;
-  }
-
-  .story-grid {
-    grid-template-columns: 1.1fr 0.9fr;
-  }
-}
-
-@media (max-width: 34rem) {
-  .app-shell {
-    padding-inline:
-      max(0.8rem, calc(env(safe-area-inset-left) + 0.8rem))
-      max(0.8rem, calc(env(safe-area-inset-right) + 0.8rem));
-  }
-
-  .panel-chrome {
-    align-items: start;
-    flex-direction: column;
-  }
-
-  .route-meta {
-    justify-items: start;
-    text-align: left;
-  }
-}
-
+:root{color-scheme:light;--shell-bg:#f3ebdf;--shell-ink:#1f1913;--shell-muted:#6d6358;--panel-bg:rgba(255, 250, 244, 0.88);--panel-line:rgba(78, 59, 39, 0.14);--panel-shadow:0 28px 90px rgba(67, 40, 17, 0.16);--accent:#d36a44;--accent-soft:rgba(211, 106, 68, 0.14);--accent-ink:#8f3819;--teal:#287a72;--dock-bg:rgba(28, 22, 18, 0.9);--dock-line:rgba(255, 244, 230, 0.08);--dock-ink:rgba(255, 246, 235, 0.78);--dock-active:#fffaf3;--expo:cubic-bezier(0.87, 0, 0.13, 1);--crossfade:cubic-bezier(0.65, 0.05, 0.36, 1)}*,::after,::before{box-sizing:border-box}body,html{height:100%}html{background:radial-gradient(circle at top left,rgba(214,158,100,.18),transparent 42%),linear-gradient(180deg,#f7f0e6 0,#efe6d8 100%)}body{margin:0;min-height:100vh;min-height:100svh;min-height:100dvh;overflow:hidden;color:var(--shell-ink);font-family:"Trebuchet MS","Avenir Next","Segoe UI",sans-serif;background:0 0}a{color:inherit}a,button{-webkit-tap-highlight-color:transparent}.app-shell{position:relative;isolation:isolate;min-height:100vh;min-height:100svh;min-height:100dvh;padding:max(1rem,env(safe-area-inset-top)) max(1rem,env(safe-area-inset-right) + 1rem) max(1rem,env(safe-area-inset-bottom) + 1rem) max(1rem,env(safe-area-inset-left) + 1rem);display:grid;grid-template-rows:minmax(0,1fr) auto;gap:clamp(.85rem,2.6vw,1.4rem)}.ambient{position:absolute;border-radius:999px;filter:blur(24px);opacity:.75;pointer-events:none;z-index:-1}.ambient-one{width:min(52vw,28rem);height:min(52vw,28rem);top:8%;left:-4rem;background:radial-gradient(circle,rgba(211,106,68,.32),rgba(211,106,68,0))}.ambient-two{width:min(42vw,24rem);height:min(42vw,24rem);right:-3rem;bottom:11%;background:radial-gradient(circle,rgba(40,122,114,.24),rgba(40,122,114,0))}.panel-stage{min-height:0;display:grid;place-items:center;padding-block:clamp(.25rem,2vw,1rem)}.content-panel{width:var(--panel-width);height:var(--panel-height);max-width:100%;max-height:100%;display:grid;grid-template-rows:minmax(0,1fr);overflow:hidden;border:1px solid var(--panel-line);border-radius:1.8rem;background:linear-gradient(180deg,rgba(255,255,255,.8),rgba(255,247,238,.88)),var(--panel-bg);box-shadow:var(--panel-shadow);backdrop-filter:blur(24px);scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain;transform-origin:center center;will-change:width,height;transition:width 620ms var(--expo),height 620ms var(--expo),opacity 620ms var(--crossfade),border-color 620ms var(--crossfade),box-shadow 620ms var(--crossfade)}.content-panel.is-sizing-immediate{transition:none}.content-panel.is-collapsed{opacity:0;border-color:transparent;box-shadow:none;pointer-events:none}.card-kicker,.contact-label,.section-kicker,.timeline-label{margin:0;color:var(--accent-ink);font-size:.72rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase}.panel-body{position:relative;display:grid;justify-items:center;align-content:start;min-height:100%;padding:1.15rem;overflow:hidden;isolation:isolate}.panel-viewport{position:relative;min-height:0;overflow:hidden;border-radius:0 0 calc(1.8rem - 1px) calc(1.8rem - 1px)}.panel-swap{position:relative;min-height:0;height:100%;overflow:hidden;isolation:isolate;contain:layout paint style}.panel-overlay{position:absolute;inset:0;overflow:hidden;pointer-events:none;isolation:isolate;z-index:2}.panel-overlay:empty{display:none}.panel-swap.is-transitioning .panel-scroll{visibility:hidden}.panel-overlay .panel-content{position:absolute;top:var(--panel-layer-top,0);left:50%;max-width:none;transform:translateX(-50%);pointer-events:none;transition:opacity 620ms var(--crossfade)}.panel-scroll{position:relative;z-index:1;height:100%;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;-ms-overflow-style:none}.panel-scroll::-webkit-scrollbar{display:none}.panel-content{position:relative;max-width:100%;margin-inline:auto;opacity:0;transition:opacity 620ms var(--crossfade);will-change:opacity;contain:layout paint style;content-visibility:auto;contain-intrinsic-size:auto 44rem}.panel-content.is-entering{transition-delay:72ms}.panel-content.is-current{z-index:1}.panel-content.is-transition-current{z-index:1}.panel-content.is-visible{opacity:1}.panel-content.is-exiting{z-index:2}.hero-block{display:grid;gap:.9rem}.hero-block h2{margin:0;font-family:Georgia,"Times New Roman",serif;font-size:clamp(1.7rem,5vw,3.2rem);line-height:.98;letter-spacing:-.03em}.availability-copy,.body-copy,.case-copy,.hero-block .lead{margin:0;color:var(--shell-muted);font-size:.98rem;line-height:1.65}.availability-copy a,.body-copy a,.hero-block .lead a{color:var(--accent-ink);font-weight:700;text-decoration-thickness:.08em;text-underline-offset:.2em}.case-grid,.contact-stack,.feature-strip,.metric-grid,.story-grid{display:grid;gap:.9rem;margin-top:1.1rem}.contact-stack,.feature-strip,.metric-grid{grid-template-columns:repeat(1,minmax(0,1fr))}.availability-card,.case-card,.contact-card,.metric-card,.note-card,.story-card{padding:1rem;border:1px solid rgba(78,59,39,.1);border-radius:1.3rem;background:linear-gradient(180deg,rgba(255,255,255,.74),rgba(255,249,243,.96));box-shadow:0 10px 28px rgba(67,40,17,.06)}.availability-card strong,.case-card h3,.contact-card strong,.metric-card strong,.note-card h3,.story-card h3{display:block;margin-top:.45rem;font-size:1rem;line-height:1.2}.metric-card .metric-value{margin-top:.55rem;display:block;font-family:Georgia,"Times New Roman",serif;font-size:clamp(1.8rem,5vw,2.8rem);line-height:1}.availability-card p,.case-card p,.contact-card p,.metric-card p,.note-card p,.story-card p{margin:.5rem 0 0;color:var(--shell-muted);line-height:1.5}.feature-strip .note-card{background:linear-gradient(180deg,rgba(255,251,247,.98),rgba(255,244,233,.92))}.case-card{display:grid;gap:.45rem}.case-card.wide{background:linear-gradient(130deg,rgba(255,241,232,.98),rgba(255,250,246,.92))}.case-chip,.pill-list span{display:inline-flex;align-items:center;gap:.35rem;padding:.38rem .64rem;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink);font-size:.76rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}.pill-list{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.7rem}.story-grid{grid-template-columns:repeat(1,minmax(0,1fr))}.timeline{list-style:none;margin:.8rem 0 0;padding:0;display:grid;gap:.9rem}.timeline li{position:relative;padding-left:1.1rem}.timeline li::before{content:"";position:absolute;top:.32rem;left:0;width:.5rem;height:.5rem;border-radius:999px;background:var(--accent);box-shadow:0 0 0 .2rem rgba(211,106,68,.12)}.timeline strong{display:block;font-size:.95rem}.timeline p{margin:.3rem 0 0;color:var(--shell-muted);line-height:1.55}.contact-card a{color:var(--accent-ink);font-weight:700;text-decoration:none}.contact-card a:focus-visible,.contact-card a:hover{text-decoration:underline}.availability-card{margin-top:1.1rem;background:linear-gradient(135deg,rgba(40,122,114,.1),rgba(255,255,255,.94))}.availability-copy{margin-top:.65rem}.dock{position:sticky;bottom:0;z-index:4;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.45rem;padding:.45rem;border:1px solid var(--dock-line);border-radius:1.45rem;background:var(--dock-bg);box-shadow:0 22px 42px rgba(0,0,0,.18);backdrop-filter:blur(18px)}.dock-link{min-width:0;padding:.68rem .5rem .62rem;border-radius:1rem;display:grid;justify-items:center;gap:.42rem;color:var(--dock-ink);text-decoration:none;transition:background-color 180ms ease,color 180ms ease,transform 180ms ease}.dock-link svg{width:1.05rem;height:1.05rem;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}.dock-link span{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}.dock-link:focus-visible,.dock-link:hover{color:var(--dock-active);background:rgba(255,255,255,.08);transform:translateY(-1px)}.dock-link.is-active{color:var(--dock-active);background:rgba(255,248,240,.14)}.dock-link:focus-visible{outline:2px solid rgba(255,250,244,.56);outline-offset:2px}.panel-measure-root{position:fixed;top:-200vh;left:0;width:100vw;visibility:hidden;pointer-events:none}.measure-panel{height:auto!important;max-height:none!important;overflow:visible!important;display:grid!important;grid-template-rows:minmax(0,1fr)!important;transition:none!important;will-change:auto!important}.measure-panel .panel-scroll,.measure-panel .panel-swap,.measure-panel .panel-viewport{contain:none;overflow:visible}.measure-panel .panel-content{contain:none;content-visibility:visible}::view-transition-group(root),::view-transition-new(root),::view-transition-old(root){animation:none}@media (min-width:40rem){.panel-body{padding:1.35rem}.metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.contact-stack,.feature-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.case-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.availability-card,.case-card.wide{grid-column:1/-1}.story-grid{grid-template-columns:1.1fr .9fr}}@media (max-width:34rem){.app-shell{padding-inline:max(.8rem,env(safe-area-inset-left) + .8rem) max(.8rem,env(safe-area-inset-right) + .8rem)}}
 </style>
 </head>
 <body>
@@ -640,45 +17,37 @@ a {
 
     <section class="panel-stage" aria-label="View transition workspace">
       <article class="content-panel" data-panel>
-        <header class="panel-chrome">
-          <div class="panel-brand">
-            <p class="brand-mark">DIESIGN-VIEWTRANSITIONS</p>
-            <h1 class="route-label" data-route-label>Home</h1>
-          </div>
-          <div class="route-meta">
-            <span class="route-sequence" data-route-sequence>01 / 04</span>
-            <strong class="route-status" data-route-status aria-live="polite">Studio overview</strong>
-          </div>
-        </header>
-
         <div class="panel-viewport">
-          <div class="panel-scroll">
-            <div class="panel-body" data-panel-body></div>
+          <div class="panel-swap">
+            <div class="panel-overlay" data-panel-overlay aria-hidden="true"></div>
+            <div class="panel-scroll">
+              <div class="panel-body" data-panel-body></div>
+            </div>
           </div>
         </div>
       </article>
     </section>
 
     <nav class="dock" aria-label="Primary sections">
-      <a class="dock-link is-active" href="?view=home" data-view-link="home" aria-current="page">
+      <a class="dock-link is-active" href="." data-view-link="home" aria-current="page">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 11.5 12 5l8 6.5v7.5H14v-5h-4v5H4z" />
         </svg>
         <span>Home</span>
       </a>
-      <a class="dock-link" href="?view=work" data-view-link="work">
+      <a class="dock-link" href="work" data-view-link="work">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 5h7v6H4zm9 0h7v6h-7zM4 13h7v6H4zm9 0h7v6h-7z" />
         </svg>
         <span>Work</span>
       </a>
-      <a class="dock-link" href="?view=about" data-view-link="about">
+      <a class="dock-link" href="about" data-view-link="about">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 5.5a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm-5 13c.5-2.7 2.5-4 5-4s4.5 1.3 5 4" />
         </svg>
         <span>About</span>
       </a>
-      <a class="dock-link" href="?view=contact" data-view-link="contact">
+      <a class="dock-link" href="contact" data-view-link="contact">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M5 7.5h14v9H5zm0 0 7 5 7-5" />
         </svg>
@@ -688,74 +57,13 @@ a {
   </main>
 
   <script>
-(() => {
-  const VIEW_ORDER = ["home", "work", "about", "contact"];
-
-  const routes = {
-    home: {
-      label: "Home",
-      status: "Studio overview",
-      widthFactor: 0.62,
-      heightFactor: 0.54,
-      render: () => `
-        <section class="hero-block">
-          <p class="section-kicker">Single surface / four states</p>
-          <h2>Fullscreen navigation without ever leaving the frame.</h2>
-          <p class="lead">
-            DIESIGN-VIEWTRANSITIONS keeps one centered panel alive while the URL, panel size, and
-            content rhythm change together. <a href="?view=work">Open work</a> or
-            <a href="?view=about">read the setup</a>.
-          </p>
-        </section>
-
-        <section class="metric-grid" aria-label="Route signals">
-          <article class="metric-card">
-            <p class="card-kicker">Routes</p>
-            <strong class="metric-value">04</strong>
-            <p>Home, work, about, and contact all live inside one persistent shell.</p>
-          </article>
-          <article class="metric-card">
-            <p class="card-kicker">Frame motion</p>
-            <strong class="metric-value">W + H</strong>
-            <p>The panel interpolates width and height together with no overshoot bounce.</p>
-          </article>
-          <article class="metric-card">
-            <p class="card-kicker">History</p>
-            <strong class="metric-value">URL</strong>
-            <p>Every tap writes <code>?view=</code> so back and forward navigation stay meaningful.</p>
-          </article>
-        </section>
-
-        <section class="feature-strip">
-          <article class="note-card">
-            <h3>Content stays readable</h3>
-            <p>
-              The frame stays clipped while an internal scroll surface handles long views and the
-              dock stays pinned at the bottom edge.
-            </p>
-          </article>
-          <article class="note-card">
-            <h3>Transitions stay subtle</h3>
-            <p>
-              CSS View Transitions handle the content swap, while registered CSS properties animate
-              the live frame dimensions in both axes.
-            </p>
-          </article>
-        </section>
-      `
-    },
-    work: {
-      label: "Work",
-      status: "Project selection",
-      widthFactor: 0.98,
-      heightFactor: 0.92,
-      render: () => `
+(()=>{(()=>{var Q;let c="home",$=[c,"work","about","contact"].filter(e=>e!==c),ne=620,ie=72,oe=/\/(?:index|demo)\.html$/,p={home:{label:"Home",status:"Shell closed",render:()=>""},work:{label:"Work",status:"Project selection",sizing:[{minWidth:0,widthFactor:.98,heightFactor:.92},{minWidth:700,widthFactor:.88,heightFactor:.86},{minWidth:1040,widthFactor:.76,heightFactor:.82}],render:()=>`
         <section class="hero-block">
           <p class="section-kicker">Selected work</p>
           <h2>A wider panel gives project cards enough air to breathe.</h2>
           <p class="lead">
             This route stretches horizontally for side-by-side previews, then compresses again on
-            tighter views. <a href="?view=contact">Jump to contact</a> when you are ready.
+            tighter views. <a href="${u("contact")}">Jump to contact</a> when you are ready.
           </p>
         </section>
 
@@ -790,21 +98,14 @@ a {
             </p>
           </article>
         </section>
-      `
-    },
-    about: {
-      label: "About",
-      status: "Process notes",
-      widthFactor: 0.76,
-      heightFactor: 0.72,
-      render: () => `
+      `},about:{label:"About",status:"Process notes",sizing:[{minWidth:0,widthFactor:.76,heightFactor:.72},{minWidth:700,widthFactor:.7,heightFactor:.72},{minWidth:1040,widthFactor:.6,heightFactor:.76}],render:()=>`
         <section class="hero-block">
           <p class="section-kicker">How it works</p>
           <h2>The route model is simple, but the panel feels alive.</h2>
           <p class="lead">
             Each view carries width and height factors, while natural content height keeps the
-            result grounded. <a href="?view=home">Return home</a> or continue into
-            <a href="?view=contact">contact</a>.
+            result grounded. <a href="${u("home")}">Return home</a> or continue into
+            <a href="${u("contact")}">contact</a>.
           </p>
         </section>
 
@@ -834,25 +135,18 @@ a {
               </li>
               <li>
                 <strong>Animate the shell</strong>
-                <p>The frame follows registered width and height properties with in-out-expo easing and no bounce.</p>
+                <p>The frame follows CSS width and height transitions with in-out-expo easing and no bounce.</p>
               </li>
             </ol>
           </article>
         </section>
-      `
-    },
-    contact: {
-      label: "Contact",
-      status: "Availability + links",
-      widthFactor: 0.52,
-      heightFactor: 0.44,
-      render: () => `
+      `},contact:{label:"Contact",status:"Availability + links",sizing:[{minWidth:0,widthFactor:.52,heightFactor:.44},{minWidth:700,widthFactor:.46,heightFactor:.48},{minWidth:1040,widthFactor:.4,heightFactor:.54}],render:()=>`
         <section class="hero-block">
           <p class="section-kicker">Reach out</p>
           <h2>A tighter contact state brings the focus back to the call to action.</h2>
           <p class="lead">
             This route intentionally compresses into a narrower frame. If you want more context,
-            <a href="?view=work">browse work</a> first.
+            <a href="${u("work")}">browse work</a> first.
           </p>
         </section>
 
@@ -874,295 +168,22 @@ a {
           <strong>Share a brief and expected launch window.</strong>
           <p class="availability-copy">
             A concise project note is enough to start. If you need a fuller walkthrough first,
-            revisit <a href="?view=about">the process notes</a>.
+            revisit <a href="${u("about")}">the process notes</a>.
           </p>
         </article>
-      `
-    }
-  };
-
-  const panel = document.querySelector("[data-panel]");
-  const stage = document.querySelector(".panel-stage");
-  const scrollHost = document.querySelector(".panel-scroll");
-  const bodyHost = document.querySelector("[data-panel-body]");
-  const routeLabel = document.querySelector("[data-route-label]");
-  const routeStatus = document.querySelector("[data-route-status]");
-  const routeSequence = document.querySelector("[data-route-sequence]");
-  const dockLinks = Array.from(document.querySelectorAll("[data-view-link]"));
-
-  if (!panel || !stage || !scrollHost || !bodyHost || !routeLabel || !routeStatus || !routeSequence || !dockLinks.length) {
-    return;
-  }
-
-  history.scrollRestoration = "manual";
-
-  const measure = createMeasurePanel();
-  let activeView = "";
-  let fadeFrame = 0;
-  let resizeFrame = 0;
-  let navigationToken = 0;
-
-  function resolveView(value) {
-    return Object.prototype.hasOwnProperty.call(routes, value) ? value : VIEW_ORDER[0];
-  }
-
-  function clamp(value, min, max) {
-    return Math.min(Math.max(value, min), max);
-  }
-
-  function sequenceText(view) {
-    return `${String(VIEW_ORDER.indexOf(view) + 1).padStart(2, "0")} / ${String(VIEW_ORDER.length).padStart(2, "0")}`;
-  }
-
-  function buildUrl(view) {
-    const url = new URL(window.location.href);
-    url.searchParams.set("view", view);
-    return `${url.pathname}${url.search}${url.hash}`;
-  }
-
-  function createMeasurePanel() {
-    const root = document.createElement("div");
-    root.className = "panel-measure-root";
-    root.setAttribute("aria-hidden", "true");
-    root.innerHTML = `
+      `}},d=document.querySelector("[data-panel]"),b=document.querySelector(".panel-stage"),H=document.querySelector(".panel-swap"),g=document.querySelector(".panel-scroll"),f=document.querySelector("[data-panel-body]"),y=document.querySelector("[data-panel-overlay]"),M=Array.from(document.querySelectorAll("[data-view-link]"));if(!d||!b||!H||!g||!f||!y||!M.length)return;history.scrollRestoration="manual";let v=ce(),S=window.location.protocol==="file:",C=ae(window.location.pathname),T="",L="",z=0,I=0,w=0,E=0;function k(e){return Object.prototype.hasOwnProperty.call(p,e)?e:c}function l(e){return e!==c}function q(e,t,n){return Math.min(Math.max(e,t),n)}function N(e){let t=e.replace(oe,"");return t?t==="/"?"/":t.replace(/\/+$/,"")||"/":"/"}function ae(e){if(S)return"";let t=N(e);for(let n of $){let i=`/${n}`;if(t===i||t.endsWith(i))return t.slice(0,-i.length)||"/"}return t}function u(e){let t=k(e);if(S)return t===c?"#/":`#/${t}`;let n=t===c?"":`/${t}`;return`${C==="/"?"":C}${n}`||"/"}function re(e,t){var i,o,a;let n={widthFactor:(i=e.widthFactor)!=null?i:.72,heightFactor:(o=e.heightFactor)!=null?o:.7};for(let r of(a=e.sizing)!=null?a:[])t>=r.minWidth&&Object.assign(n,r);return n}function A(e){let t=e instanceof URL?e:new URL(e,window.location.href);if(S){let o=t.hash.replace(/^#\/?/,"").replace(/\/+$/,"");return o?k(o):c}let n=N(t.pathname);if(n===C)return c;for(let o of $)if(n===u(o))return o;let i=t.searchParams.get("view");return i&&Object.prototype.hasOwnProperty.call(p,i)?i:null}function se(e,t){if(t==="none")return;let n=u(e);if(t==="push"){history.pushState(null,"",n);return}history.replaceState(null,"",n)}function ce(){let e=document.createElement("div");return e.className="panel-measure-root",e.setAttribute("aria-hidden","true"),e.innerHTML=`
       <article class="content-panel measure-panel">
-        <header class="panel-chrome">
-          <div class="panel-brand">
-            <p class="brand-mark">DIESIGN-VIEWTRANSITIONS</p>
-            <h1 class="route-label">Measure</h1>
-          </div>
-          <div class="route-meta">
-            <span class="route-sequence">00 / 00</span>
-            <strong class="route-status">Measuring</strong>
-          </div>
-        </header>
         <div class="panel-viewport">
-          <div class="panel-scroll">
-            <div class="panel-body"></div>
+          <div class="panel-swap">
+            <div class="panel-scroll">
+              <div class="panel-body"></div>
+            </div>
           </div>
         </div>
       </article>
-    `;
-    document.body.appendChild(root);
-
-    return {
-      panel: root.querySelector(".measure-panel"),
-      body: root.querySelector(".panel-body"),
-      label: root.querySelector(".route-label"),
-      status: root.querySelector(".route-status"),
-      sequence: root.querySelector(".route-sequence")
-    };
-  }
-
-  function createPanelContent(view) {
-    const wrapper = document.createElement("div");
-    wrapper.className = "panel-content";
-    wrapper.dataset.view = view;
-    wrapper.innerHTML = routes[view].render();
-    return wrapper;
-  }
-
-  function updateRouteMeta(view) {
-    routeLabel.textContent = routes[view].label;
-    routeStatus.textContent = routes[view].status;
-    routeSequence.textContent = sequenceText(view);
-    document.title = `${routes[view].label} | DIESIGN-VIEWTRANSITIONS`;
-  }
-
-  function updateDockState(view) {
-    for (const link of dockLinks) {
-      const isActive = link.dataset.viewLink === view;
-      link.classList.toggle("is-active", isActive);
-      if (isActive) {
-        link.setAttribute("aria-current", "page");
-      } else {
-        link.removeAttribute("aria-current");
-      }
-    }
-  }
-
-  function applyPanelSize(size, immediate = false) {
-    if (immediate) {
-      panel.classList.add("is-sizing-immediate");
-    }
-
-    panel.style.setProperty("--panel-width", `${size.width}px`);
-    panel.style.setProperty("--panel-height", `${size.height}px`);
-
-    if (immediate) {
-      panel.getBoundingClientRect();
-      panel.classList.remove("is-sizing-immediate");
-    }
-  }
-
-  function measureTargetSize(view) {
-    const route = routes[view];
-    const availableWidth = Math.max(stage.clientWidth, 280);
-    const availableHeight = Math.max(stage.clientHeight, 320);
-    const maxWidth = Math.min(availableWidth, 960);
-    const minWidth = Math.min(maxWidth, availableWidth < 480 ? 220 : 300);
-    const width = Math.round(clamp(availableWidth * route.widthFactor, minWidth, maxWidth));
-
-    measure.label.textContent = route.label;
-    measure.status.textContent = route.status;
-    measure.sequence.textContent = sequenceText(view);
-    measure.panel.style.width = `${width}px`;
-    measure.body.replaceChildren(createPanelContent(view));
-
-    const naturalHeight = Math.ceil(measure.panel.getBoundingClientRect().height);
-    const minHeight = Math.min(availableHeight, availableWidth < 680 ? 360 : 420);
-    const maxHeight = Math.floor(
-      Math.min(availableHeight, Math.max(minHeight, availableHeight * route.heightFactor))
-    );
-    const height = Math.round(clamp(naturalHeight, minHeight, maxHeight));
-
-    return { width, height };
-  }
-
-  function queueFadeIn(content, token) {
-    cancelAnimationFrame(fadeFrame);
-    fadeFrame = requestAnimationFrame(() => {
-      if (token !== navigationToken) {
-        return;
-      }
-      content.classList.add("is-visible");
-    });
-  }
-
-  function commitView(view, token) {
-    updateRouteMeta(view);
-    updateDockState(view);
-
-    const content = createPanelContent(view);
-    bodyHost.replaceChildren(content);
-    scrollHost.scrollTop = 0;
-    queueFadeIn(content, token);
-  }
-
-  function swapWithViewTransition(callback) {
-    if (typeof document.startViewTransition !== "function") {
-      callback();
-      return;
-    }
-
-    try {
-      document.startViewTransition(() => {
-        callback();
-      });
-    } catch (error) {
-      callback();
-    }
-  }
-
-  function renderView(nextView, options = {}) {
-    const view = resolveView(nextView);
-    const { historyMode = "push", immediate = false } = options;
-
-    if (view === activeView && historyMode === "push") {
-      scrollHost.scrollTop = 0;
-      return;
-    }
-
-    const token = ++navigationToken;
-    const targetSize = measureTargetSize(view);
-
-    if (historyMode === "push") {
-      history.pushState({ view }, "", buildUrl(view));
-    } else if (historyMode === "replace") {
-      history.replaceState({ view }, "", buildUrl(view));
-    }
-
-    activeView = view;
-
-    if (immediate || !bodyHost.firstElementChild) {
-      commitView(view, token);
-      applyPanelSize(targetSize, true);
-      return;
-    }
-
-    swapWithViewTransition(() => {
-      commitView(view, token);
-      applyPanelSize(targetSize);
-    });
-  }
-
-  function syncCurrentRouteSize() {
-    if (!activeView) {
-      return;
-    }
-
-    const targetSize = measureTargetSize(activeView);
-    applyPanelSize(targetSize, true);
-  }
-
-  function requestSyncCurrentRouteSize() {
-    cancelAnimationFrame(resizeFrame);
-    resizeFrame = requestAnimationFrame(() => {
-      syncCurrentRouteSize();
-    });
-  }
-
-  function handleNavigationClick(event) {
-    if (
-      event.defaultPrevented ||
-      event.button !== 0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey
-    ) {
-      return;
-    }
-
-    const link = event.target.closest("a[href]");
-    if (!link || link.target || link.hasAttribute("download")) {
-      return;
-    }
-
-    const url = new URL(link.href, window.location.href);
-    if (url.origin !== window.location.origin || url.pathname !== window.location.pathname) {
-      return;
-    }
-
-    const requestedView = url.searchParams.get("view");
-    if (!requestedView || !Object.prototype.hasOwnProperty.call(routes, requestedView)) {
-      return;
-    }
-
-    event.preventDefault();
-    renderView(requestedView, { historyMode: "push" });
-  }
-
-  document.addEventListener("click", handleNavigationClick);
-
-  window.addEventListener("popstate", (event) => {
-    const stateView = typeof event.state?.view === "string" ? event.state.view : null;
-    const queryView = new URL(window.location.href).searchParams.get("view");
-    renderView(queryView || stateView || VIEW_ORDER[0], { historyMode: "none" });
-  });
-
-  window.addEventListener("resize", requestSyncCurrentRouteSize, { passive: true });
-  window.addEventListener("orientationchange", requestSyncCurrentRouteSize, { passive: true });
-
-  if (typeof ResizeObserver === "function") {
-    const observer = new ResizeObserver(() => {
-      requestSyncCurrentRouteSize();
-    });
-    observer.observe(stage);
-  }
-
-  if (document.fonts && typeof document.fonts.ready?.then === "function") {
-    document.fonts.ready.then(() => {
-      requestSyncCurrentRouteSize();
-    });
-  }
-
-  const initialView = resolveView(new URL(window.location.href).searchParams.get("view"));
-  renderView(initialView, { historyMode: "replace", immediate: true });
-  console.log("[agency] DIESIGN-VIEWTRANSITIONS initialized");
-})();
+    `,document.body.appendChild(e),{panel:e.querySelector(".measure-panel"),body:e.querySelector(".panel-body")}}function R(e){let t=document.createElement("div");return t.className="panel-content",t.dataset.view=e,t.innerHTML=p[e].render(),t}function O(e){if(!e)return null;let t=e.getBoundingClientRect();return{contentWidth:Math.round(t.width),contentHeight:Math.ceil(t.height)}}function _(e){var o,a;if(!e)return null;let t=O(e),n=H.getBoundingClientRect(),i=e.getBoundingClientRect();return{contentWidth:(o=t==null?void 0:t.contentWidth)!=null?o:Math.round(i.width),contentHeight:(a=t==null?void 0:t.contentHeight)!=null?a:Math.ceil(i.height),top:Math.round(i.top-n.top)}}function F(e,t,n={}){if(!e||!t)return;let{lockHeight:i=!1}=n;if(e.style.width=`${t.contentWidth}px`,e.style.minHeight=`${t.contentHeight}px`,i){e.style.height=`${t.contentHeight}px`;return}e.style.removeProperty("height")}function le(e,t){if(!e||!t)return null;let n=e.cloneNode(!0);return n.classList.remove("is-current","is-entering"),n.classList.add("is-exiting"),n.classList.remove("is-visible"),n.style.opacity=window.getComputedStyle(e).opacity,n.style.contentVisibility="visible",F(n,t,{lockHeight:!0}),n.style.setProperty("--panel-layer-top",`${t.top}px`),n}function U(){return y.querySelector(".panel-content.is-transition-current")||f.querySelector(".panel-content.is-current")||f.lastElementChild}function B(){return Math.round(parseFloat(window.getComputedStyle(f).paddingTop)||0)}function he(e,t){let n=R(e);return n.classList.add("is-transition-current","is-entering"),n.style.contentVisibility="visible",n.style.setProperty("--panel-layer-top",`${B()}px`),F(n,t,{lockHeight:!0}),n}function de(e,t){let n=R(e);return n.classList.add("is-current","is-visible"),F(n,t),n}function D(e){T=e,L=e,ue(e),K(e)}function W(e){H.classList.toggle("is-transitioning",e),e||y.replaceChildren()}function j(e,t){if(!l(e)){f.replaceChildren(),g.scrollTop=0;return}f.replaceChildren(de(e,t)),g.scrollTop=0}function ue(e){document.title=`${p[e].label} | DIESIGN-VIEWTRANSITIONS`,d.setAttribute("aria-label",`${p[e].label}: ${p[e].status}`)}function pe(){for(let e of M)e.href=u(e.dataset.viewLink)}function K(e){for(let t of M){let n=t.dataset.viewLink===e;t.classList.toggle("is-active",n),n?t.setAttribute("aria-current","page"):t.removeAttribute("aria-current")}}function V(e,t={}){let{immediate:n=!1,collapsed:i=!1}=t;n&&d.classList.add("is-sizing-immediate"),d.classList.toggle("is-collapsed",i),d.style.setProperty("--panel-width",`${e.width}px`),d.style.setProperty("--panel-height",`${e.height}px`),n&&(d.getBoundingClientRect(),d.classList.remove("is-sizing-immediate"))}function G(e){var ee,te;if(!l(e))return{width:0,height:0,contentWidth:0,contentHeight:0};let t=p[e],n=Math.max(b.clientWidth,280),i=Math.max(b.clientHeight,320),o=re(t,n),a=Math.min(n,960),r=Math.min(a,n<480?220:300),s=Math.round(q(n*o.widthFactor,r,a));v.panel.style.width=`${s}px`,v.body.replaceChildren(R(e));let m=v.body.querySelector(".panel-content"),h=O(m),ve=Math.ceil(v.panel.getBoundingClientRect().height),X=Math.min(i,n<680?360:420),Se=Math.floor(Math.min(i,Math.max(X,i*o.heightFactor))),Z=Math.round(q(ve,X,Se));return{width:s,height:Z,contentWidth:(ee=h==null?void 0:h.contentWidth)!=null?ee:s,contentHeight:(te=h==null?void 0:h.contentHeight)!=null?te:Z}}function fe(e,t){cancelAnimationFrame(z),z=requestAnimationFrame(()=>{t===w&&e.classList.add("is-visible")})}function Y(e,t){clearTimeout(E),D(e),W(!1),j(e,t)}function me(e,t,n,i=null){clearTimeout(E),D(e);let o=U(),a=l(e);if(!o&&!a){Y(e,n);return}let r=o?i||_(o):null,s=o?le(o,r):null,m=a?he(e,n):null;W(!0),y.replaceChildren(...[s,m].filter(Boolean)),g.scrollTop=0,m&&fe(m,t),s&&requestAnimationFrame(()=>{t!==w||!s.isConnected||(s.style.opacity="0")}),E=window.setTimeout(()=>{t===w&&(j(e,n),W(!1))},ne+ie)}async function ge(e){if(typeof document.startViewTransition!="function"){e();return}try{await document.startViewTransition(()=>{e()}).finished.catch(()=>{})}catch(t){e()}}function P(e,t={}){let n=k(e),{historyMode:i="push",immediate:o=!1}=t;if(n===L&&i==="push"){g.scrollTop=0;return}let a=++w,r=G(n);if(se(n,i),L=n,K(n),o||!T){Y(n,r),V(r,{immediate:!0,collapsed:!l(n)});return}let s=_(U()),m=l(T)&&l(n),h=()=>{a===w&&(me(n,a,r,s),V(r,{collapsed:!l(n)}))};if(!m){h();return}ge(h)}function ye(){let e=L||T;if(!e)return;let t=G(e);if(V(t,{immediate:!0,collapsed:!l(e)}),!l(e))return;let n=y.querySelector(".panel-content.is-transition-current")||f.querySelector(".panel-content.is-current"),i=!!(n!=null&&n.classList.contains("is-transition-current"));F(n,t,{lockHeight:i}),i&&n.style.setProperty("--panel-layer-top",`${B()}px`)}function x(){cancelAnimationFrame(I),I=requestAnimationFrame(()=>{ye()})}function we(e){if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;let t=e.target.closest("a[href]");if(!t||t.target||t.hasAttribute("download"))return;let n=new URL(t.href,window.location.href);if(n.origin!==window.location.origin)return;let i=A(n);i&&(e.preventDefault(),P(i,{historyMode:"push"}))}document.addEventListener("click",we);let J=()=>{let e=A(new URL(window.location.href));P(e||c,{historyMode:"none"})};S?window.addEventListener("hashchange",J):window.addEventListener("popstate",J),window.addEventListener("resize",x,{passive:!0}),window.addEventListener("orientationchange",x,{passive:!0}),typeof ResizeObserver=="function"&&new ResizeObserver(()=>{x()}).observe(b),document.fonts&&typeof((Q=document.fonts.ready)==null?void 0:Q.then)=="function"&&document.fonts.ready.then(()=>{x()}),pe();let be=k(A(new URL(window.location.href)));P(be,{historyMode:"replace",immediate:!0}),console.log("[agency] DIESIGN-VIEWTRANSITIONS initialized")})();})();
+//# sourceMappingURL=main.min.js.map
 
 </script>
 </body>
 </html>
-

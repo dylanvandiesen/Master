@@ -1,0 +1,138 @@
+"content": {
+      "title": "",
+      "client": "",
+      "year": 20,
+      "excerpt": "",
+      "goals": "",
+      "role": "",
+      "toolset": [
+        {
+          "categorie": "Design",
+          "subitems": [
+            "Photoshop",
+            "Illustrator",
+            "After Effects",
+          ],
+          "categorie": "Stack",
+          "subitems": [
+            "WordPress", 
+            "WP CLI",
+            "Elementor", 
+            "Dynamic.ooo",
+            "WP Rocket",
+            "Perfmatters",
+            "WordFence",
+          ],
+          "categorie": "Code",
+          "subitems": [
+            "Node.js",
+            "PHP",
+            "Javascript",
+            "HTML",
+            "CSS",
+            "LottieFiles",
+          ],
+          "categorie": "Hosting",
+          "subitems": [
+            "Azure",
+            "WP Engine",
+          ],
+          "categorie": "Analytics en marketing",
+          "subitems": [
+            "Google Analytics"
+          ],
+        },
+      ],
+      "skillset": [
+        {
+          "categorie": "Strategie en advies",
+          "skills": [
+            "Strategisch advies",
+            "Strategische ontwikkeling",
+            "Marketingadvies",
+            "Technisch advies",
+            "Digital transformation",
+            "Innovatiemanagement",
+            "Business development",
+            "Consultancy"
+          ]
+        },
+        {
+          "categorie": "Concept en richting",
+          "skills": [
+            "Conceptontwikkeling",
+            "Storytelling",
+            "Art direction",
+            "Creative direction",
+            "Technical direction",
+            "Stakeholder direction",
+            "Stakeholder management"
+          ]
+        },
+        {
+          "categorie": "Onderzoek en validatie",
+          "skills": [
+            "User research",
+            "Usability testing",
+            "Contentstrategie"
+          ]
+        },
+        {
+          "categorie": "Creatie en ontwerp",
+          "skills": [
+            "Illustratie",
+            "Animatie",
+            "Motion design",
+            "Visual design",
+            "Grafisch ontwerp",
+            "Branding",
+            "Corporate identity",
+            "UX/UI design",
+            "Interaction design",
+            "Webdesign",
+            "Design systems",
+            "Prototyping"
+          ]
+        },
+        {
+          "categorie": "Ontwikkeling en techniek",
+          "skills": [
+            "Front-end webdevelopment",
+            "Back-end webdevelopment",
+            "Full-stack webdevelopment",
+            "Technische architectuur",
+            "Cloud infrastructuur",
+            "DevOps",
+            "Cybersecurity",
+            "Cybersecurity advies",
+            "Kunstmatige intelligentie advies"
+          ]
+        },
+        {
+          "categorie": "Optimalisatie en groei",
+          "skills": [
+            "Conversie-optimalisatie",
+            "SEO/SEA strategie",
+            "Social media strategie",
+            "Website optimalisatie",
+            "Data-analyse"
+          ]
+        },
+        {
+          "categorie": "product en projectmanagement",
+          "skills": [
+            "Productontwikkeling",
+            "Productmanagement",
+            "Projectmanagement",
+            "Team coaching",
+            "Agile/Scrum begeleiding",
+            "Change management",
+            "Verwachtingsmanagement",
+            "Service design"
+          ]
+        }
+      ],
+
+      "challenges": "",
+      "results": ""
+    },

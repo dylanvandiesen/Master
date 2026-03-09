@@ -1,0 +1,71 @@
+/* ===============================
+   GLOBAL VARIABLES
+   =============================== */
+
+:root {
+  --app-height: 100%;
+
+  --spacing-xs: .25rem;
+  --spacing-sm: .5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 3rem;
+  
+  --p-h: 285; --p-s: 96%; --p-l: 65%; --p-a: 1; 
+
+  --primary: hsla(var(--p-h), var(--p-s), var(--p-l), var(--p-a));
+  --primary-60: hsla(var(--p-h), var(--p-s), var(--p-l), .4);
+  --primary-40: hsla(var(--p-h), var(--p-s), var(--p-l), .4);
+  --primary-30: hsla(var(--p-h), var(--p-s), var(--p-l), .3);
+  --primary-0: hsla(var(--p-h), var(--p-s), var(--p-l), 0);
+  --primary-hex: #c550fc;
+
+  --primary-dark: hsla(var(--p-h), var(--p-s), 20%, var(--p-a)); 
+  --primary-dark-80: hsla(var(--p-h), var(--p-s), 20%, .8);
+  --primary-dark-70: hsla(var(--p-h), var(--p-s), 20%, .7);
+  --primary-dark-40: hsla(var(--p-h), var(--p-s), 20%, .4);
+  --primary-dark-30: hsla(var(--p-h), var(--p-s), 20%, .3);
+  --primary-dark-0: hsla(var(--p-h), var(--p-s), 20%, 0);
+  
+  --primary-light: hsla(var(--p-h), var(--p-s), 80%, var(--p-a)); 
+  --primary-light-80: hsla(var(--p-h), var(--p-s), 80%, .8);
+  
+  --accent: hsla(285, 96%, 80%, 1); 
+  --white: hsla(0, 0%, 100%, 1);
+  --black: hsla(0, 0%, 0%, 1); 
+
+  --body-font-family: 'Exo 2', Arial, sans-serif;
+  --heading-font-family: 'jaapokki', Arial, sans-serif;
+  --font-size: 16px;
+  --line-height: 1.6rem;
+
+  --h2-font-size-xs: 1rem;
+  --h2-font-size-md: 1.25rem;
+  --h2-font-size-lg: 1.5rem;
+  --h2-font-size-xl: 1.875rem;
+}
+$container-breakpoints: (
+  xs: 0,
+  sm: 576px,
+  md: 768px,
+  lg: 992px,
+  xl: 1200px
+);
+/* ===============================
+   NORMALIZE
+   =============================== */
+
+*,
+::before,
+::after {
+  box-sizing: border-box;
+}
+
+/* ===============================
+   CLASSES TO EXTEND
+   =============================== */
+
+.heading-base {
+  font-family: var(--heading-font-family);
+  text-transform: uppercase;
+}

@@ -1,0 +1,644 @@
+@use "sass:map";
+@use "variables" as variables;
+
+
+// Mixin for container queries
+@mixin container-query($breakpoint) {
+  @if map.has-key(variables.$container-breakpoints, $breakpoint) {
+    $value: map.get(variables.$container-breakpoints, $breakpoint);
+    @container (min-width: #{$value}) {
+      @content;
+    }
+  } @else {
+    @error "Invalid breakpoint: #{$breakpoint}.";
+  }
+}
+
+
+
+// Bootstrap functions
+//
+// Utility mixins and functions for evaluating source code across our variables, maps, and mixins.
+
+// Ascending
+// Used to evaluate Sass maps like our grid breakpoints.
+// @mixin _assert-ascending($map, $map-name) {
+//   $prev-key: null;
+//   $prev-num: null;
+//   @each $key, $num in $map {
+//     @if $prev-num == null or unit($num) == "%" or unit($prev-num) == "%" {
+//       // Do nothing
+//     } @else if not comparable($prev-num, $num) {
+//       @warn "Potentially invalid value for #{$map-name}: This map must be in ascending order, but key '#{$key}' has value #{$num} whose unit makes it incomparable to #{$prev-num}, the value of the previous key '#{$prev-key}' !";
+//     } @else if $prev-num >= $num {
+//       @warn "Invalid value for #{$map-name}: This map must be in ascending order, but key '#{$key}' has value #{$num} which isn't greater than #{$prev-num}, the value of the previous key '#{$prev-key}' !";
+//     }
+//     $prev-key: $key;
+//     $prev-num: $num;
+//   }
+// }
+
+// // Starts at zero
+// // Used to ensure the min-width of the lowest breakpoint starts at 0.
+// @mixin _assert-starts-at-zero($map, $map-name: "$grid-breakpoints") {
+//   @if length($map) > 0 {
+//     $values: map-values($map);
+//     $first-value: nth($values, 1);
+//     @if $first-value != 0 {
+//       @warn "First breakpoint in #{$map-name} must start at 0, but starts at #{$first-value}.";
+//     }
+//   }
+// }
+
+
+
+
+
+
+//------ CUSTOM SASS MIXINS ------//
+
+
+// BREAKPOINTS (Todo:Refactor)
+
+// @mixin for-size($size) {
+//     @if $size == phone-only {
+//       @media (max-width: 599px) { @content; }
+//     } @else if $size == tablet-portrait-up {
+//       @media (min-width: 600px) { @content; }
+//     } @else if $size == tablet-landscape-up {
+//       @media (min-width: 900px) { @content; }
+//     } @else if $size == desktop-up {
+//       @media (min-width: 1200px) { @content; }
+//     } @else if $size == big-desktop-up {
+//       @media (min-width: 1800px) { @content; }
+//     }
+//   }
+  // Breakpoint viewport sizes and media queries.
+//
+// Breakpoints are defined as a map of (name: minimum width), order from small to large:
+//
+//    (xs: 0, sm: 576px, md: 768px, lg: 992px, xl: 1200px)
+//
+// The map defined in the `$grid-breakpoints` global variable is used as the `$breakpoints` argument by default.
+
+// Name of the next breakpoint, or null for the last breakpoint.
+//
+//    >> breakpoint-next(sm)
+//    md
+//    >> breakpoint-next(sm, (xs: 0, sm: 576px, md: 768px, lg: 992px, xl: 1200px))
+//    md
+//    >> breakpoint-next(sm, $breakpoint-names: (xs sm md lg xl))
+//    md
+// @function breakpoint-next($name, $breakpoints: $grid-breakpoints, $breakpoint-names: map-keys($breakpoints)) {
+//   $n: index($breakpoint-names, $name);
+//   @return if($n != null and $n < length($breakpoint-names), nth($breakpoint-names, $n + 1), null);
+// }
+
+// Minimum breakpoint width. Null for the smallest (first) breakpoint.
+//
+//    >> breakpoint-min(sm, (xs: 0, sm: 576px, md: 768px, lg: 992px, xl: 1200px))
+//    576px
+// @function breakpoint-min($name, $breakpoints: $grid-breakpoints) {
+//   $min: map-get($breakpoints, $name);
+//   @return if($min != 0, $min, null);
+// }
+
+// Maximum breakpoint width. Null for the largest (last) breakpoint.
+// The maximum value is calculated as the minimum of the next one less 0.02px
+// to work around the limitations of `min-` and `max-` prefixes and viewports with fractional widths.
+// See https://www.w3.org/TR/mediaqueries-4/#mq-min-max
+// Uses 0.02px rather than 0.01px to work around a current rounding bug in Safari.
+// See https://bugs.webkit.org/show_bug.cgi?id=178261
+//
+//    >> breakpoint-max(sm, (xs: 0, sm: 576px, md: 768px, lg: 992px, xl: 1200px))
+//    767.98px
+// @function breakpoint-max($name, $breakpoints: $grid-breakpoints) {
+//   $next: breakpoint-next($name, $breakpoints);
+//   @return if($next, breakpoint-min($next, $breakpoints) - .02, null);
+// }
+
+// Returns a blank string if smallest breakpoint, otherwise returns the name with a dash in front.
+// Useful for making responsive utilities.
+//
+//    >> breakpoint-infix(xs, (xs: 0, sm: 576px, md: 768px, lg: 992px, xl: 1200px))
+//    ""  (Returns a blank string)
+//    >> breakpoint-infix(sm, (xs: 0, sm: 576px, md: 768px, lg: 992px, xl: 1200px))
+//    "-sm"
+// @function breakpoint-infix($name, $breakpoints: $grid-breakpoints) {
+//   @return if(breakpoint-min($name, $breakpoints) == null, "", "-#{$name}");
+// }
+
+// Media of at least the minimum breakpoint width. No query for the smallest breakpoint.
+// Makes the @content apply to the given breakpoint and wider.
+// @mixin break-up($name, $breakpoints: $grid-breakpoints) {
+//   $min: breakpoint-min($name, $breakpoints);
+//   @if $min {
+//     @media (min-width: $min) {
+//       @content;
+//     }
+//   } @else {
+//     @content;
+//   }
+// }
+// @mixin break-up-css($name) {
+//   @if $name == xs {
+//     @content;
+//   } @else {
+//     @media (min-width: var(--breakpoint-#{$name})) {
+//       @content;
+//     }
+//   }
+// }
+
+// Media of at most the maximum breakpoint width. No query for the largest breakpoint.
+// Makes the @content apply to the given breakpoint and narrower.
+// @mixin break-down($name, $breakpoints: $grid-breakpoints) {
+//   $max: breakpoint-max($name, $breakpoints);
+//   @if $max {
+//     @media (max-width: $max) {
+//       @content;
+//     }
+//   } @else {
+//     @content;
+//   }
+// }
+
+// Media that spans multiple breakpoint widths.
+// Makes the @content apply between the min and max breakpoints
+// @mixin media-breakpoint-between($lower, $upper, $breakpoints: $grid-breakpoints) {
+//   $min: breakpoint-min($lower, $breakpoints);
+//   $max: breakpoint-max($upper, $breakpoints);
+
+//   @if $min != null and $max != null {
+//     @media (min-width: $min) and (max-width: $max) {
+//       @content;
+//     }
+//   } @else if $max == null {
+//     @include media-breakpoint-up($lower, $breakpoints) {
+//       @content;
+//     }
+//   } @else if $min == null {
+//     @include media-breakpoint-down($upper, $breakpoints) {
+//       @content;
+//     }
+//   }
+// }
+
+// Media between the breakpoint's minimum and maximum widths.
+// No minimum for the smallest breakpoint, and no maximum for the largest one.
+// Makes the @content apply only to the given breakpoint, not viewports any wider or narrower.
+// @mixin media-breakpoint-only($name, $breakpoints: $grid-breakpoints) {
+//   $min: breakpoint-min($name, $breakpoints);
+//   $max: breakpoint-max($name, $breakpoints);
+
+//   @if $min != null and $max != null {
+//     @media (min-width: $min) and (max-width: $max) {
+//       @content;
+//     }
+//   } @else if $max == null {
+//     @include media-breakpoint-up($name, $breakpoints) {
+//       @content;
+//     }
+//   } @else if $min == null {
+//     @include media-breakpoint-down($name, $breakpoints) {
+//       @content;
+//     }
+//   }
+// }
+
+
+
+
+// ANIMATION/TRANSITION
+
+  // @mixin animation($animation){
+  //   animation: $animation;
+  // }
+  // @mixin transition($transition: all .3s ease-in-out) {
+  //   transition: $transition;
+  // }
+
+
+// BOX SHADOW
+
+  // @mixin box-shadow($values: 0 2px 2px rgba(0,0,0,.15)) {
+  //   box-shadow: $values !important;
+  // }
+
+
+// TEXT SHADOW
+
+  // @mixin text-shadow($values: 0 1px 1px rgba(0,0,0,.25)) {
+  //   text-shadow: $values;
+  // }
+
+
+// BOOTSTRAP GRADIENT ADDITION
+
+  // @mixin gradient-directional-three($start-color: $gray-600, $mid-color: $gray-600, $end-color: $gray-800, $deg: 45deg) {
+  //   background-image: linear-gradient($deg, $start-color, $mid-color, $end-color);
+
+  // }
+
+
+// ELEMENT SIZES
+
+  // @mixin full-height() {
+  //   min-height:600px;
+  //   min-height:100vh;
+  //   height: 100%;
+  // }
+  // @mixin half-height() {
+  //   min-height:600px;
+  //   min-height:50vh;
+  //   height: 100%;
+  // }
+
+
+// POSITIONS
+
+  // @mixin pseudo($position, $top, $right, $bottom, $left){
+  //   content: '';
+  //   position: $position;
+  //   top:$top; right:$right; bottom:$bottom; left:$left;
+  // }
+  // @mixin pos-absolute($top, $right, $bottom, $left){
+  //   position: absolute;
+  //   top:$top; right:$right; bottom:$bottom; left:$left;
+  // }
+  // @mixin pos-fixed($top, $right, $bottom, $left){
+  //   position: fixed;
+  //   top:$top; right:$right; bottom:$bottom; left:$left;
+  // }
+  // @mixin fixed-top() {
+  //   position: fixed;
+  //   top: 0;
+  //   right: 0;
+  //   left: 0;
+  //   z-index: 1030;
+  // }
+  // @mixin fixed-bottom() {
+  //   position: fixed;
+  //   top: auto;
+  //   right: 0;
+  //   left: 0;
+  //   bottom: 0;
+  //   z-index: 1030;
+  // }
+
+
+// DISPLAY TYPES
+
+  @mixin d-block() {
+    display: block !important;
+  }
+  @mixin d-flex() {
+    display: flex !important;
+  }
+  @mixin d-inline-flex() {
+    display: inline-flex!important;
+  }
+  @mixin d-none() {
+    display: none !important;
+  }
+
+
+// FLEX ALIGN
+
+  // @mixin align-items-start() {
+  //   align-items: flex-start !important;
+  // }
+  // @mixin align-items-end() {
+  //   align-items: flex-end !important;
+  // }
+  // @mixin align-items-center() {
+  //   align-items: center !important;
+  // }
+  // @mixin align-items-stretch() {
+  //   align-items: stretch !important;
+  // }
+  // @mixin align-items-between() {
+  //   align-items: space-between !important;
+  // }
+
+
+  // @mixin align-self-start() {
+  //   align-self: flex-start !important;
+  // }
+  // @mixin align-self-end() {
+  //   align-self: flex-end !important;
+  // }
+  // @mixin align-self-center() {
+  //   align-self: center !important;
+  // }
+  // @mixin align-self-stretch() {
+  //   align-self: stretch !important;
+  // }
+  // @mixin align-self-between() {
+  //   align-self: space-between !important;
+  // }
+
+
+// FLEX JUSTIFY
+
+  // @mixin justify-content-center{
+  //   justify-content: center !important;
+  // }
+  // @mixin justify-content-end{
+  //   justify-content: flex-end !important;
+  // }
+  // @mixin justify-content-between{
+  //   justify-content: space-between !important;
+  // }
+  // @mixin justify-content-around{
+  //   justify-content: space-around !important;
+  // }
+  // @mixin justify-content-stretch{
+  //   justify-content: stretch !important;
+  // }
+
+
+// FLEX DIRECTION
+
+  // @mixin flex-direction($value: row) {
+  //   flex-direction: $value;
+  // }
+
+
+// FLEX GROW/SHRINK
+
+  // @mixin flex-grow($value: 1){
+  //   flex-grow: $value !important;
+  // }
+  // @mixin flex-shrink($value: 1){
+  //   flex-shrink: $value !important;
+  // }
+
+
+// MAKE ROW
+
+  @mixin make-row(){
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -1rem;
+    margin-left: -1rem;
+  }
+  @mixin make-row-nop(){
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+
+// wrap nowrap
+
+  // @mixin flex-wrap(){
+  //   flex-wrap: wrap;
+  // }
+  // @mixin flex-nowrap(){
+  //   flex-wrap: nowrap;
+  // }
+
+
+// MAKE COLS
+
+  @mixin make-col-clean(){
+    position: relative;
+    // width: 100%;
+    // padding-right: 1rem;
+    // padding-left: 1rem;
+    // flex-basis: 0;
+    // flex-grow: 1;
+    // max-width: 100%;
+  }
+  @mixin make-col-auto(){
+    width: auto;
+    max-width: auto;
+    flex: 0 0 auto;
+  }
+  @mixin make-col-none(){
+    flex-basis: 0;
+    flex-grow: 1;
+    max-width: 100%;
+  }
+  @mixin make-col-ready(){
+    display: flex;
+    flex-direction: column;
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+// PADDINGs
+
+  // @mixin padding($key) {
+  //   @if $key == auto {padding:auto;}
+  //   padding: map-get($spacers, $key);
+  // }
+  // @mixin padding-l($key) {
+  //   @if $key == auto {padding-left:auto;}
+  //   padding-left: map-get($spacers, $key);
+  // }
+  // @mixin padding-r($key) {
+  //   @if $key == auto {padding-right:auto;}
+  //   padding-right: map-get($spacers, $key);
+  // }
+  // @mixin padding-x($key) {
+  //   @if $key == auto {padding-left:auto;padding-right:auto;}
+  //   padding-left: map-get($spacers, $key);
+  //   padding-right: map-get($spacers, $key);
+  // }
+  // @mixin padding-t($key) {
+  //   @if $key == auto {padding-top:auto;}
+  //   padding-top: map-get($spacers, $key);
+  // }
+  // @mixin padding-b($key) {
+  //   @if $key == auto {padding-bottom:auto;}
+  //   padding-bottom: map-get($spacers, $key);
+  // }
+  // @mixin padding-y($key) {
+  //   @if $key == auto {padding-top:auto;padding-bottom:auto;}
+  //   padding-top: map-get($spacers, $key);
+  //   padding-bottom: map-get($spacers, $key);
+  // }
+
+
+// MARGINS
+
+  // @mixin margin($key) {
+  //   @if $key == auto {margin:auto;}
+  //   margin: map-get($spacers, $key);
+  // }
+  // @mixin margin-l($key) {
+  //   @if $key == auto {margin-left:auto;}
+  //   margin-left: map-get($spacers, $key);
+  // }
+  // @mixin margin-r($key) {
+  //   @if $key == auto {margin-right:auto;}
+  //   margin-right: map-get($spacers, $key);
+  // }
+  // @mixin margin-x($key) {
+  //   @if $key == auto {margin-left:auto;margin-right:auto;}
+  //   margin-left: map-get($spacers, $key);
+  //   margin-right: map-get($spacers, $key);
+  // }
+  // @mixin margin-t($key) {
+  //   @if $key == auto {margin-top:auto;}
+  //   margin-top: map-get($spacers, $key);
+  // }
+  // @mixin margin-b($key) {
+  //   @if $key == auto {margin-bottom:auto;}
+  //   margin-bottom: map-get($spacers, $key);
+  // }
+  // @mixin margin-y($key) {
+  //   @if $key == auto {margin-top:auto;margin-bottom:auto;}
+  //   margin-top: map-get($spacers, $key);
+  //   margin-bottom: map-get($spacers, $key);
+  // }
+
+
+// FORM STUFF
+
+  @mixin form-inline(){
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+  }
+
+// CARD MIXIN
+
+// @mixin card() {
+//   position: relative;
+//   @include d-flex;
+//   @include flex-direction(column);
+//   min-width: 0;
+//   word-wrap: break-word;
+//   background-color: $white;
+//   background-clip: border-box;
+//   // border: $card-border-width solid $card-border-color;
+//   border-radius: $card-border-radius;
+// }
+
+// PULSE SUCCESS COMPONENT
+
+// @mixin animate-pulse-success-once-sm(){
+//   box-shadow: 0 0 0 0 rgba($success, 1);
+//   animation: pulse-sm 1s 1 cubic-bezier(0.66, 0, 0, 1);
+//   @keyframes pulse-sm {to {box-shadow: 0 0 0 8px rgba($success, 0);}}
+// }
+
+
+// @mixin animate-pulse-success(){
+//   box-shadow: 0 0 0 0 rgba($success, 0.7);
+//   animation: pulse 1.25s infinite cubic-bezier(0.66, 0, 0, 1);
+//   @keyframes pulse {to {box-shadow: 0 0 0 30px rgba($success, 0);}}
+
+//   &:hover {
+//     animation: none;
+//   }
+// }
+// @mixin animate-pulse-success-once(){
+//   box-shadow: 0 0 0 0 rgba($success, 0.7);
+//   animation: pulse 1.25s 1 cubic-bezier(0.66, 0, 0, 1);
+//   @keyframes pulse {to {box-shadow: 0 0 0 30px rgba($success, 0);}}
+// }
+// @mixin animate-pulse-success-sm(){
+//   box-shadow: 0 0 0 0 rgba($success, 1);
+//   animation: pulse-sm 1.25s infinite cubic-bezier(0.66, 0, 0, 1);
+//   @keyframes pulse-sm {to {box-shadow: 0 0 0 15px rgba($success, 0);}}
+// }
+
+// @mixin animate-pulse-danger(){
+//   box-shadow: 0 0 0 0 rgba($danger, 0.7);
+//   animation: pulse 1.25s infinite cubic-bezier(0.66, 0, 0, 1);
+//   @keyframes pulse {to {box-shadow: 0 0 0 30px rgba($danger, 0);}}
+
+//   &:hover {
+//     animation: none;
+//   }
+// }
+// @mixin animate-pulse-danger-sm(){
+//   box-shadow: 0 0 0 0 rgba($danger, 1);
+//   animation: pulse-sm 1.25s infinite cubic-bezier(0.66, 0, 0, 1);
+//   @keyframes pulse-sm {to {box-shadow: 0 0 0 15px rgba($danger, 0);}}
+// }
+// @mixin animate-pulse-danger-3-sm(){
+//   box-shadow: 0 0 0 0 rgba($danger, 1);
+//   animation: pulse-sm 1.25s 3 cubic-bezier(0.66, 0, 0, 1);
+//   @keyframes pulse-sm {to {box-shadow: 0 0 0 15px rgba($danger, 0);}}
+// }
+
+// @mixin animate-pulse-primary-darken(){
+//   box-shadow: 0 0 0 0 rgba($primary-darken, 0.7);
+//   animation: pulse 1.25s infinite cubic-bezier(0.66, 0, 0, 1);
+//   @keyframes pulse {to {box-shadow: 0 0 0 30px rgba($primary-darken, 0);}}
+
+//   &:hover {
+//     animation: none;
+//   }
+// }
+// @mixin animate-pulse-primary-darken-sm(){
+//   box-shadow: 0 0 0 0 rgba($primary-darken, 1);
+//   animation: pulse-sm 1.25s infinite cubic-bezier(0.66, 0, 0, 1);
+//   @keyframes pulse-sm {to {box-shadow: 0 0 0 15px rgba($primary-darken, 0);}}
+// }
+
+
+// // COMPLEX ANIMATIONS
+
+// @mixin animate-swing(){
+//   -webkit-transform-origin: top center;
+//   transform-origin: top center;
+//   animation: swing 1.25s  ease-in-out infinite;
+
+//   @keyframes swing {
+//     20%  { transform: rotate3d(0, 0, 1,  15deg); }
+//     40%  { transform: rotate3d(0, 0, 1, -10deg); }
+//     60%  { transform: rotate3d(0, 0, 1,  5deg); }
+//     80%  { transform: rotate3d(0, 0, 1, -5deg); }
+//     100% { transform: rotate3d(0, 0, 1,  0deg); }
+//   }
+// }
+
+// @mixin animate-bounce(){
+//   transform-origin: center bottom;
+//   animation: bounce 1.25s infinite;
+
+//   @keyframes bounce {
+//     from, 20%, 53%, 80%, to {
+//       animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+//       transform: translate3d(0, 0, 0);
+//     }
+//     40%, 43% {
+//       animation-timing-function: cubic-bezier(0.755, 0.05, 0.855, 0.06);
+//       transform: translate3d(0, -15px, 0);
+//     }
+//     70% {
+//       animation-timing-function: cubic-bezier(0.755, 0.05, 0.855, 0.06);
+//       transform: translate3d(0, -7px, 0);
+//     }
+//     90% {
+//       transform: translate3d(0, -2px, 0);
+//     }
+//   }
+// }
+
+// @mixin animate-tada(){
+//   animation: tada 1.25s infinite;
+
+//   @keyframes tada {
+//     from               { transform: scale3d(1, 1, 1); }
+//     10%, 20%           { transform: scale3d(0.9, 0.9, 0.9) rotate3d(0, 0, 1, -3deg); }
+//     30%, 50%, 70%, 90% { transform: scale3d(1.1, 1.1, 1.1) rotate3d(0, 0, 1,  3deg); }
+//     40%, 60%, 80%      { transform: scale3d(1.1, 1.1, 1.1) rotate3d(0, 0, 1, -3deg); }
+//     to                 { transform: scale3d(1, 1, 1); }
+//   }
+// }

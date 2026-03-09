@@ -1,71 +1,31 @@
 (() => {
-  const VIEW_ORDER = ["home", "work", "about", "contact"];
-
+  const HOME_VIEW = "home";
+  const ROUTE_VIEWS = [HOME_VIEW, "work", "about", "contact"];
+  const NON_HOME_VIEWS = ROUTE_VIEWS.filter((view) => view !== HOME_VIEW);
+  const CONTENT_FADE_MS = 620;
+  const CONTENT_FADE_DELAY_MS = 72;
+  const STATIC_ENTRY_PATTERN = /\/(?:index|demo)\.html$/;
   const routes = {
     home: {
       label: "Home",
-      status: "Studio overview",
-      widthFactor: 0.62,
-      heightFactor: 0.54,
-      render: () => `
-        <section class="hero-block">
-          <p class="section-kicker">Single surface / four states</p>
-          <h2>Fullscreen navigation without ever leaving the frame.</h2>
-          <p class="lead">
-            DIESIGN-VIEWTRANSITIONS keeps one centered panel alive while the URL, panel size, and
-            content rhythm change together. <a href="?view=work">Open work</a> or
-            <a href="?view=about">read the setup</a>.
-          </p>
-        </section>
-
-        <section class="metric-grid" aria-label="Route signals">
-          <article class="metric-card">
-            <p class="card-kicker">Routes</p>
-            <strong class="metric-value">04</strong>
-            <p>Home, work, about, and contact all live inside one persistent shell.</p>
-          </article>
-          <article class="metric-card">
-            <p class="card-kicker">Frame motion</p>
-            <strong class="metric-value">W + H</strong>
-            <p>The panel interpolates width and height together with no overshoot bounce.</p>
-          </article>
-          <article class="metric-card">
-            <p class="card-kicker">History</p>
-            <strong class="metric-value">URL</strong>
-            <p>Every tap writes <code>?view=</code> so back and forward navigation stay meaningful.</p>
-          </article>
-        </section>
-
-        <section class="feature-strip">
-          <article class="note-card">
-            <h3>Content stays readable</h3>
-            <p>
-              The frame stays clipped while an internal scroll surface handles long views and the
-              dock stays pinned at the bottom edge.
-            </p>
-          </article>
-          <article class="note-card">
-            <h3>Transitions stay subtle</h3>
-            <p>
-              CSS View Transitions handle the content swap, while registered CSS properties animate
-              the live frame dimensions in both axes.
-            </p>
-          </article>
-        </section>
-      `
+      status: "Shell closed",
+      render: () => ""
     },
     work: {
       label: "Work",
       status: "Project selection",
-      widthFactor: 0.98,
-      heightFactor: 0.92,
+      sizing: [
+        { minWidth: 0, widthFactor: 0.98, heightFactor: 0.92 },
+        { minWidth: 700, widthFactor: 0.88, heightFactor: 0.86 },
+        { minWidth: 1040, widthFactor: 0.76, heightFactor: 0.82 }
+      ],
       render: () => `
         <section class="hero-block">
           <p class="section-kicker">Selected work</p>
           <h2>A wider panel gives project cards enough air to breathe.</h2>
           <p class="lead">
             This route stretches horizontally for side-by-side previews, then compresses again on
-            tighter views. <a href="?view=contact">Jump to contact</a> when you are ready.
+            tighter views. <a href="${routeHref("contact")}">Jump to contact</a> when you are ready.
           </p>
         </section>
 
@@ -90,7 +50,7 @@
               Tuned for mobile-first timing, especially when the frame changes aspect ratio between
               stacked and gridded sections.
             </p>
-          </article>
+          </article>I still see 
           <article class="case-card">
             <span class="case-chip">System prototype</span>
             <h3>One panel, many densities</h3>
@@ -105,16 +65,19 @@
     about: {
       label: "About",
       status: "Process notes",
-      widthFactor: 0.76,
-      heightFactor: 0.72,
+      sizing: [
+        { minWidth: 0, widthFactor: 0.76, heightFactor: 0.72 },
+        { minWidth: 700, widthFactor: 0.7, heightFactor: 0.72 },
+        { minWidth: 1040, widthFactor: 0.6, heightFactor: 0.76 }
+      ],
       render: () => `
         <section class="hero-block">
           <p class="section-kicker">How it works</p>
           <h2>The route model is simple, but the panel feels alive.</h2>
           <p class="lead">
             Each view carries width and height factors, while natural content height keeps the
-            result grounded. <a href="?view=home">Return home</a> or continue into
-            <a href="?view=contact">contact</a>.
+            result grounded. <a href="${routeHref("home")}">Return home</a> or continue into
+            <a href="${routeHref("contact")}">contact</a>.
           </p>
         </section>
 
@@ -144,7 +107,7 @@
               </li>
               <li>
                 <strong>Animate the shell</strong>
-                <p>The frame follows registered width and height properties with in-out-expo easing and no bounce.</p>
+                <p>The frame follows CSS width and height transitions with in-out-expo easing and no bounce.</p>
               </li>
             </ol>
           </article>
@@ -154,15 +117,18 @@
     contact: {
       label: "Contact",
       status: "Availability + links",
-      widthFactor: 0.52,
-      heightFactor: 0.44,
+      sizing: [
+        { minWidth: 0, widthFactor: 0.52, heightFactor: 0.44 },
+        { minWidth: 700, widthFactor: 0.46, heightFactor: 0.48 },
+        { minWidth: 1040, widthFactor: 0.4, heightFactor: 0.54 }
+      ],
       render: () => `
         <section class="hero-block">
           <p class="section-kicker">Reach out</p>
           <h2>A tighter contact state brings the focus back to the call to action.</h2>
           <p class="lead">
             This route intentionally compresses into a narrower frame. If you want more context,
-            <a href="?view=work">browse work</a> first.
+            <a href="${routeHref("work")}">browse work</a> first.
           </p>
         </section>
 
@@ -184,7 +150,7 @@
           <strong>Share a brief and expected launch window.</strong>
           <p class="availability-copy">
             A concise project note is enough to start. If you need a fuller walkthrough first,
-            revisit <a href="?view=about">the process notes</a>.
+            revisit <a href="${routeHref("about")}">the process notes</a>.
           </p>
         </article>
       `
@@ -193,41 +159,132 @@
 
   const panel = document.querySelector("[data-panel]");
   const stage = document.querySelector(".panel-stage");
+  const swapHost = document.querySelector(".panel-swap");
   const scrollHost = document.querySelector(".panel-scroll");
   const bodyHost = document.querySelector("[data-panel-body]");
-  const routeLabel = document.querySelector("[data-route-label]");
-  const routeStatus = document.querySelector("[data-route-status]");
-  const routeSequence = document.querySelector("[data-route-sequence]");
+  const overlayHost = document.querySelector("[data-panel-overlay]");
   const dockLinks = Array.from(document.querySelectorAll("[data-view-link]"));
 
-  if (!panel || !stage || !scrollHost || !bodyHost || !routeLabel || !routeStatus || !routeSequence || !dockLinks.length) {
+  if (!panel || !stage || !swapHost || !scrollHost || !bodyHost || !overlayHost || !dockLinks.length) {
     return;
   }
 
   history.scrollRestoration = "manual";
 
   const measure = createMeasurePanel();
+  const usesHashRouting = window.location.protocol === "file:";
+  const basePath = resolveBasePath(window.location.pathname);
   let activeView = "";
+  let targetView = "";
   let fadeFrame = 0;
   let resizeFrame = 0;
   let navigationToken = 0;
+  let contentCleanupTimer = 0;
 
   function resolveView(value) {
-    return Object.prototype.hasOwnProperty.call(routes, value) ? value : VIEW_ORDER[0];
+    return Object.prototype.hasOwnProperty.call(routes, value) ? value : HOME_VIEW;
+  }
+
+  function isPanelView(view) {
+    return view !== HOME_VIEW;
   }
 
   function clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
   }
 
-  function sequenceText(view) {
-    return `${String(VIEW_ORDER.indexOf(view) + 1).padStart(2, "0")} / ${String(VIEW_ORDER.length).padStart(2, "0")}`;
+  function normalizePathname(pathname) {
+    const stripped = pathname.replace(STATIC_ENTRY_PATTERN, "");
+
+    if (!stripped) {
+      return "/";
+    }
+
+    return stripped === "/" ? "/" : stripped.replace(/\/+$/, "") || "/";
   }
 
-  function buildUrl(view) {
-    const url = new URL(window.location.href);
-    url.searchParams.set("view", view);
-    return `${url.pathname}${url.search}${url.hash}`;
+  function resolveBasePath(pathname) {
+    if (usesHashRouting) {
+      return "";
+    }
+
+    const normalized = normalizePathname(pathname);
+
+    for (const view of NON_HOME_VIEWS) {
+      const suffix = `/${view}`;
+
+      if (normalized === suffix || normalized.endsWith(suffix)) {
+        return normalized.slice(0, -suffix.length) || "/";
+      }
+    }
+
+    return normalized;
+  }
+
+  function routeHref(view) {
+    const resolvedView = resolveView(view);
+
+    if (usesHashRouting) {
+      return resolvedView === HOME_VIEW ? "#/" : `#/${resolvedView}`;
+    }
+
+    const suffix = resolvedView === HOME_VIEW ? "" : `/${resolvedView}`;
+    const prefix = basePath === "/" ? "" : basePath;
+    return `${prefix}${suffix}` || "/";
+  }
+
+  function resolveSizing(route, availableWidth) {
+    const base = {
+      widthFactor: route.widthFactor ?? 0.72,
+      heightFactor: route.heightFactor ?? 0.7
+    };
+
+    for (const rule of route.sizing ?? []) {
+      if (availableWidth >= rule.minWidth) {
+        Object.assign(base, rule);
+      }
+    }
+
+    return base;
+  }
+
+  function resolveViewFromUrl(input) {
+    const url = input instanceof URL ? input : new URL(input, window.location.href);
+
+    if (usesHashRouting) {
+      const hashView = url.hash.replace(/^#\/?/, "").replace(/\/+$/, "");
+      return hashView ? resolveView(hashView) : HOME_VIEW;
+    }
+
+    const normalizedPath = normalizePathname(url.pathname);
+
+    if (normalizedPath === basePath) {
+      return HOME_VIEW;
+    }
+
+    for (const view of NON_HOME_VIEWS) {
+      if (normalizedPath === routeHref(view)) {
+        return view;
+      }
+    }
+
+    const legacyView = url.searchParams.get("view");
+    return legacyView && Object.prototype.hasOwnProperty.call(routes, legacyView) ? legacyView : null;
+  }
+
+  function commitHistory(view, mode) {
+    if (mode === "none") {
+      return;
+    }
+
+    const href = routeHref(view);
+
+    if (mode === "push") {
+      history.pushState(null, "", href);
+      return;
+    }
+
+    history.replaceState(null, "", href);
   }
 
   function createMeasurePanel() {
@@ -236,19 +293,11 @@
     root.setAttribute("aria-hidden", "true");
     root.innerHTML = `
       <article class="content-panel measure-panel">
-        <header class="panel-chrome">
-          <div class="panel-brand">
-            <p class="brand-mark">DIESIGN-VIEWTRANSITIONS</p>
-            <h1 class="route-label">Measure</h1>
-          </div>
-          <div class="route-meta">
-            <span class="route-sequence">00 / 00</span>
-            <strong class="route-status">Measuring</strong>
-          </div>
-        </header>
         <div class="panel-viewport">
-          <div class="panel-scroll">
-            <div class="panel-body"></div>
+          <div class="panel-swap">
+            <div class="panel-scroll">
+              <div class="panel-body"></div>
+            </div>
           </div>
         </div>
       </article>
@@ -257,10 +306,7 @@
 
     return {
       panel: root.querySelector(".measure-panel"),
-      body: root.querySelector(".panel-body"),
-      label: root.querySelector(".route-label"),
-      status: root.querySelector(".route-status"),
-      sequence: root.querySelector(".route-sequence")
+      body: root.querySelector(".panel-body")
     };
   }
 
@@ -272,11 +318,129 @@
     return wrapper;
   }
 
+  function captureContentMetrics(content) {
+    if (!content) {
+      return null;
+    }
+
+    const rect = content.getBoundingClientRect();
+    return {
+      contentWidth: Math.round(rect.width),
+      contentHeight: Math.ceil(rect.height)
+    };
+  }
+
+  function captureExitState(content) {
+    if (!content) {
+      return null;
+    }
+
+    const metrics = captureContentMetrics(content);
+    const swapRect = swapHost.getBoundingClientRect();
+    const contentRect = content.getBoundingClientRect();
+
+    return {
+      contentWidth: metrics?.contentWidth ?? Math.round(contentRect.width),
+      contentHeight: metrics?.contentHeight ?? Math.ceil(contentRect.height),
+      top: Math.round(contentRect.top - swapRect.top)
+    };
+  }
+
+  function applyFrozenMetrics(content, metrics, options = {}) {
+    if (!content || !metrics) {
+      return;
+    }
+
+    const { lockHeight = false } = options;
+    content.style.width = `${metrics.contentWidth}px`;
+    content.style.minHeight = `${metrics.contentHeight}px`;
+
+    if (lockHeight) {
+      content.style.height = `${metrics.contentHeight}px`;
+      return;
+    }
+
+    content.style.removeProperty("height");
+  }
+
+  function createExitLayer(content, metrics) {
+    if (!content || !metrics) {
+      return null;
+    }
+
+    const exitLayer = content.cloneNode(true);
+    exitLayer.classList.remove("is-current", "is-entering");
+    exitLayer.classList.add("is-exiting");
+    exitLayer.classList.remove("is-visible");
+    exitLayer.style.opacity = window.getComputedStyle(content).opacity;
+    exitLayer.style.contentVisibility = "visible";
+    applyFrozenMetrics(exitLayer, metrics, { lockHeight: true });
+    exitLayer.style.setProperty("--panel-layer-top", `${metrics.top}px`);
+    return exitLayer;
+  }
+
+  function getCurrentVisualContent() {
+    return (
+      overlayHost.querySelector(".panel-content.is-transition-current") ||
+      bodyHost.querySelector(".panel-content.is-current") ||
+      bodyHost.lastElementChild
+    );
+  }
+
+  function getTransitionLayerTop() {
+    return Math.round(parseFloat(window.getComputedStyle(bodyHost).paddingTop) || 0);
+  }
+
+  function createIncomingLayer(view, metrics) {
+    const incomingLayer = createPanelContent(view);
+    incomingLayer.classList.add("is-transition-current", "is-entering");
+    incomingLayer.style.contentVisibility = "visible";
+    incomingLayer.style.setProperty("--panel-layer-top", `${getTransitionLayerTop()}px`);
+    applyFrozenMetrics(incomingLayer, metrics, { lockHeight: true });
+    return incomingLayer;
+  }
+
+  function createLiveContent(view, metrics) {
+    const content = createPanelContent(view);
+    content.classList.add("is-current", "is-visible");
+    applyFrozenMetrics(content, metrics);
+    return content;
+  }
+
+  function syncActiveRoute(view) {
+    activeView = view;
+    targetView = view;
+    updateRouteMeta(view);
+    updateDockState(view);
+  }
+
+  function setTransitioning(isTransitioning) {
+    swapHost.classList.toggle("is-transitioning", isTransitioning);
+    if (!isTransitioning) {
+      overlayHost.replaceChildren();
+    }
+  }
+
+  function mountLiveContent(view, metrics) {
+    if (!isPanelView(view)) {
+      bodyHost.replaceChildren();
+      scrollHost.scrollTop = 0;
+      return;
+    }
+
+    bodyHost.replaceChildren(createLiveContent(view, metrics));
+    scrollHost.scrollTop = 0;
+  }
+
   function updateRouteMeta(view) {
-    routeLabel.textContent = routes[view].label;
-    routeStatus.textContent = routes[view].status;
-    routeSequence.textContent = sequenceText(view);
     document.title = `${routes[view].label} | DIESIGN-VIEWTRANSITIONS`;
+    panel.setAttribute("aria-label", `${routes[view].label}: ${routes[view].status}`);
+  }
+
+  function syncDockTargets() {
+    for (const link of dockLinks) {
+      link.href = routeHref(link.dataset.viewLink);
+    }
   }
 
   function updateDockState(view) {
@@ -291,11 +455,14 @@
     }
   }
 
-  function applyPanelSize(size, immediate = false) {
+  function applyPanelState(size, options = {}) {
+    const { immediate = false, collapsed = false } = options;
+
     if (immediate) {
       panel.classList.add("is-sizing-immediate");
     }
 
+    panel.classList.toggle("is-collapsed", collapsed);
     panel.style.setProperty("--panel-width", `${size.width}px`);
     panel.style.setProperty("--panel-height", `${size.height}px`);
 
@@ -306,27 +473,41 @@
   }
 
   function measureTargetSize(view) {
+    if (!isPanelView(view)) {
+      return {
+        width: 0,
+        height: 0,
+        contentWidth: 0,
+        contentHeight: 0
+      };
+    }
+
     const route = routes[view];
     const availableWidth = Math.max(stage.clientWidth, 280);
     const availableHeight = Math.max(stage.clientHeight, 320);
+    const sizing = resolveSizing(route, availableWidth);
     const maxWidth = Math.min(availableWidth, 960);
     const minWidth = Math.min(maxWidth, availableWidth < 480 ? 220 : 300);
-    const width = Math.round(clamp(availableWidth * route.widthFactor, minWidth, maxWidth));
+    const width = Math.round(clamp(availableWidth * sizing.widthFactor, minWidth, maxWidth));
 
-    measure.label.textContent = route.label;
-    measure.status.textContent = route.status;
-    measure.sequence.textContent = sequenceText(view);
     measure.panel.style.width = `${width}px`;
     measure.body.replaceChildren(createPanelContent(view));
+    const measuredContent = measure.body.querySelector(".panel-content");
+    const contentMetrics = captureContentMetrics(measuredContent);
 
     const naturalHeight = Math.ceil(measure.panel.getBoundingClientRect().height);
     const minHeight = Math.min(availableHeight, availableWidth < 680 ? 360 : 420);
     const maxHeight = Math.floor(
-      Math.min(availableHeight, Math.max(minHeight, availableHeight * route.heightFactor))
+      Math.min(availableHeight, Math.max(minHeight, availableHeight * sizing.heightFactor))
     );
     const height = Math.round(clamp(naturalHeight, minHeight, maxHeight));
 
-    return { width, height };
+    return {
+      width,
+      height,
+      contentWidth: contentMetrics?.contentWidth ?? width,
+      contentHeight: contentMetrics?.contentHeight ?? height
+    };
   }
 
   function queueFadeIn(content, token) {
@@ -339,26 +520,66 @@
     });
   }
 
-  function commitView(view, token) {
-    updateRouteMeta(view);
-    updateDockState(view);
-
-    const content = createPanelContent(view);
-    bodyHost.replaceChildren(content);
-    scrollHost.scrollTop = 0;
-    queueFadeIn(content, token);
+  function commitImmediateView(view, targetSize) {
+    clearTimeout(contentCleanupTimer);
+    syncActiveRoute(view);
+    setTransitioning(false);
+    mountLiveContent(view, targetSize);
   }
 
-  function swapWithViewTransition(callback) {
+  function commitView(view, token, targetSize, exitState = null) {
+    clearTimeout(contentCleanupTimer);
+    syncActiveRoute(view);
+
+    const currentContent = getCurrentVisualContent();
+    const nextHasPanel = isPanelView(view);
+
+    if (!currentContent && !nextHasPanel) {
+      commitImmediateView(view, targetSize);
+      return;
+    }
+
+    const frozenState = currentContent ? exitState || captureExitState(currentContent) : null;
+    const exitLayer = currentContent ? createExitLayer(currentContent, frozenState) : null;
+    const incomingLayer = nextHasPanel ? createIncomingLayer(view, targetSize) : null;
+
+    setTransitioning(true);
+    overlayHost.replaceChildren(...[exitLayer, incomingLayer].filter(Boolean));
+
+    scrollHost.scrollTop = 0;
+    if (incomingLayer) {
+      queueFadeIn(incomingLayer, token);
+    }
+
+    if (exitLayer) {
+      requestAnimationFrame(() => {
+        if (token !== navigationToken || !exitLayer.isConnected) {
+          return;
+        }
+        exitLayer.style.opacity = "0";
+      });
+    }
+
+    contentCleanupTimer = window.setTimeout(() => {
+      if (token !== navigationToken) {
+        return;
+      }
+      mountLiveContent(view, targetSize);
+      setTransitioning(false);
+    }, CONTENT_FADE_MS + CONTENT_FADE_DELAY_MS);
+  }
+
+  async function swapWithViewTransition(callback) {
     if (typeof document.startViewTransition !== "function") {
       callback();
       return;
     }
 
     try {
-      document.startViewTransition(() => {
+      const transition = document.startViewTransition(() => {
         callback();
       });
+      await transition.finished.catch(() => {});
     } catch (error) {
       callback();
     }
@@ -368,7 +589,7 @@
     const view = resolveView(nextView);
     const { historyMode = "push", immediate = false } = options;
 
-    if (view === activeView && historyMode === "push") {
+    if (view === targetView && historyMode === "push") {
       scrollHost.scrollTop = 0;
       return;
     }
@@ -376,33 +597,57 @@
     const token = ++navigationToken;
     const targetSize = measureTargetSize(view);
 
-    if (historyMode === "push") {
-      history.pushState({ view }, "", buildUrl(view));
-    } else if (historyMode === "replace") {
-      history.replaceState({ view }, "", buildUrl(view));
-    }
+    commitHistory(view, historyMode);
 
-    activeView = view;
+    targetView = view;
+    updateDockState(view);
 
-    if (immediate || !bodyHost.firstElementChild) {
-      commitView(view, token);
-      applyPanelSize(targetSize, true);
+    if (immediate || !activeView) {
+      commitImmediateView(view, targetSize);
+      applyPanelState(targetSize, { immediate: true, collapsed: !isPanelView(view) });
       return;
     }
 
-    swapWithViewTransition(() => {
-      commitView(view, token);
-      applyPanelSize(targetSize);
-    });
+    const exitState = captureExitState(getCurrentVisualContent());
+    const canUseViewTransition = isPanelView(activeView) && isPanelView(view);
+
+    const commitRoute = () => {
+      if (token !== navigationToken) {
+        return;
+      }
+      commitView(view, token, targetSize, exitState);
+      applyPanelState(targetSize, { collapsed: !isPanelView(view) });
+    };
+
+    if (!canUseViewTransition) {
+      commitRoute();
+      return;
+    }
+
+    swapWithViewTransition(commitRoute);
   }
 
   function syncCurrentRouteSize() {
-    if (!activeView) {
+    const view = targetView || activeView;
+    if (!view) {
       return;
     }
 
-    const targetSize = measureTargetSize(activeView);
-    applyPanelSize(targetSize, true);
+    const targetSize = measureTargetSize(view);
+    applyPanelState(targetSize, { immediate: true, collapsed: !isPanelView(view) });
+
+    if (!isPanelView(view)) {
+      return;
+    }
+
+    const currentContent =
+      overlayHost.querySelector(".panel-content.is-transition-current") ||
+      bodyHost.querySelector(".panel-content.is-current");
+    const isTransitionLayer = Boolean(currentContent?.classList.contains("is-transition-current"));
+    applyFrozenMetrics(currentContent, targetSize, { lockHeight: isTransitionLayer });
+    if (isTransitionLayer) {
+      currentContent.style.setProperty("--panel-layer-top", `${getTransitionLayerTop()}px`);
+    }
   }
 
   function requestSyncCurrentRouteSize() {
@@ -430,12 +675,12 @@
     }
 
     const url = new URL(link.href, window.location.href);
-    if (url.origin !== window.location.origin || url.pathname !== window.location.pathname) {
+    if (url.origin !== window.location.origin) {
       return;
     }
 
-    const requestedView = url.searchParams.get("view");
-    if (!requestedView || !Object.prototype.hasOwnProperty.call(routes, requestedView)) {
+    const requestedView = resolveViewFromUrl(url);
+    if (!requestedView) {
       return;
     }
 
@@ -445,11 +690,16 @@
 
   document.addEventListener("click", handleNavigationClick);
 
-  window.addEventListener("popstate", (event) => {
-    const stateView = typeof event.state?.view === "string" ? event.state.view : null;
-    const queryView = new URL(window.location.href).searchParams.get("view");
-    renderView(queryView || stateView || VIEW_ORDER[0], { historyMode: "none" });
-  });
+  const syncViewFromLocation = () => {
+    const currentView = resolveViewFromUrl(new URL(window.location.href));
+    renderView(currentView || HOME_VIEW, { historyMode: "none" });
+  };
+
+  if (usesHashRouting) {
+    window.addEventListener("hashchange", syncViewFromLocation);
+  } else {
+    window.addEventListener("popstate", syncViewFromLocation);
+  }
 
   window.addEventListener("resize", requestSyncCurrentRouteSize, { passive: true });
   window.addEventListener("orientationchange", requestSyncCurrentRouteSize, { passive: true });
@@ -467,7 +717,8 @@
     });
   }
 
-  const initialView = resolveView(new URL(window.location.href).searchParams.get("view"));
+  syncDockTargets();
+  const initialView = resolveView(resolveViewFromUrl(new URL(window.location.href)));
   renderView(initialView, { historyMode: "replace", immediate: true });
   console.log("[agency] DIESIGN-VIEWTRANSITIONS initialized");
 })();

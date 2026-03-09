@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, viewport-fit=cover, interactive-widget=overlays-content">
+    <meta name="robots" content="index, nofollow">
+
+    <% if (isProduction) { %>
+      <link rel="preload" href="/css/preloader.css" as="style">
+      <link href="/css/preloader.css" rel="stylesheet">
+      <link href="/css/main.css" rel="stylesheet">
+    <% } %>
+    <link rel="preload" href="/js/runtime.js" as="script">
+    <script src="/js/runtime.js"></script>
+    <link rel="preload" href="/js/preloader.js" as="script">
+    <script src="/js/preloader.js"></script>
+    
+      <link rel="preload" href="/images/icons/loading-spinner.svg" as="image" type="image/svg+xml">
+      <link rel="preload" href="/fonts/jaapokkisubtract-regular.woff2" as="font" type="font/woff2" crossorigin>
+      <link rel="preload" href="/fonts/exo-2-v24-latin-300.woff2" as="font" type="font/woff2" crossorigin>
+      <link rel="preload" href="/fonts/exo-2-v24-latin-200.woff2" as="font" type="font/woff2" crossorigin>
+      <link rel="preload" href="/images/layer4.avif" as="image" type="image/avif">
+      <link rel="preload" href="/images/layer3.avif" as="image" type="image/avif">
+      <link rel="preload" href="/images/layer2.avif" as="image" type="image/avif">
+      <link rel="preload" href="/images/layer1.avif" as="image" type="image/avif">
+      <link rel="prefetch" href="/images/sky.avif" as="image" type="image/avif">
+ 
+    <%/* <meta http-equiv="refresh" content="0; url=index.html?v=2">*/%>
+    <meta property="og:title" content="DIESIGN | Designer & front-end astronaut">
+    <meta property="og:description" content="Ik ben dylan van diesen, een ervaren auto­didact met liefde voor design en front-end development. Al sinds mijn twaalf­de spen­deer ik het liefst uren ach­ter de com­puter om mezelf nieuwe tech­nieken en vaardig­heden aan te leren. In de jaren hierop volgend heb ik mijn crea­tivi­teit en ken­nis nog verder uit kun­nen brei­den door mijn werk bij ui­teen­lopen­de media­bureaus en het leiden van mijn eigen multi­media­bedrijf.">
+    <meta property="og:image" content="/images/social-intro.jpg">
+    <meta property="og:url" content="https://www.diesign.space">
+    <meta property="og:site_name" content="DIESIGN">
+    
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png">
+    <link rel="manifest" href="/favicons/site.webmanifest">
+    <link rel="mask-icon" href="/favicons/safari-pinned-tab.svg" color="hsl(285,96%,20%)">
+    <link rel="shortcut icon" href="/favicons/favicon.ico">
+    <meta name="msapplication-TileColor" content="hsl(285,96%,20%)">
+    <meta name="msapplication-config" content="/favicons/browserconfig.xml">
+    <meta name="theme-color" content="hsl(285,96%,20%)">
+    <title>&lt;DIESIGN/&gt; Designer & front-end astronaut</title>
+    <meta name="Title" content="&lt;DIESIGN/&gt; - Designer & front-end astronaut">
+    <meta name="Description" content="Ik ben Dylan van Diesen, een ervaren auto­didact met liefde voor design en front-end development">
+    
+  </head>
+  <body style="background-color:hsl(285,96%,20%);">
+    <div id="loader"></div>
+    <div id="app" class="content-container"  style="display:none;">
+      <input type="radio" id="logo-home" name="d-tabs" checked="checked" style="display:none;visibillity:hidden;opacity:0">
+      <label class="nav-link" for="nav-home">
+        <div class="logo-container" >
+          <svg id="logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1156.65 212.77" style="max-width:250px">
+            <path d="M551.77,83.46c-1.79-.6-3.49-1.19-5.88-1.79C527.17,77,519.8,71.11,519.5,60.56c-.3-6.78,1.69-10,3.48-11.76,5.18-5.57,15.54-7.67,18.13-7.67,17.83,0,26.39,5.58,39.54,14L588,59.86,609.43,25l-6.77-4.38C587.72,11,571,.1,541.11.1c-10.56,0-32.57,4.38-47.81,20.22-10.55,11.15-15.83,25.49-14.94,41.93.9,19.62,10,35.45,26.4,46.31,11.75,7.87,26.09,11,32.57,13.15l.89.5c21.32,7.27,34,17.52,34,28.68,0,5.28-5.58,20.82-22.61,20.82-9.07,0-33.37,0-55.08-23.21l-29.88,28.19a114.81,114.81,0,0,0,49,31.07,122.23,122.23,0,0,0,36.06,5,62.54,62.54,0,0,0,47.21-21.12c10.25-11.45,16.43-26.39,16.43-40.73,0-14.64-5.58-28.39-16.14-40.14C586.63,99.3,571.39,90.24,551.77,83.46Z" fill="hsl(285,96%,65%)"/>
+            <path d="M130.47,32.77a102.79,102.79,0,0,0-32.57-22A102.72,102.72,0,0,0,58.07,2.89H0V208.16H16.73v.2H58.07a98,98,0,0,0,39.83-8.17,98.15,98.15,0,0,0,32.57-22,93.78,93.78,0,0,0,22-32.57,98.09,98.09,0,0,0,8.17-40.14,98,98,0,0,0-8.17-39.84A97.73,97.73,0,0,0,130.47,32.77ZM58.07,167.42H41V44H58a61.59,61.59,0,0,1,61.55,61.55C119.62,139.54,92,167.42,58.07,167.42Z" fill="#fff"/>
+            <rect x="203.18" y="2.89" width="41.03" height="205.17" fill="#fff"/>
+            <rect x="294.01" y="82.07" width="113.44" height="41.03" fill="#fff"/>
+            <rect x="294.01" y="167.42" width="136.05" height="41.03" fill="#fff"/>
+            <rect x="294.01" y="2.89" width="136.95" height="41.13" fill="#fff"/>
+            <rect x="655.78" y="2.89" width="41.03" height="205.17" fill="#fff"/>
+            <path d="M861.54,122.6h46.32c-7.67,27.59-33.17,49-63,49a64,64,0,0,1-46-19.62,65.15,65.15,0,0,1-18.43-46.32A63.84,63.84,0,0,1,799.65,60a65,65,0,0,1,46-19h.6a64.83,64.83,0,0,1,36,11.46l29.58-29A105.74,105.74,0,0,0,846.65,0h-.89A106.37,106.37,0,0,0,739.39,105.27c-.6,58.87,46.31,106.08,105.27,106.67h.3c55.08,0,102-44.82,102-109.35V81.77H861.6Z" fill="#fff"/>
+            <polygon points="1115.62 2.89 1115.62 117.82 1002.18 2.89 989.33 2.89 989.33 208.46 1030.36 208.46 1030.36 88.54 1145.89 208.46 1145.89 208.36 1156.65 208.36 1156.65 2.89 1115.62 2.89" fill="#fff"/>
+          </svg>
+        </div>
+      </label>
+
+
+      <div class="tab-panes">
+        <div id="home" class="tab-pane-container">
+          <div class="spacer">
+            <div class="content-scroller">
+              <div id="home-tab" class="tab-pane active" role="tabpanel" aria-labelledby="home-tab">
+                <div class="intro-container">
+                  <svg class="diesign-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2200 212.74">
+                    <path class="logo-letter-01-d" d="M130.47,32.77a102.85,102.85,0,0,0-32.57-22A102.57,102.57,0,0,0,58.07,2.89H0V208.16H16.73v.2H58.07a98,98,0,0,0,39.83-8.17,98.12,98.12,0,0,0,32.57-22,93.82,93.82,0,0,0,22-32.57,98.06,98.06,0,0,0,8.17-40.14,98,98,0,0,0-8.17-39.84A97.82,97.82,0,0,0,130.47,32.77ZM58.07,167.42H41V44h17a61.59,61.59,0,0,1,61.55,61.55C119.62,139.54,92,167.42,58.07,167.42Z"></path>
+                    <rect class="logo-letter-02-i" x="203.18" y="2.89" width="41.03" height="205.17"></rect>
+                    <g class="logo-letter-03-e" >
+                      <rect x="294.01" y="2.89" width="136.95" height="41.13"></rect>
+                      <rect x="294.01" y="82.07" width="113.44" height="41.03"></rect>
+                      <rect x="294.01" y="167.42" width="136.05" height="41.03"></rect>
+                    </g>
+                    <path class="logo-letter-04-s" d="M551.77,83.46c-1.79-.6-3.49-1.19-5.88-1.79C527.17,77,519.8,71.11,519.5,60.56c-.3-6.78,1.69-10,3.48-11.76,5.18-5.57,15.54-7.67,18.13-7.67,17.83,0,26.39,5.58,39.54,14L588,59.86,609.43,25l-6.77-4.38C587.72,11,571,.1,541.11.1c-10.56,0-32.57,4.38-47.81,20.22-10.55,11.15-15.83,25.49-14.94,41.93.9,19.62,10,35.45,26.4,46.31,11.75,7.87,26.09,11,32.57,13.15l.89.5c21.32,7.27,34,17.52,34,28.68,0,5.28-5.58,20.82-22.61,20.82-9.07,0-33.37,0-55.08-23.21l-29.88,28.19a114.78,114.78,0,0,0,49,31.07,122.22,122.22,0,0,0,36.06,5,62.57,62.57,0,0,0,47.21-21.12c10.25-11.45,16.43-26.39,16.43-40.73,0-14.64-5.58-28.39-16.14-40.14C586.63,99.3,571.39,90.24,551.77,83.46Z"></path>
+                    <g class="logo-letter-05-e" >
+                      <rect x="659.23" y="2.89" width="136.95" height="41.13"></rect>
+                      <rect x="659.23" y="82.07" width="113.44" height="41.03"></rect>
+                      <rect x="659.23" y="167.42" width="136.05" height="41.03"></rect>
+                    </g>
+                    <polygon class="logo-letter-06-n" points="970.87 117.82 857.43 2.89 844.58 2.89 844.58 208.46 885.62 208.46 885.62 88.54 1001.15 208.46 1001.15 208.36 1011.91 208.36 1011.91 2.89 970.87 2.89 970.87 117.82"></polygon>
+                    <path class="logo-letter-07-d" d="M1264.09,29.88A100.75,100.75,0,0,0,1191.68,0h-58.07V205.17h16.74v.3h41.33a102.67,102.67,0,0,0,72.41-30.18,93.82,93.82,0,0,0,22-32.57,98.2,98.2,0,0,0,8.16-40.13,98.16,98.16,0,0,0-8.16-39.84A97.86,97.86,0,0,0,1264.09,29.88Zm-72.41,134.55h-17V41h17a61.59,61.59,0,0,1,61.55,61.56C1253.23,136.55,1225.64,164.43,1191.68,164.43Z"></path>
+                    <g class="logo-letter-08-e" >
+                      <rect x="1337.39" y="2.89" width="136.95" height="41.13"></rect>
+                      <polygon points="1450.83 82.07 1337.39 82.07 1337.39 82.07 1337.39 123.1 1450.83 123.1 1450.83 82.07"></polygon>
+                      <rect x="1337.39" y="167.42" width="136.05" height="41.03"></rect>
+                    </g>
+                    <path class="logo-letter-09-s" d="M1595.15,83.46c-1.8-.6-3.49-1.19-5.88-1.79-18.72-4.68-26.09-10.56-26.39-21.11-.3-6.78,1.69-10,3.48-11.76,5.18-5.57,15.54-7.67,18.13-7.67,17.83,0,26.39,5.58,39.54,14l7.37,4.68L1652.81,25,1646,20.62C1631.1,11,1614.37.1,1584.49.1c-10.56,0-32.57,4.38-47.81,20.22-10.55,11.15-15.83,25.49-14.94,41.93.9,19.62,10,35.45,26.4,46.31,11.75,7.87,26.09,11,32.57,13.15l.89.5c21.32,7.27,34,17.52,34,28.68,0,5.28-5.57,20.82-22.6,20.82-9.07,0-33.37,0-55.08-23.21L1508,176.69a114.78,114.78,0,0,0,49,31.07,122.22,122.22,0,0,0,36.06,5,62.54,62.54,0,0,0,47.2-21.12c10.26-11.45,16.44-26.39,16.44-40.73,0-14.64-5.58-28.39-16.14-40.14C1630,99.3,1614.77,90.24,1595.15,83.46Z"></path>
+                    <rect class="logo-letter-10-i" x="1699.13" y="2.89" width="41.03" height="205.17"></rect>
+                    <path class="logo-letter-11-g" d="M1904.89,122.6h46.32c-7.67,27.59-33.17,49-63,49a64,64,0,0,1-46-19.62,65.13,65.13,0,0,1-18.43-46.32A63.81,63.81,0,0,1,1843,60a65,65,0,0,1,46-19h.6a64.84,64.84,0,0,1,36,11.46l29.58-29A105.75,105.75,0,0,0,1890,0h-.89a106.37,106.37,0,0,0-106.37,105.27c-.6,58.87,46.31,106.08,105.27,106.67h.3c55.08,0,102-44.82,102-109.35V81.77h-85.36Z"></path>
+                    <polygon class="logo-letter-12-n" points="2158.97 2.89 2158.97 117.82 2045.53 2.89 2032.68 2.89 2032.68 208.46 2073.71 208.46 2073.71 88.54 2189.24 208.46 2189.24 208.36 2200 208.36 2200 2.89 2158.97 2.89"></polygon>
+                  </svg>
+                  <h3>Designer &amp; front-end astronaut</h3>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="work" class="tab-pane-container" style="display:none;">
+          <div class="spacer">
+            <div class="content-bg"></div>
+            <div class="content-scroller">
+              <div id="work-tab" class="tab-pane" role="tabpanel" aria-labelledby="work-tab">
+              
+              <% // Declare fields once, available to all popovers %>
+              <%
+                const fields = [
+                  { key: 'title', label: 'Project' },
+                  { key: 'client', label: 'Opdrachtgever' },
+                  { key: 'year', label: 'Jaartal' },
+                  { key: 'excerpt', label: 'Samenvatting' },
+                  { key: 'goals', label: 'Doelstellingen' },
+                  { key: 'role', label: 'Mijn rol' },
+                  { key: 'challenges', label: 'Uitdagingen' },
+                  { key: 'results', label: 'Resultaten' },
+                  { key: 'toolset', label: 'Toolset' },
+                  { key: 'skillset', label: 'Vaardigheden' }
+                ];
+              %>
+
+              <div class="content-wrapper">
+                <div class="thumbnails">
+                  <% projects.forEach(function(project) { %>
+                    <div class="thumbnail">
+                      <button popovertarget="<%= project.id %>" class="pop-btn open">
+                        <div class="hoverBox">
+                          <div class="ripple wrapper" data-effect="ripple"></div>
+                        </div>
+                        <picture>
+                          <source srcset="/<%= project.thumb.avif %>" type="image/avif">
+                          <source srcset="/<%= project.thumb.webp %>" type="image/webp">
+                          <source srcset="/<%= project.thumb.jpg %>" type="image/jpeg">
+                          <img class="d-loading" src="/<%= project.thumb.jpg %>" alt="<%= project.thumb.alt %>" width="<%= project.thumb.width %>" height="<%= project.thumb.height %>" loading="lazy" style="aspect-ratio:<%= project.thumb.width %>/<%= project.thumb.height %>">
+                        </picture>
+                      </button>
+                    </div>
+                  <% }); %>
+                </div>
+              </div>
+
+              <% projects.forEach(function(project) { %>
+                <template id="template-<%= project.id %>">
+                  <div id="<%= project.id %>" class="project-pop" popover tabindex="0">
+                    <div class="star-bg"></div>
+                    <div class="bg-overlay"></div>
+                    <div class="oversnap-scroller">
+                      <div class="oversnap-body">
+                        <% project.figures.forEach(function(fig, figIndex) { %>
+                          <figure>
+                            <% if (fig.type === "picture") { %>
+                              <picture class="<%= fig.class %>">
+                                <% fig.sources.forEach(function(source) { %>
+                                  <source srcset="/<%= source.srcset %>" type="<%= source.type %>">
+                                <% }); %>
+                                <img class="d-loading" src="/<%= fig.img.src %>" alt="<%= fig.img.alt %>" width="<%= fig.img.width %>" height="<%= fig.img.height %>" loading="lazy">
+                              </picture>
+                            <% } else if (fig.type === "video") { %>
+                              <div
+                                class="video-placeholder <%= fig.class %>"
+                                data-video='<%- JSON.stringify({
+                                  title: fig.title,
+                                  width: fig.width,
+                                  height: fig.height,
+                                  sources: fig.sources,
+                                  autoplay: true,
+                                  loop: true,
+                                  muted: true,
+                                  controls: true,
+                                  controlsList: "play nodownload noplaybackrate",
+                                  disableRemotePlayback: true,
+                                  disablePictureInPicture: true
+                                }) %>'
+                              ></div>
+                            <% } %>
+
+                            <% if (figIndex === 0 && project.content) { %>
+                              <div class="project-content" style="opacity:0;">
+                                <figcaption class="content-bg">
+                                  <details>
+                                    <summary>
+                                      <div class="ripple wrapper" data-effect="ripple"></div>
+                                      <span>Projectdetails</span>
+                                    </summary>
+                                    <div class="content">
+                                      <% fields.forEach(function(field) { 
+                                        const value = project.content[field.key];
+
+                                        if (value) { %>
+                                        
+                                          <h3><%= field.label %></h3>
+                                          
+                                          <% if (Array.isArray(value)) { %>
+                                          
+                                            <% 
+                                              // Check of het een array van objecten met een 'categorie'-key is
+                                              const hasCategories = value[0] && value[0].categorie; 
+                                            %>
+
+                                            <% if (hasCategories) { %>
+                                              <div class="subcategory">
+                                                <% 
+                                                  // Groepeer de subitems per categorie
+                                                  const categories = value.reduce((acc, item) => {
+                                                    if (!acc[item.categorie]) {
+                                                      acc[item.categorie] = [];
+                                                    }
+                                                    acc[item.categorie].push(item.subitem);
+                                                    return acc;
+                                                  }, {});
+                                                %>
+                                                <% value.forEach(function(category) { %>
+                                                  <h4>✦ <%= category.categorie %></h4>
+                                                  <ul>
+                                                    <% category.subitems.forEach(function(subitem) { %>
+                                                      <li><%= subitem %></li>
+                                                    <% }); %>
+                                                  </ul>
+                                                <% }); %>
+                                              </div>
+                                            <% } else { %>
+                                            
+                                              <ul>
+                                                <% value.forEach(function(item) { %>
+                                                  <li><%= item %></li>
+                                                <% }); %>
+                                              </ul>
+                                              
+                                            <% } %>
+
+                                          <% } else { %>
+                                          
+                                            <p><%= value %></p>
+                                            
+                                          <% } %>
+                                          
+                                      <% } }); %>
+                                    </div>
+                                  </details>
+                                </figcaption>
+                              </div>
+                            <% } %>
+                          </figure>
+                        <% }); %>
+                      </div>
+                    </div>
+                    <ul class="pop-nav">
+                      <li><button class="icon prev ripple"></button></li>
+                      <li><button popovertarget="<%= project.id %>" class="icon close ripple"></button></li>
+                      <li><button class="icon next ripple"></button></li>
+                    </ul>
+                  </div>
+                </template>
+              <% }); %>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="about" class="tab-pane-container">
+          <div class="spacer">
+            <div class="content-bg"></div>
+            <div class="content-scroller">
+              <div id="about-tab" class="tab-pane content" role="tabpanel" aria-labelledby="about-tab">
+                <div class="content-wrapper">
+
+                  <div class="profile-pic"><div class="ripple wrapper" data-effect="ripple"></div></div>
+                  <h2>Ik ben Dylan van Diesen, een ervaren autodidact met liefde voor design en front-end development</h2>
+                  
+                  <p>Mijn naam is Dylan van Diesen - een gedreven multimedia-designer en webdeveloper met ruim 25 jaar ervaring, gevormd door een combinatie van autodidactisch leren, praktijkervaring en een diepe interesse voor technologie en creatie. Wat op mijn twaalfde ooit begon met het bouwen van websites en ontwerpen van logo's en huisstijlen voor lokale ondernemers, groeide uit tot een carrière waarin ik brede expertise heb op mogen bouwen in onder andere (front-end) development, UX/UI design en webdesign.</p>
+
+                  <p>Naast mijn werk ben getrouwd en vader van een zoontje. In mijn vrije tijd ga ik graag op pad met mijn gezin of ben ik bezig op de computer - meestal experimenterend met nieuwe tools of technieken. Die nieuwsgierigheid is niet alleen mijn hobby, maar ook de motor achter mijn werk.</p>
+
+                  <p>Door de jaren heen heb ik mogen werken aan de meest uiteenlopende projecten, van conversiegerichte WordPress-websites tot complexe maatwerkplatformen en SaaS-oplossingen binnen diverse sectoren. Daarbij ligt mij kracht in het schrijven van schone, testbare code en het ontwikkelen van interfaces die zowel functioneel als visueel impactvol zijn. Mijn ervaring strekt zich uit over verschillende tech stacks en markten, waardoor ik snel kan schakelen en effectief kan inspelen op de behoeften van ieder project.</p>
+
+                  <p>Op de werkvloer word ik omschreven als betrokken, loyaal, leergierig en word mijn humor veelal gewaardeerd. Eén van mijn krachten is mijn vermogen om zowel strategisch als uitvoerend te kunnen denken; ik werk graag mee aan de inhoud en visie van een project, maar duik net zo enthousiast in de code of het design. Ik geloof in de kracht van samenwerking (van elkaar leren), open communicatie en een positieve werksfeer waar voldoende ruimte is voor creativiteit, experimenteren en groei.</p>
+
+                  <p>Om mijn kennis nog verder te verbreden hoop ik in 2026 een functiediploma in Ethical Hacking af te ronden, waarmee ik mijn technische fundament nog sterker maak en nieuwe waarde kan toevoegen aan de digitale oplossingen die ik ontwikkel.</p>
+
+                  <% 
+                  // <p>Al sinds mijn twaalfde spendeer ik het liefst uren achter de computer om mezelf nieuwe technieken en vaardigheden aan te leren. In de jaren hierop volgend heb ik mijn creativiteit en kennis nog verder uit kunnen breiden door mijn werk bij uiteenlopende mediabureaus en het leiden van mijn eigen multimediabedrijf.</p>
+
+                  // <p>Nu, 21 jaar later heb ik mezelf ontwikkeld tot een multimedia designer die zijn creativiteit en kennis op meerdere gebieden kan toepassen. Van grafisch ontwerp tot UX/UI design en van marketingadvies tot het salesgesprek. Ik heb hierdoor dan ook al vele projecten succesvol begeleid en uitgevoerd. Door mijn liefde voor computers, technologie en design ben ik expert geworden op het gebied van multimediatechnologieën en applicaties. Ook ben ik in begin 2016 de uitdaging aangegaan om mezelf tot professioneel niveau te ontwikkelen op het gebied van front-end development!</p>
+
+                  // <p>Op de werkvloer word ik omschreven als iemand die hard werkt, loyaal is en een goede dosis humor bevat. Ik ben dan ook op zoek naar een uitdaging voor langere tijd met een open en gezellige werksfeer waarbij ik mezelf verder kan ontwikkelen.</p>
+                  %>
+                  
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="contact" class="tab-pane-container">
+          <div class="spacer">
+            <div class="content-bg"></div>
+            <div class="content-scroller">
+              <div id="contact-tab" class="tab-pane content" role="tabpanel" aria-labelledby="contact-tab">
+                <div class="content-wrapper">
+                  <div class="contact-options">
+                    <a href="tel:0633835576" class="contact-option">
+                      <div class="ripple wrapper" data-effect="ripple"></div>
+                      <span class="icon sattelite"></span>
+                      <span>Bel 06 338 355 76</span>
+                    </a>
+                    <a href="/curriculum-vitae-dylan-van-diesen.pdf" target="_blank" class="contact-option">
+                      <div class="ripple wrapper" data-effect="ripple"></div>
+                      <span class="icon astronaut"></span>
+                      <span>Curricu&shy;lum Vitae</span>
+                    </a>
+                    <a href="https://www.linkedin.com/in/dylanvandiesen/" target="_blank" rel="noopener"  class="contact-option">
+                      <div class="ripple wrapper" data-effect="ripple"></div>
+                      <span class="icon linkedin"></span>
+                      <span>Mijn Linkedin</span>
+                    </a>
+                  </div>
+                  <form name="contact-form" action="https://formsubmit.co/dylanvandiesen@gmail.com" method="POST" >
+                      <div class="fieldset">
+                        <h2><span>Kom in contact</span> <span class="icon spock"></span></h2>
+                        <div class="input-container">
+                          <label for="contact-name">Naam</label>
+                          <input type="text" name="name" class="form-control" id="contact-name" placeholder="Naam" autocomplete="on" required="true">
+                        </div>
+                        <div class="input-container">
+                          <label for="contact-email">E-mail</label>
+                          <input type="email" name="email" class="form-control" id="contact-email" placeholder="E-mailadres" autocomplete="on" required="true">
+                        </div>
+                        <div class="input-container">
+                          <label for="contact-telephone">Telefoon</label>
+                          <input type="tel" name="tel" class="form-control" id="contact-telephone" placeholder="Telefoonnummer" autocomplete="on" required="true">
+                        </div>
+                        <div class="input-container">
+                          <label for="contact-message">Bericht</label>
+                          <textarea name="message" class="form-control" id="contact-message" rows="1" max-rows="6" placeholder="Bericht schrijven" required="true"></textarea>
+                        </div>
+                        
+                      </div>
+                      <button type="submit" class="btn btn-primary"><div class="ripple wrapper" data-effect="ripple"></div>Versturen <i class="fas fa-paper-plane"></i></button>
+                    </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel-route-stage" data-panel-stage aria-hidden="true">
+          <div class="panel-route-shell spacer is-collapsed" data-panel-shell>
+            <div class="content-bg"></div>
+            <div class="content-scroller panel-route-scroller" data-panel-scroller>
+              <div class="panel-swap" data-panel-swap>
+                <div class="panel-overlay" data-panel-overlay aria-hidden="true"></div>
+                <div class="panel-scroll" data-panel-scroll>
+                  <div class="panel-body" data-panel-body></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <nav class="nav-main">
+        <ul class="nav nav-tabs " id="myTab" role="tablist">
+          <li class="nav-item" role="tab">
+            <input type="radio" id="nav-home" name="d-tabs">
+            <label class="nav-link"  for="nav-home" tabindex="0"> 
+                <canvas class="ripple wrapper" data-effect="ripple"></canvas>
+              <div class="icon globe"></div>
+              <span title="Home">Home</span>
+            </label>
+          </li>
+          <li class="nav-item" role="tab">
+            <input type="radio" id="nav-work" name="d-tabs">
+            <label class="nav-link" for="nav-work" tabindex="0">
+                <canvas class="ripple wrapper" data-effect="ripple"></canvas>
+                <div class="icon rocket"></div>
+                <span title="Work">Work</span>
+            </label>
+          </li>
+          <li class="nav-item" role="tab">
+            <input type="radio" id="nav-about" name="d-tabs">
+            <label class="nav-link" for="nav-about" tabindex="0">
+                <canvas class="ripple wrapper" data-effect="ripple"></canvas>
+                <div class="icon astronaut"></div>
+                <span title="About">About</span>
+            </label>
+          </li>
+          <li class="nav-item" role="tab">
+            <input type="radio" id="nav-contact" name="d-tabs">
+            <label class="nav-link" for="nav-contact" tabindex="0">
+              <canvas class="ripple wrapper" data-effect="ripple"></canvas>
+              <div class="icon spock"></div>
+              <span title="Contact">Contact</span>
+            </label>
+          </li>
+        </ul>
+      </nav>
+
+      <div id="stage" class="stage" data-scalar-y="8">
+        <div class="bg-container" data-depth="0.05">
+          <div id="bg"></div>
+          <div id="stars">
+            <canvas id="starfield" class="starfield" data-effect="starfield"></canvas>
+          </div>
+
+          <% /* 
+            <svg id="bg-cloud1-filters" image-rendering="optimizeQuality" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" width="0" height="0" viewBox="0 0 0 0">
+              <defs>
+                <filter id="bg-cloud1-filter-base">
+                  <feTurbulence type="turbulence" baseFrequency="0.001 0.008" numOctaves="6" seed="8518" stitchTiles="noStitch">
+                    <animate attributeName="baseFrequency" attributeType="XML" values="0.001 0.008; 0.00025 0.0085" keyTimes="0;1" dur="60s" repeatCount="indefinite" />
+                    <!-- <animate attributeName="seed" values="8518;8519,8520" keyTimes="0;0.5;1" dur="60s" repeatCount="indefinite" /> -->
+                    <!-- <feColorMatrix in="turbulence" type="hueRotate" values="0" result="cloud">
+                      <animate attributeName="values" from="0" to="360" dur="60s" repeatCount="indefinite"/>
+                    </feColorMatrix> -->
+                  </feTurbulence>
+                  <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="200">
+                    <animate attributeName="scale" values="200;400" keyTimes="0;1" dur="60s" repeatCount="indefinite" />
+                  </feDisplacementMap>
+                  <!-- <feGaussianBlur in="turbulence" stdDeviation="0">
+                    <animate attributeName="stdDeviation" values="0;0" dur="60s" repeatCount="indefinite"/>
+                  </feGaussianBlur> -->
+                </filter>
+                <filter id="bg-cloud1-filter-back">
+                  <feTurbulence type="turbulence" baseFrequency="0.001 0.008" numOctaves="6" seed="8518" stitchTiles="noStitch">
+                    <animate attributeName="baseFrequency" attributeType="XML" values="0.001 0.008; 0.00025 0.0085" keyTimes="0;1" dur="60s" repeatCount="indefinite" />
+                  </feTurbulence>
+                  <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="200">
+                    <animate attributeName="scale" values="200;400" keyTimes="0;1" dur="60s" repeatCount="indefinite" />
+                  </feDisplacementMap>
+                </filter>
+                <filter id="bg-cloud1-filter-mid">
+                  <feTurbulence type="turbulence" baseFrequency="0.001 0.008" numOctaves="5" seed="8518" stitchTiles="noStitch">
+                    <animate attributeName="baseFrequency" attributeType="XML" values="0.001 0.008; 0.00025 0.0085" keyTimes="0;1" dur="60s" repeatCount="indefinite" />
+                  </feTurbulence>
+                  <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="200">
+                    <animate attributeName="scale" values="200;400" keyTimes="0;1" dur="60s" repeatCount="indefinite" />
+                  </feDisplacementMap>
+                </filter>
+                <filter id="bg-cloud1-filter-front">
+                  <feTurbulence type="turbulence" baseFrequency="0.001 0.008" numOctaves="4" seed="8518" stitchTiles="noStitch">
+                    <animate attributeName="baseFrequency" attributeType="XML" values="0.001 0.008; 0.00025 0.0085" keyTimes="0;1" dur="60s" repeatCount="indefinite" />
+                  </feTurbulence>
+                  <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="200">
+                    <animate attributeName="scale" values="200;500" keyTimes="0;1" dur="60s" repeatCount="indefinite" />
+                  </feDisplacementMap>
+                </filter>
+              </defs>
+            </svg>
+            <div class="bg-clouds">
+              <div class="bottom">
+                <div id="bg-cloud1" class="bg-cloud" >
+                  <div class="bg-cloud1-base"></div>
+                  <div class="bg-cloud1-back"></div>
+                  <div class="bg-cloud1-mid"></div>
+                  <div class="bg-cloud1-front"></div>
+                </div>
+              </div>
+            </div>
+          */ %>
+
+        </div>
+        <div class="mbg-container" data-depth="0.075">
+          <div id="mbg"></div>
+        </div>
+        <div class="mg-container" data-depth="0.1">
+          <div id="mg"></div>
+          <% /*
+            <svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" class="clouds2" fill-rule="evenodd" clip-rule="evenodd" image-rendering="optimizeQuality" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" viewBox="0 0 1200 300">
+                <defs>
+                <filter id="clouds2-filter" filterUnits="userSpaceOnUse">
+                    <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="5" seed="2" result="noise1">
+                    <animate attributeName="baseFrequency" values="0.01; 0.015; 0.01" dur="20s" repeatCount="indefinite" />
+                    </feTurbulence>
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="10" />
+                    <feDisplacementMap in="blur1" scale="20" in2="noise1" result="cloud1">
+                    <animate attributeName="scale" values="20; 25; 20" dur="20s" repeatCount="indefinite" />
+                    </feDisplacementMap>
+                    <feMerge>
+                    <feMergeNode in="cloud1" />
+                    </feMerge>
+                </filter>
+                </defs>
+                <g fill="#FFF" stroke="#FFF" stroke-width="60" filter="url(#clouds2-filter)" opacity="0.8">
+                <path d="M50 60 Q 70 40, 110 60 T 170 60 Q 190 40, 230 60 T 290 60 Q 310 40, 350 60 T 410 60" />
+                </g>
+            </svg> 
+          */ %>
+        </div>
+
+        <div class="fg-container" data-depth="0.15" data-friction-y="0.001">
+          <div id="fg">
+            <% // <canvas class="displacement-layer" style="width: 100%; height: auto; aspect-ratio: 2048 / 1365; display: block; position: absolute; bottom:0;left:-5%;"></canvas> %>
+            
+ <% /* 
+ <video title="video-title2" width="1152" height="768" controls="none" autoplay="true" muted="true" loop="true" controlslist="" disableremoteplayback="" disablepictureinpicture="" class="" draggable="false" style="position: absolute; inset:auto 0 0 0; width: 100%; height:auto;">
+  <source src="/videos/test1.mp4" type="video/mp4">
+ </video>
+ */ %>
+          </div>
+          <div id="dust"></div>
+        </div>
+      </div>
+
+    </div>
+    <% if (isDevelopment) { %>
+      <% // <script src="/debug/resizeObserverMonkeyPatch.js"></script> %>
+       <script src="/debug/resizeObserverMonkeyPatch.js"></script>
+    <% } %>
+    <script defer src="/js/vendors.js"></script>
+    <script defer src="/js/main.js"></script>
+  </body>
+</html>
