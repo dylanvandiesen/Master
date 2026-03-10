@@ -9,6 +9,15 @@
   RewriteRule ^ index.html [L]
 </IfModule>
 
+# Explicit MIME types for modern assets used by the portfolio
+<IfModule mod_mime.c>
+  AddType image/avif .avif
+  AddType image/webp .webp
+  AddType image/svg+xml .svg .svgz
+  AddType font/woff .woff
+  AddType font/woff2 .woff2
+</IfModule>
+
 # Serve pre-compressed Brotli files if they exist and the client accepts br
 <IfModule mod_rewrite.c>
   RewriteEngine On
@@ -168,6 +177,8 @@
     ExpiresByType text/html "access 1 month"
     ExpiresByType image/gif "access 1 year"
     ExpiresByType image/png "access 1 year"
+    ExpiresByType image/avif "access 1 year"
+    ExpiresByType image/webp "access 1 year"
     ExpiresByType image/jpg "access 1 year"
     ExpiresByType image/jpeg "access 1 year"
     ExpiresByType image/x-icon "access 1 year"

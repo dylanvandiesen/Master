@@ -6,6 +6,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const CompressionPlugin = require('compression-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
+const { WebpackManifestPlugin } = require('webpack-manifest-plugin');
 const projects = require('./src/data/projects.json');
 
 function toPublicAssetPath(file, publicPath = '/') {
@@ -16,6 +17,19 @@ function toPublicAssetPath(file, publicPath = '/') {
 	}
 
 	return `${basePath.replace(/\/?$/, '/')}${file}`.replace(/([^:]\/)\/+/g, '$1');
+}
+
+function getEntrypointFiles(compilation, name, extensionPattern) {
+	const entrypoint = compilation.entrypoints.get(name);
+
+	if (!entrypoint) {
+		return [];
+	}
+
+	const publicPath = compilation.options.output.publicPath;
+	const files = entrypoint.getFiles().filter((file) => extensionPattern.test(file));
+
+	return [...new Set(files.map((file) => toPublicAssetPath(file, publicPath)))];
 }
 
 class RemoveDistArtifactsPlugin {
@@ -45,7 +59,7 @@ module.exports = (
 		},
 		output: {
 			path: path.resolve(__dirname, 'dist'),
-			filename: 'js/[name].js',
+			filename: prod ? 'js/[name].[contenthash].js' : 'js/[name].js',
 			assetModuleFilename: 'assets/[hash][ext][query]',
 			clean: prod,
 			publicPath: '/'
@@ -157,6 +171,10 @@ module.exports = (
 			]
 		},
 		plugins: [
+			new WebpackManifestPlugin({
+				fileName: 'manifest.json',
+				filter: (file) => file.name?.startsWith('preloader') || file.name?.endsWith('.css')
+			}),
 			new HtmlWebpackPlugin({
 				template: './src/index.ejs',
 				filename: 'index.html',
@@ -171,20 +189,34 @@ module.exports = (
 				inject: false,
 				chunks: ['main', 'vendors'],
 				chunksSortMode: 'manual',
-				templateParameters: (compilation, assets, assetTags, options) => ({
-					publicPath: compilation.options.output.publicPath,
-					webpackConfig: compilation.options,
-					isProduction: prod,
-					isDevelopment: !prod,
-					projects,
-					...options
-				})
+				templateParameters: (compilation, assets, assetTags, options) => {
+					const preloaderStyles = getEntrypointFiles(compilation, 'preloader', /\.css$/i);
+					const preloaderScripts = getEntrypointFiles(compilation, 'preloader', /\.js$/i);
+					const mainStyles = getEntrypointFiles(compilation, 'main', /\.css$/i);
+					const mainScripts = getEntrypointFiles(compilation, 'main', /\.js$/i)
+						.filter((file) => !preloaderScripts.includes(file));
+
+					return {
+						publicPath: compilation.options.output.publicPath,
+						webpackConfig: compilation.options,
+						isProduction: prod,
+						isDevelopment: !prod,
+						projects,
+						preloaderStyles,
+						preloaderScripts,
+						mainStyles,
+						mainScripts,
+						...options
+					};
+				}
 
 
 			}),
 
 			new MiniCssExtractPlugin({
-				filename: (pathData) => `css/${pathData.chunk.name}.css`
+				filename: (pathData) => prod
+					? `css/${pathData.chunk.name}.[contenthash].css`
+					: `css/${pathData.chunk.name}.css`
 			}),
 			...(prod
 				? [

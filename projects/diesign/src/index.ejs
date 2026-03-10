@@ -5,15 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3, viewport-fit=cover, interactive-widget=overlays-content">
     <meta name="robots" content="index, nofollow">
 
-    <% if (isProduction) { %>
-      <link rel="preload" href="/css/preloader.css" as="style">
-      <link href="/css/preloader.css" rel="stylesheet">
-      <link href="/css/main.css" rel="stylesheet">
-    <% } %>
-    <link rel="preload" href="/js/runtime.js" as="script">
-    <script src="/js/runtime.js"></script>
-    <link rel="preload" href="/js/preloader.js" as="script">
-    <script src="/js/preloader.js"></script>
+    <% preloaderStyles.forEach(function(href) { %>
+      <link rel="preload" href="<%= href %>" as="style">
+      <link href="<%= href %>" rel="stylesheet">
+    <% }); %>
+    <% mainStyles.forEach(function(href) { %>
+      <link href="<%= href %>" rel="stylesheet">
+    <% }); %>
+    <% preloaderScripts.forEach(function(src) { %>
+      <link rel="preload" href="<%= src %>" as="script">
+      <script src="<%= src %>"></script>
+    <% }); %>
     
       <link rel="preload" href="/images/icons/loading-spinner.svg" as="image" type="image/svg+xml">
       <link rel="preload" href="/fonts/jaapokkisubtract-regular.woff2" as="font" type="font/woff2" crossorigin>
@@ -511,7 +513,8 @@
       <% // <script src="/debug/resizeObserverMonkeyPatch.js"></script> %>
        <script src="/debug/resizeObserverMonkeyPatch.js"></script>
     <% } %>
-    <script defer src="/js/vendors.js"></script>
-    <script defer src="/js/main.js"></script>
+    <% mainScripts.forEach(function(src) { %>
+      <script defer src="<%= src %>"></script>
+    <% }); %>
   </body>
 </html>
