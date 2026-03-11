@@ -3,8 +3,7 @@
     loadTimeout: 5000,
     loaderSelector: '#loader',
     loadedClass: 'loaded',
-    removeDelay: 600,
-    homeRemoveDelay: 3200,
+    removeDelay: 180,
     stageSelector: '#bg, #mbg, #mg, #fg'
   };
 
@@ -24,17 +23,6 @@
 
   const LOADER_FADE_DURATION_MS = 400;
   const SPINNER_FADE_DURATION_MS = 300;
-
-  function getNormalizedPathname() {
-    const pathname = window.location.pathname.replace(/\/index\.html$/, '').replace(/\/+$/, '');
-    return pathname || '/';
-  }
-
-  function getRevealDelay() {
-    return getNormalizedPathname() === '/'
-      ? Math.max(config.removeDelay, config.homeRemoveDelay)
-      : config.removeDelay;
-  }
 
   function applyLoaderTiming(revealDelay) {
     const loader = document.querySelector(config.loaderSelector);
@@ -65,7 +53,7 @@
     }
 
     requestAnimationFrame(() => {
-      const revealDelay = getRevealDelay();
+      const revealDelay = Math.max(0, config.removeDelay);
       applyLoaderTiming(revealDelay);
       document.body.classList.add(config.loadedClass);
       removeLoaderTimeoutId = window.setTimeout(() => {

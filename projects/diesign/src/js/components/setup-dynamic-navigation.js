@@ -16,7 +16,6 @@ export function setupDynamicNavigation(options = {}) {
   const activeInstances = new Map();
   let currentPath = getCurrentPath();
   let routeJobId = 0;
-
   function delay(ms) {
     return new Promise((resolve) => window.setTimeout(resolve, ms));
   }

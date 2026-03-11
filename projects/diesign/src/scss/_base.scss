@@ -46,6 +46,18 @@ body {
   initial-value: 0;
 }
 
+@property --panel-shell-scale {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+@property --panel-shell-tilt {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
 .stage, .logo-container, nav, .tab-pane-container:not(#work), .spacer{
   touch-action: pan-x pan-y;
 }
@@ -78,6 +90,7 @@ a, label, button {
   cursor: url("../images/cursor-pointer.svg") 5 5, pointer !important;
   &:active  { cursor: url("../images/cursor-pointer-down.svg") 6 6, pointer !important;}
 }
+
 body .bg-container {
   -webkit-user-select: text;
      -moz-user-select: text;
@@ -110,6 +123,8 @@ body .bg-container {
   --panel-shell-width: 0px;
   --panel-shell-height: 0px;
   --panel-shell-opacity: 0;
+  --panel-shell-scale: 1;
+  --panel-shell-tilt: 0deg;
   
   // &::after {
   //   content: ''; m
@@ -131,12 +146,16 @@ body .bg-container {
     will-change: opacity;
     transition: opacity 1s ease-in-out;
     opacity:0;
+    pointer-events: none;
 	}
-
-	// &:has(nav input#nav-home:checked) .logo-container       {opacity: 0 !important;}
-	&:has(nav input:is(#nav-home, #nav-work, #nav-about, #nav-contact)) .logo-container {opacity: 0;}
-	&:has(nav input:is(#nav-work, #nav-about, #nav-contact):checked) .logo-container {opacity: 1}
-	&:has(nav input#nav-home:checked) .logo-container       {opacity: 0;}
+  &:has(nav input#nav-home:is(:checked)) .logo-container {
+    opacity: 0;
+    pointer-events: none;
+  }
+  &:has(nav input#nav-home:not(:checked)) .logo-container {
+    opacity: 1;
+    pointer-events: auto;
+  }
 
   // SITE ICONS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
   
@@ -252,6 +271,7 @@ body .bg-container {
       content-visibility: auto;
       contain-intrinsic-size: 100% 100dvh;
       contain: strict;
+      display: flex;
     }
 
     .panel-route-stage {
@@ -272,13 +292,17 @@ body .bg-container {
       opacity: var(--panel-shell-opacity);
       isolation: isolate;
       pointer-events: auto;
-      will-change: --panel-shell-left, --panel-shell-top, --panel-shell-width, --panel-shell-height, --panel-shell-opacity;
+      transform-origin: 50% 50%;
+      transform: perspective(95dvh) rotateX(var(--panel-shell-tilt)) scale(var(--panel-shell-scale));
+      will-change: --panel-shell-left, --panel-shell-top, --panel-shell-width, --panel-shell-height, --panel-shell-opacity, --panel-shell-scale, --panel-shell-tilt;
       transition:
         --panel-shell-left var(--panel-resize-duration) var(--panel-resize-easing),
         --panel-shell-top var(--panel-resize-duration) var(--panel-resize-easing),
         --panel-shell-width var(--panel-resize-duration) var(--panel-resize-easing),
         --panel-shell-height var(--panel-resize-duration) var(--panel-resize-easing),
-        --panel-shell-opacity var(--panel-resize-duration) var(--panel-resize-easing);
+        --panel-shell-opacity var(--panel-resize-duration) var(--panel-resize-easing),
+        --panel-shell-scale var(--panel-resize-duration) var(--panel-resize-easing),
+        --panel-shell-tilt var(--panel-resize-duration) var(--panel-resize-easing);
     }
 
     .panel-route-shell.is-sizing-immediate {
@@ -287,6 +311,8 @@ body .bg-container {
 
     .panel-route-shell.is-collapsed {
       pointer-events: none;
+      --panel-shell-scale: .25;
+      --panel-shell-tilt: -12deg;
     }
 
     .panel-route-scroller {
@@ -368,8 +394,14 @@ body .bg-container {
       position: relative;
       margin-inline: auto;
       opacity: 0;
-      will-change: opacity;
-      transition: opacity var(--panel-fade-duration) var(--panel-fade-easing);
+      --panel-layer-translate-x: 0px;
+      --panel-layer-translate-y: 0px;
+      --panel-layer-scale: 1;
+      --panel-layer-tilt: 0deg;
+      will-change: opacity, transform;
+      transition:
+        opacity var(--panel-fade-duration) var(--panel-fade-easing),
+        transform var(--panel-fade-duration) var(--panel-fade-easing);
       content-visibility: visible;
       contain: layout paint style;
     }
@@ -397,51 +429,34 @@ body .bg-container {
       left: 50%;
       top: var(--panel-layer-top, 0px);
       max-width: none;
-      transform: translateX(-50%);
+      --panel-layer-translate-x: -50%;
+      transform: translate(var(--panel-layer-translate-x), var(--panel-layer-translate-y))
+        perspective(95dvh)
+        rotateX(var(--panel-layer-tilt))
+        scale(var(--panel-layer-scale));
       pointer-events: none;
     }
 
     .panel-overlay .panel-content.is-centered-layout {
       top: 50%;
-      transform: translate(-50%, -50%);
+      --panel-layer-translate-y: -50%;
     }
 
-    .panel-home-overlay-host {
-      position: absolute;
-      inset: 0;
-      z-index: 3;
-      pointer-events: none;
-      overflow: hidden;
+    .panel-overlay .panel-content.is-entering {
+      --panel-layer-scale: 1.05;
+      --panel-layer-tilt: 4deg;
     }
 
-    .panel-home-overlay {
-      position: absolute;
-      opacity: 0;
-      will-change: opacity;
-      transition: opacity var(--panel-fade-duration) var(--panel-fade-easing);
-      pointer-events: none;
-
-      &.is-visible {
-        opacity: 1;
-      }
-
-      > *,
-      * {
-        animation: none !important;
-        transition: none !important;
-      }
-
-      .diesign-logo {
-        opacity: 1 !important;
-        will-change: opacity;
-        transition: opacity var(--panel-resize-duration) var(--panel-resize-easing) !important;
-      }
-
-      &:not(.is-visible) .diesign-logo {
-        opacity: 0 !important;
-      }
+    .panel-overlay .panel-content.is-entering.is-visible {
+      --panel-layer-scale: 1;
+      --panel-layer-tilt: 0deg;
     }
-  
+
+    .panel-overlay .panel-content.is-exiting:not(.is-visible) {
+      --panel-layer-scale: .9;
+      --panel-layer-tilt: -8deg;
+    }
+
     .spacer {
       position: relative; overflow: hidden; max-height: 100%;
       $pane-offset: 11px;
@@ -567,15 +582,16 @@ body .bg-container {
   &:has(nav input#nav-work) .tab-panes #work,
   &:has(nav input#nav-about) .tab-panes #about,
   &:has(nav input#nav-contact) .tab-panes #contact {
-    display: none;
     opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
     transform-style: preserve-3d;
     transform: perspective(95dvh) rotateX(-5deg) translate(0, 8px) scale(.95);
     z-index:1;
     -webkit-backface-visibility: hidden;
             backface-visibility: hidden;
-    will-change: transform, opacity, display;
-    transition: transform, opacity, display allow-discrete;
+    will-change: transform, opacity;
+    transition: transform, opacity;
     transition-timing-function: cubic-bezier(0.68, -0.55, 0.265, 1.55);
     // transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
     // transition-timing-function: cubic-bezier(0.785, 0.135, 0.15, 0.86);
@@ -587,8 +603,9 @@ body .bg-container {
   &:has(nav input#nav-work:checked) .tab-panes #work,
   &:has(nav input#nav-about:checked) .tab-panes #about,
   &:has(nav input#nav-contact:checked) .tab-panes #contact  {
-    display: flex !important;
     opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
     transform: perspective(95dvh) rotateX(0deg) translate(0, 0) scale(1);
     z-index:1;
   }
@@ -597,8 +614,9 @@ body .bg-container {
     &:has(nav input#nav-work:checked) .tab-panes #work,
     &:has(nav input#nav-about:checked) .tab-panes #about,
     &:has(nav input#nav-contact:checked) .tab-panes #contact  {
-      display: none;
       opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
       transform: perspective(95dvh) rotateX(-5deg) translate(0, 8px) scale(.95);
       z-index:2;
     }
@@ -624,8 +642,56 @@ body .bg-container {
       transition: none;
     }
   }
-  
+
+  &.is-home-transition-out .tab-panes #home,
+  &.is-home-transition-in .tab-panes #home {
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: none !important;
+    z-index: 26;
+  }
+
+  &.is-home-transition-out .tab-panes #home-tab,
+  &.is-home-transition-in .tab-panes #home-tab {
+    will-change: opacity, transform;
+    animation-duration: var(--panel-fade-duration);
+    animation-timing-function: var(--panel-fade-easing);
+    animation-fill-mode: both;
+  }
+
+  &.is-home-transition-out .tab-panes #home-tab {
+    animation-name: home-view-exit;
+  }
+
+  &.is-home-transition-in .tab-panes #home-tab {
+    animation-name: home-view-enter;
+  }
+
   // END TAB PANES \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+  @keyframes home-view-exit {
+    from {
+      opacity: 1;
+      transform: perspective(95dvh) rotateX(0deg) scale(1);
+    }
+
+    to {
+      opacity: 0;
+      transform: perspective(95dvh) rotateX(-8deg) scale(.9);
+    }
+  }
+
+  @keyframes home-view-enter {
+    from {
+      opacity: 0;
+      transform: perspective(95dvh) rotateX(4deg) scale(1.05);
+    }
+
+    to {
+      opacity: 1;
+      transform: perspective(95dvh) rotateX(0deg) scale(1);
+    }
+  }
 
   // WORK PROJECTS POPOVERS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 

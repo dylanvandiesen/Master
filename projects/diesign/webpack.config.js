@@ -79,6 +79,7 @@ module.exports = (
 					[
 						{
 							test: /\.(jpe?g|png|webp|avif)$/i,
+							resourceQuery: /sizes\[]=/,
 							use: [
 								{
 									loader: 'responsive-loader',
@@ -131,6 +132,9 @@ module.exports = (
 				},
 				{
 					test: /\.(png|jpe?g|gif|svg|avif|webp)$/i,
+					resourceQuery: {
+						not: [/sizes\[]=/]
+					},
 					type: 'asset',
 					parser: {
 						dataUrlCondition: {

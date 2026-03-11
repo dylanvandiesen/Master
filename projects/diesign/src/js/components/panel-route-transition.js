@@ -108,11 +108,6 @@ export function setupPanelRouteTransition({
   }
 
   root.classList.add('is-panel-shell-ready');
-
-  const homeVisual = routes.home.pane.querySelector('.intro-container') ?? routes.home.pane;
-  const homeOverlayHost = document.createElement('div');
-  homeOverlayHost.className = 'panel-home-overlay-host';
-  stage.append(homeOverlayHost);
   const routeFormState = new Map();
 
   let activeView = getPrimaryRoute(location.pathname);
@@ -126,6 +121,26 @@ export function setupPanelRouteTransition({
   let liveLayoutFrame = 0;
   let liveLayoutTimeout = 0;
   let deferredLayoutTimeout = 0;
+  const HOME_TRANSITION_OUT_CLASS = 'is-home-transition-out';
+  const HOME_TRANSITION_IN_CLASS = 'is-home-transition-in';
+
+  function isEditableElement(element) {
+    if (!(element instanceof HTMLElement)) {
+      return false;
+    }
+
+    if (element.isContentEditable) {
+      return true;
+    }
+
+    return /^(INPUT|TEXTAREA|SELECT)$/.test(element.tagName);
+  }
+
+  function isEditingLivePanelControl() {
+    const activeElement = document.activeElement;
+
+    return isEditableElement(activeElement) && bodyHost.contains(activeElement);
+  }
 
   function setLiveContentSettled(settled) {
     const liveContent = bodyHost.querySelector('.panel-content.is-current');
@@ -624,14 +639,10 @@ export function setupPanelRouteTransition({
     swapHost.classList.remove('is-transitioning');
   }
 
-  function clearHomeOverlay() {
-    homeOverlayHost.replaceChildren();
-  }
-
   function resetOverlay() {
     pendingExitLayer = null;
     clearOverlay();
-    clearHomeOverlay();
+    root.classList.remove(HOME_TRANSITION_OUT_CLASS, HOME_TRANSITION_IN_CLASS);
   }
 
   function getExitLayerSnapshot() {
@@ -643,7 +654,7 @@ export function setupPanelRouteTransition({
 
     const visualContent = getCurrentVisualContent();
     return visualContent
-      ? createFrozenLayer(visualContent, getFrozenContentMetrics(currentView, visualContent), 'is-exiting')
+      ? createFrozenLayer(visualContent, getFrozenContentMetrics(targetView, visualContent), 'is-exiting')
       : null;
   }
 
@@ -658,49 +669,6 @@ export function setupPanelRouteTransition({
       ? createFrozenLayer(visualContent, getFrozenContentMetrics(view, visualContent), 'is-exiting')
       : null;
     pendingExitLayer = layer;
-  }
-
-  function freezeSnapshotStyles(source, clone) {
-    if (!source || !clone) {
-      return;
-    }
-
-    const computed = window.getComputedStyle(source);
-    clone.style.animation = 'none';
-    clone.style.transition = 'none';
-    clone.style.opacity = computed.opacity;
-    clone.style.transform = computed.transform === 'none' ? 'none' : computed.transform;
-    clone.style.transformOrigin = computed.transformOrigin;
-    clone.style.filter = computed.filter;
-    clone.style.fill = computed.fill;
-    clone.style.color = computed.color;
-    clone.style.stroke = computed.stroke;
-    clone.style.strokeWidth = computed.strokeWidth;
-
-    Array.from(source.children).forEach((child, index) => {
-      freezeSnapshotStyles(child, clone.children[index]);
-    });
-  }
-
-  function createHomeExitLayer() {
-    if (!homeVisual) {
-      return null;
-    }
-
-    const layer = document.createElement('div');
-    layer.className = 'panel-home-overlay is-visible';
-
-    const clone = homeVisual.cloneNode(true);
-    freezeSnapshotStyles(homeVisual, clone);
-    layer.append(clone);
-
-    const rect = toStageRect(stage, homeVisual);
-    layer.style.left = `${rect.left}px`;
-    layer.style.top = `${rect.top}px`;
-    layer.style.width = `${rect.width}px`;
-    layer.style.height = `${rect.height}px`;
-
-    return layer;
   }
 
   function commitImmediate(view) {
@@ -735,7 +703,6 @@ export function setupPanelRouteTransition({
       ? getCurrentShellRect()
       : collapseRect(getPreferredShellRect(nextView) ?? getSourceShellRect(nextView) ?? lastExpandedRect);
     const endRect = PANEL_VIEWS.has(nextView) ? getPreferredShellRect(nextView) : collapseRect(startRect);
-    const homeExitLayer = currentView === HOME_VIEW && PANEL_VIEWS.has(nextView) ? createHomeExitLayer() : null;
     const exitLayer = getExitLayerSnapshot();
     const liveNextContent = PANEL_VIEWS.has(nextView) ? mountLiveView(nextView) : null;
     const enterLayer = liveNextContent
@@ -748,9 +715,16 @@ export function setupPanelRouteTransition({
       : null;
 
     clearOverlay();
-    clearHomeOverlay();
 
-    if (!exitLayer && !enterLayer && !homeExitLayer) {
+    if (currentView === HOME_VIEW && PANEL_VIEWS.has(nextView)) {
+      root.classList.add(HOME_TRANSITION_OUT_CLASS);
+    }
+
+    if (nextView === HOME_VIEW && PANEL_VIEWS.has(currentView)) {
+      root.classList.add(HOME_TRANSITION_IN_CLASS);
+    }
+
+    if (!exitLayer && !enterLayer) {
       commitImmediate(nextView);
       return;
     }
@@ -764,10 +738,6 @@ export function setupPanelRouteTransition({
 
     if (enterLayer) {
       overlayHost.append(enterLayer);
-    }
-
-    if (homeExitLayer) {
-      homeOverlayHost.append(homeExitLayer);
     }
 
     setShellRect(startRect, {
@@ -787,10 +757,6 @@ export function setupPanelRouteTransition({
 
     if (exitLayer) {
       exitLayer.classList.remove('is-visible');
-    }
-
-    if (homeExitLayer) {
-      homeExitLayer.classList.remove('is-visible');
     }
 
     setShellRect(endRect, {
@@ -852,10 +818,19 @@ export function setupPanelRouteTransition({
     }
   }
 
+  function handleViewportChange() {
+    if (isEditingLivePanelControl()) {
+      return;
+    }
+
+    syncCurrentState();
+  }
+
   window.addEventListener('routewillchange', handleRouteWillChange);
   window.addEventListener('routechange', handleRouteChange);
-  window.addEventListener('resize', syncCurrentState, { passive: true });
-  window.addEventListener('orientationchange', syncCurrentState, { passive: true });
+  window.addEventListener('resize', handleViewportChange, { passive: true });
+  window.addEventListener('orientationchange', handleViewportChange, { passive: true });
+  window.visualViewport?.addEventListener('resize', handleViewportChange, { passive: true });
   bodyHost.addEventListener('input', scheduleLiveLayoutSync, true);
   bodyHost.addEventListener('change', scheduleLiveLayoutSync, true);
   bodyHost.addEventListener('toggle', scheduleLiveLayoutSync, true);
@@ -879,7 +854,6 @@ export function setupPanelRouteTransition({
       window.clearTimeout(liveLayoutTimeout);
       window.clearTimeout(deferredLayoutTimeout);
       clearScrollPrimeTimer();
-      homeOverlayHost.remove();
       bodyHost.removeEventListener('input', scheduleLiveLayoutSync, true);
       bodyHost.removeEventListener('change', scheduleLiveLayoutSync, true);
       bodyHost.removeEventListener('toggle', scheduleLiveLayoutSync, true);
@@ -888,8 +862,9 @@ export function setupPanelRouteTransition({
       bodyHost.removeEventListener('change', persistCurrentLiveFormState, true);
       window.removeEventListener('routewillchange', handleRouteWillChange);
       window.removeEventListener('routechange', handleRouteChange);
-      window.removeEventListener('resize', syncCurrentState);
-      window.removeEventListener('orientationchange', syncCurrentState);
+      window.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('orientationchange', handleViewportChange);
+      window.visualViewport?.removeEventListener('resize', handleViewportChange);
     }
   };
 }
