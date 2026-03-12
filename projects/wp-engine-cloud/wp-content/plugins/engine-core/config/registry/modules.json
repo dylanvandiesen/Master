@@ -1,0 +1,12 @@
+{
+  "$schema": "./schemas/module.schema.json",
+  "schemaVersion": "1.0.0",
+  "modules": [
+    {
+      "id": "hero",
+      "label": "Hero",
+      "version": "1.0.0",
+      "state": "approved"
+    }
+  ]
+}

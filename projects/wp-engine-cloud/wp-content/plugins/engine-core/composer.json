@@ -1,0 +1,16 @@
+{
+  "name": "wp-engine-cloud/engine-core",
+  "description": "Core rendering and orchestration services for WP Engine Cloud",
+  "type": "wordpress-plugin",
+  "require": {
+    "php": "^8.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "WPEngineCloud\\EngineCore\\": "src/"
+    }
+  },
+  "config": {
+    "sort-packages": true
+  }
+}
