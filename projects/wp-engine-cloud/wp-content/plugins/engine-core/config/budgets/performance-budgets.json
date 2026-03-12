@@ -1,0 +1,12 @@
+{
+  "templateBudgets": {
+    "singular": { "cssKb": 150, "jsKb": 120 },
+    "archive": { "cssKb": 130, "jsKb": 100 },
+    "search": { "cssKb": 120, "jsKb": 90 },
+    "404": { "cssKb": 80, "jsKb": 40 }
+  },
+  "webVitals": {
+    "lcpMs": 2500,
+    "tbtMs": 200
+  }
+}

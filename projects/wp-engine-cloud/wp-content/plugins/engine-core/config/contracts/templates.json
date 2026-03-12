@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "1.1.0",
+  "contracts": [
+    {
+      "variant": "hero.default",
+      "templatePath": "templates/modules/hero/default.php",
+      "requiredFields": ["headline"],
+      "optionalFields": ["body", "cta_label", "cta_url"],
+      "shape": { "headline": "string", "body": "string", "cta_label": "string", "cta_url": "string" }
+    },
+    {
+      "variant": "cta.default",
+      "templatePath": "templates/modules/cta/default.php",
+      "requiredFields": ["title"],
+      "optionalFields": ["text", "button_label", "button_url"],
+      "shape": { "title": "string", "text": "string", "button_label": "string", "button_url": "string" }
+    },
+    {
+      "variant": "feature-grid.default",
+      "templatePath": "templates/modules/feature-grid/default.php",
+      "requiredFields": ["title"],
+      "optionalFields": ["items"],
+      "shape": { "title": "string", "items": "array" }
+    }
+  ]
+}

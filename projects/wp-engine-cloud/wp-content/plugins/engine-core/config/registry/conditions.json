@@ -1,0 +1,12 @@
+{
+  "$schema": "./schemas/condition.schema.json",
+  "schemaVersion": "1.0.0",
+  "conditions": [
+    {
+      "id": "default.allow",
+      "label": "Default Allow",
+      "expression": "true",
+      "priority": 100
+    }
+  ]
+}

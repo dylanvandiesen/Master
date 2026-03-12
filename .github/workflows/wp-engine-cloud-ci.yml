@@ -1,0 +1,35 @@
+name: wp-engine-cloud-ci
+
+on:
+  push:
+    paths:
+      - 'projects/wp-engine-cloud/**'
+      - '.github/workflows/wp-engine-cloud-ci.yml'
+  pull_request:
+    paths:
+      - 'projects/wp-engine-cloud/**'
+      - '.github/workflows/wp-engine-cloud-ci.yml'
+
+jobs:
+  quality-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+      - name: PHP syntax
+        run: find projects/wp-engine-cloud -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: JSON schema parse smoke
+        run: find projects/wp-engine-cloud -name '*.json' -print0 | xargs -0 -n1 jq empty
+      - name: a11y template audit
+        run: php projects/wp-engine-cloud/wp-content/plugins/engine-core/bin/check-a11y.php
+      - name: perf budget gate
+        run: php projects/wp-engine-cloud/wp-content/plugins/engine-core/bin/check-perf-budgets.php
+      - name: pattern diff test
+        run: php projects/wp-engine-cloud/wp-content/plugins/engine-core/tests/pattern-diff-test.php
+      - name: migration runner test
+        run: php projects/wp-engine-cloud/wp-content/plugins/engine-core/tests/migration/migration-runner-test.php
+      - name: migration config loader test
+        run: php projects/wp-engine-cloud/wp-content/plugins/engine-core/tests/migration/migration-config-loader-test.php
