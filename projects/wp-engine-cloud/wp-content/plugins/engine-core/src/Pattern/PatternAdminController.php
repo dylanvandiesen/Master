@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace WPEngineCloud\EngineCore\Pattern;
 
 use WPEngineCloud\EngineCore\Governance\CapabilityMap;
+use WPEngineCloud\EngineCore\Security\RequestGuard;
 
 final class PatternAdminController
 {
     public function __construct(
         private readonly PatternRepository $patterns,
         private readonly PatternSyncService $sync,
-        private readonly CapabilityMap $capabilities
+        private readonly CapabilityMap $capabilities,
+        private readonly RequestGuard $guard
     ) {
     }
 
@@ -27,6 +29,7 @@ final class PatternAdminController
     public function save(): void
     {
         check_ajax_referer('engine_core_pattern', 'nonce');
+        $this->guard->assertAllowedAction(sanitize_key((string) ($_POST['action'] ?? '')), ['engine_core_pattern_save']);
         if (! $this->capabilities->canCompose()) {
             wp_send_json_error(['message' => 'Forbidden'], 403);
         }
@@ -64,6 +67,7 @@ final class PatternAdminController
     public function diff(): void
     {
         check_ajax_referer('engine_core_pattern', 'nonce');
+        $this->guard->assertAllowedAction(sanitize_key((string) ($_POST['action'] ?? '')), ['engine_core_pattern_diff']);
         if (! $this->capabilities->canCompose()) {
             wp_send_json_error(['message' => 'Forbidden'], 403);
         }
@@ -75,6 +79,7 @@ final class PatternAdminController
     public function batchPreview(): void
     {
         check_ajax_referer('engine_core_pattern', 'nonce');
+        $this->guard->assertAllowedAction(sanitize_key((string) ($_POST['action'] ?? '')), ['engine_core_pattern_batch_sync_preview']);
         if (! $this->capabilities->canCompose()) {
             wp_send_json_error(['message' => 'Forbidden'], 403);
         }
@@ -86,6 +91,7 @@ final class PatternAdminController
     public function batchApply(): void
     {
         check_ajax_referer('engine_core_pattern', 'nonce');
+        $this->guard->assertAllowedAction(sanitize_key((string) ($_POST['action'] ?? '')), ['engine_core_pattern_batch_sync_apply']);
         if (! $this->capabilities->canGovern()) {
             wp_send_json_error(['message' => 'Forbidden'], 403);
         }
@@ -97,6 +103,7 @@ final class PatternAdminController
     public function rollback(): void
     {
         check_ajax_referer('engine_core_pattern', 'nonce');
+        $this->guard->assertAllowedAction(sanitize_key((string) ($_POST['action'] ?? '')), ['engine_core_pattern_batch_sync_rollback']);
         if (! $this->capabilities->canGovern()) {
             wp_send_json_error(['message' => 'Forbidden'], 403);
         }

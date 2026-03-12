@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace WPEngineCloud\EngineCore\Preview;
 
+use WPEngineCloud\EngineCore\Governance\CapabilityMap;
 use WPEngineCloud\EngineCore\Render\RenderContext;
 use WPEngineCloud\EngineCore\Render\RenderService;
+use WPEngineCloud\EngineCore\Security\RequestGuard;
 
 final class PreviewController
 {
-    public function __construct(private readonly RenderService $renderService)
-    {
+    public function __construct(
+        private readonly RenderService $renderService,
+        private readonly CapabilityMap $capabilities,
+        private readonly RequestGuard $guard
+    ) {
     }
 
     public function register(): void
@@ -21,10 +26,9 @@ final class PreviewController
     public function handle(): void
     {
         check_ajax_referer('engine_core_preview', 'nonce');
-
-        if (! current_user_can('edit_posts')) {
-            wp_send_json_error(['message' => 'Forbidden'], 403);
-        }
+        $action = sanitize_key((string) ($_POST['action'] ?? ''));
+        $this->guard->assertAllowedAction($action, ['engine_core_preview']);
+        $this->guard->assertPreviewPermission($this->capabilities);
 
         $context = new RenderContext(
             templateType: sanitize_text_field((string) ($_POST['templateType'] ?? 'preview')),

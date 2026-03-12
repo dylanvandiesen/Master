@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace WPEngineCloud\EngineCore;
 
 use WPEngineCloud\EngineCore\ACF\FieldRegistrar;
+use WPEngineCloud\EngineCore\Accessibility\TemplateAccessibilityAudit;
+use WPEngineCloud\EngineCore\Observability\Metrics;
+use WPEngineCloud\EngineCore\Performance\AssetManager;
+use WPEngineCloud\EngineCore\Security\RequestGuard;
 use WPEngineCloud\EngineCore\Admin\GovernanceAdmin;
 use WPEngineCloud\EngineCore\Governance\CapabilityMap;
 use WPEngineCloud\EngineCore\Governance\ReferenceScanner;
@@ -43,12 +47,20 @@ final class Bootstrap
             dirname(__DIR__) . '/config/registry'
         ));
         self::$container->singleton(TemplateContractValidator::class, static fn (): TemplateContractValidator => new TemplateContractValidator());
-        self::$container->singleton(PreviewController::class, static fn (Container $c): PreviewController => new PreviewController($c->get(RenderService::class)));
+        self::$container->singleton(PreviewController::class, static fn (Container $c): PreviewController => new PreviewController(
+            $c->get(RenderService::class),
+            $c->get(CapabilityMap::class),
+            $c->get(RequestGuard::class)
+        ));
         self::$container->singleton(PatternPostType::class, static fn (): PatternPostType => new PatternPostType());
         self::$container->singleton(PatternRepository::class, static fn (): PatternRepository => new PatternRepository());
         self::$container->singleton(PatternDiff::class, static fn (): PatternDiff => new PatternDiff());
         self::$container->singleton(PatternSnapshotStore::class, static fn (): PatternSnapshotStore => new PatternSnapshotStore());
         self::$container->singleton(CapabilityMap::class, static fn (): CapabilityMap => new CapabilityMap());
+        self::$container->singleton(RequestGuard::class, static fn (): RequestGuard => new RequestGuard());
+        self::$container->singleton(AssetManager::class, static fn (Container $c): AssetManager => new AssetManager($c->get(Resolver::class)));
+        self::$container->singleton(Metrics::class, static fn (): Metrics => new Metrics());
+        self::$container->singleton(TemplateAccessibilityAudit::class, static fn (): TemplateAccessibilityAudit => new TemplateAccessibilityAudit());
         self::$container->singleton(WorkflowState::class, static fn (): WorkflowState => new WorkflowState());
         self::$container->singleton(ReferenceScanner::class, static fn (): ReferenceScanner => new ReferenceScanner($GLOBALS['wpdb']));
         self::$container->singleton(PatternSyncService::class, static fn (Container $c): PatternSyncService => new PatternSyncService(
@@ -64,7 +76,8 @@ final class Bootstrap
         self::$container->singleton(PatternAdminController::class, static fn (Container $c): PatternAdminController => new PatternAdminController(
             $c->get(PatternRepository::class),
             $c->get(PatternSyncService::class),
-            $c->get(CapabilityMap::class)
+            $c->get(CapabilityMap::class),
+            $c->get(RequestGuard::class)
         ));
 
         add_action('after_setup_theme', static function (): void {
@@ -80,6 +93,8 @@ final class Bootstrap
         add_action('init', static function (): void {
             self::$container?->get(PatternPostType::class)->register();
             self::$container?->get(PatternAdminController::class)->register();
+            self::$container?->get(AssetManager::class)->register();
+            self::$container?->get(Metrics::class)->register();
         });
 
         add_action('init', static function (): void {
