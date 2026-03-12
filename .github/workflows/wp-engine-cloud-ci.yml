@@ -29,3 +29,5 @@ jobs:
         run: php projects/wp-engine-cloud/wp-content/plugins/engine-core/bin/check-perf-budgets.php
       - name: pattern diff test
         run: php projects/wp-engine-cloud/wp-content/plugins/engine-core/tests/pattern-diff-test.php
+      - name: migration runner test
+        run: php projects/wp-engine-cloud/wp-content/plugins/engine-core/tests/migration/migration-runner-test.php

@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace WPEngineCloud\EngineCore;
 
 use WPEngineCloud\EngineCore\ACF\FieldRegistrar;
+use WPEngineCloud\EngineCore\Audit\AuditLogger;
+use WPEngineCloud\EngineCore\DR\Runbook;
+use WPEngineCloud\EngineCore\Localization\LocaleResolver;
+use WPEngineCloud\EngineCore\Migration\MigrationRunner;
+use WPEngineCloud\EngineCore\Tenancy\TenantContext;
 use WPEngineCloud\EngineCore\Accessibility\TemplateAccessibilityAudit;
 use WPEngineCloud\EngineCore\Observability\Metrics;
 use WPEngineCloud\EngineCore\Performance\AssetManager;
@@ -61,6 +66,14 @@ final class Bootstrap
         self::$container->singleton(AssetManager::class, static fn (Container $c): AssetManager => new AssetManager($c->get(Resolver::class)));
         self::$container->singleton(Metrics::class, static fn (): Metrics => new Metrics());
         self::$container->singleton(TemplateAccessibilityAudit::class, static fn (): TemplateAccessibilityAudit => new TemplateAccessibilityAudit());
+        self::$container->singleton(AuditLogger::class, static fn (): AuditLogger => new AuditLogger());
+        self::$container->singleton(LocaleResolver::class, static fn (): LocaleResolver => new LocaleResolver());
+        self::$container->singleton(TenantContext::class, static fn (): TenantContext => new TenantContext());
+        self::$container->singleton(Runbook::class, static fn (): Runbook => new Runbook());
+        self::$container->singleton(MigrationRunner::class, static fn (Container $c): MigrationRunner => new MigrationRunner(
+            $c->get(PatternSnapshotStore::class),
+            $c->get(AuditLogger::class)
+        ));
         self::$container->singleton(WorkflowState::class, static fn (): WorkflowState => new WorkflowState());
         self::$container->singleton(ReferenceScanner::class, static fn (): ReferenceScanner => new ReferenceScanner($GLOBALS['wpdb']));
         self::$container->singleton(PatternSyncService::class, static fn (Container $c): PatternSyncService => new PatternSyncService(
@@ -157,6 +170,26 @@ final class Bootstrap
         });
 
         add_action('init', static fn (): mixed => self::$container?->get(PreviewController::class)->register());
+
+        if (defined('WP_CLI') && WP_CLI) {
+            \WP_CLI::add_command('engine-core migration:dry-run', static function ($args): void {
+                $postIds = array_map('intval', $args ?: []);
+                $result = self::$container?->get(MigrationRunner::class)->dryRun($postIds);
+                \WP_CLI::log((string) wp_json_encode($result));
+            });
+
+            \WP_CLI::add_command('engine-core migration:apply', static function ($args): void {
+                $postIds = array_map('intval', $args ?: []);
+                $result = self::$container?->get(MigrationRunner::class)->apply($postIds);
+                \WP_CLI::log((string) wp_json_encode($result));
+            });
+
+            \WP_CLI::add_command('engine-core migration:rollback', static function ($args): void {
+                $snapshotId = (string) ($args[0] ?? '');
+                $result = self::$container?->get(MigrationRunner::class)->rollback($snapshotId);
+                \WP_CLI::log((string) wp_json_encode($result));
+            });
+        }
 
         add_filter('engine_core/render_service', static fn (): RenderService => self::renderService());
 
