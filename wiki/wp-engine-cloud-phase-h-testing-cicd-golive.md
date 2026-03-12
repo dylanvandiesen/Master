@@ -1,7 +1,7 @@
 # WP Engine Cloud — Phase H Testing, CI/CD, Go-Live
 
 ## Test matrix
-- Unit-ish: `pattern-diff-test.php`, `migration-runner-test.php`, `migration-config-loader-test.php`
+- Unit-ish: `pattern-diff-test.php`, `migration-runner-test.php`, `migration-config-loader-test.php`, `migration-chain-test.php`
 - Static/contract smoke: PHP lint + JSON parse + template a11y + performance budgets + registry/contract compatibility checks.
 
 ## CI failure gates

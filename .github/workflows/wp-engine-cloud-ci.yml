@@ -33,3 +33,5 @@ jobs:
         run: php projects/wp-engine-cloud/wp-content/plugins/engine-core/tests/migration/migration-runner-test.php
       - name: migration config loader test
         run: php projects/wp-engine-cloud/wp-content/plugins/engine-core/tests/migration/migration-config-loader-test.php
+      - name: migration chain test
+        run: php projects/wp-engine-cloud/wp-content/plugins/engine-core/tests/migration/migration-chain-test.php
