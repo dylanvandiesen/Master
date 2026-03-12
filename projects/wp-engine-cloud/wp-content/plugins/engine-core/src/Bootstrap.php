@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace WPEngineCloud\EngineCore;
 
 use WPEngineCloud\EngineCore\ACF\FieldRegistrar;
+use WPEngineCloud\EngineCore\Admin\GovernanceAdmin;
+use WPEngineCloud\EngineCore\Governance\CapabilityMap;
+use WPEngineCloud\EngineCore\Governance\ReferenceScanner;
+use WPEngineCloud\EngineCore\Governance\WorkflowState;
 use WPEngineCloud\EngineCore\ACF\NestedDepthGuard;
 use WPEngineCloud\EngineCore\Pattern\PatternAdminController;
 use WPEngineCloud\EngineCore\Pattern\PatternDiff;
@@ -44,14 +48,23 @@ final class Bootstrap
         self::$container->singleton(PatternRepository::class, static fn (): PatternRepository => new PatternRepository());
         self::$container->singleton(PatternDiff::class, static fn (): PatternDiff => new PatternDiff());
         self::$container->singleton(PatternSnapshotStore::class, static fn (): PatternSnapshotStore => new PatternSnapshotStore());
+        self::$container->singleton(CapabilityMap::class, static fn (): CapabilityMap => new CapabilityMap());
+        self::$container->singleton(WorkflowState::class, static fn (): WorkflowState => new WorkflowState());
+        self::$container->singleton(ReferenceScanner::class, static fn (): ReferenceScanner => new ReferenceScanner($GLOBALS['wpdb']));
         self::$container->singleton(PatternSyncService::class, static fn (Container $c): PatternSyncService => new PatternSyncService(
             $c->get(PatternRepository::class),
             $c->get(PatternDiff::class),
             $c->get(PatternSnapshotStore::class)
         ));
+        self::$container->singleton(GovernanceAdmin::class, static fn (Container $c): GovernanceAdmin => new GovernanceAdmin(
+            $c->get(CapabilityMap::class),
+            $c->get(WorkflowState::class),
+            $c->get(ReferenceScanner::class)
+        ));
         self::$container->singleton(PatternAdminController::class, static fn (Container $c): PatternAdminController => new PatternAdminController(
             $c->get(PatternRepository::class),
-            $c->get(PatternSyncService::class)
+            $c->get(PatternSyncService::class),
+            $c->get(CapabilityMap::class)
         ));
 
         add_action('after_setup_theme', static function (): void {
@@ -68,6 +81,18 @@ final class Bootstrap
             self::$container?->get(PatternPostType::class)->register();
             self::$container?->get(PatternAdminController::class)->register();
         });
+
+        add_action('init', static function (): void {
+            self::$container?->get(GovernanceAdmin::class)->register();
+        });
+
+        add_action('add_meta_boxes', static function (): void {
+            $caps = self::$container?->get(CapabilityMap::class);
+            if ($caps instanceof CapabilityMap && ! $caps->canGovern()) {
+                remove_meta_box('postcustom', null, 'normal');
+                remove_meta_box('slugdiv', null, 'normal');
+            }
+        }, 99);
 
         add_action('acf/validate_save_post', static function (): void {
             $postId = isset($_POST['post_ID']) ? (int) $_POST['post_ID'] : 0;

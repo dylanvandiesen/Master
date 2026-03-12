@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace WPEngineCloud\EngineCore\Pattern;
 
+use WPEngineCloud\EngineCore\Governance\CapabilityMap;
+
 final class PatternAdminController
 {
     public function __construct(
         private readonly PatternRepository $patterns,
-        private readonly PatternSyncService $sync
+        private readonly PatternSyncService $sync,
+        private readonly CapabilityMap $capabilities
     ) {
     }
 
@@ -24,7 +27,7 @@ final class PatternAdminController
     public function save(): void
     {
         check_ajax_referer('engine_core_pattern', 'nonce');
-        if (! current_user_can('edit_posts')) {
+        if (! $this->capabilities->canCompose()) {
             wp_send_json_error(['message' => 'Forbidden'], 403);
         }
 
@@ -61,7 +64,7 @@ final class PatternAdminController
     public function diff(): void
     {
         check_ajax_referer('engine_core_pattern', 'nonce');
-        if (! current_user_can('edit_posts')) {
+        if (! $this->capabilities->canCompose()) {
             wp_send_json_error(['message' => 'Forbidden'], 403);
         }
 
@@ -72,7 +75,7 @@ final class PatternAdminController
     public function batchPreview(): void
     {
         check_ajax_referer('engine_core_pattern', 'nonce');
-        if (! current_user_can('edit_posts')) {
+        if (! $this->capabilities->canCompose()) {
             wp_send_json_error(['message' => 'Forbidden'], 403);
         }
 
@@ -83,7 +86,7 @@ final class PatternAdminController
     public function batchApply(): void
     {
         check_ajax_referer('engine_core_pattern', 'nonce');
-        if (! current_user_can('manage_options')) {
+        if (! $this->capabilities->canGovern()) {
             wp_send_json_error(['message' => 'Forbidden'], 403);
         }
 
@@ -94,7 +97,7 @@ final class PatternAdminController
     public function rollback(): void
     {
         check_ajax_referer('engine_core_pattern', 'nonce');
-        if (! current_user_can('manage_options')) {
+        if (! $this->capabilities->canGovern()) {
             wp_send_json_error(['message' => 'Forbidden'], 403);
         }
 
