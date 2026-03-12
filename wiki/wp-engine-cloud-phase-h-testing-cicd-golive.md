@@ -29,3 +29,9 @@
 ## Release/rollback
 - Use semantic release tagging.
 - Rollback plan: restore DB snapshot + re-deploy previous release artifact + run smoke checks.
+
+
+## Local startup runbook
+- Use `projects/wp-engine-cloud/dev/docker-compose.yml` with `.env` from `.env.example`.
+- Run `bash projects/wp-engine-cloud/scripts/setup-local-wp.sh` to bootstrap DB, WordPress install, plugin activation, and theme activation.
+- Access local frontend/admin at the configured `WP_URL`.
