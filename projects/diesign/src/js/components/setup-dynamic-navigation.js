@@ -1,6 +1,3 @@
-import replaceVideoPlaceholdersInDialog from './video-popover.js';
-import PopoverDragScrollSnap from './popover-drag-scroll-snap.js';
-
 export function setupDynamicNavigation(options = {}) {
   const {
     tabsSelector = 'input[name="d-tabs"]',
@@ -14,6 +11,7 @@ export function setupDynamicNavigation(options = {}) {
   } = options;
 
   const activeInstances = new Map();
+  let popoverModulesPromise = null;
   let currentPath = getCurrentPath();
   let routeJobId = 0;
   function delay(ms) {
@@ -178,6 +176,11 @@ export function setupDynamicNavigation(options = {}) {
 
   async function initializePopoverContent(popover, projectId) {
     try {
+      const {
+        replaceVideoPlaceholdersInDialog,
+        PopoverDragScrollSnap
+      } = await loadPopoverModules();
+
       if (typeof window.popoverPreloader === 'function') {
         await window.popoverPreloader(popover);
       }
@@ -296,14 +299,6 @@ export function setupDynamicNavigation(options = {}) {
     history.replaceState({}, '', newPath);
   }
 
-  function emitRouteWillChange(path, previousPath) {
-    window.dispatchEvent(
-      new CustomEvent('routewillchange', {
-        detail: { path, previousPath }
-      })
-    );
-  }
-
   function emitRouteChange(path, previousPath) {
     window.dispatchEvent(
       new CustomEvent('routechange', {
@@ -316,10 +311,6 @@ export function setupDynamicNavigation(options = {}) {
     const jobId = ++routeJobId;
     const nextPath = location.pathname;
     const previousPath = currentPath;
-
-    if (nextPath !== previousPath) {
-      emitRouteWillChange(nextPath, previousPath);
-    }
 
     const [tab, projectId] = nextPath.split('/').filter(Boolean);
     const tabName = tab || 'home';
@@ -399,6 +390,18 @@ export function setupDynamicNavigation(options = {}) {
     });
     activeInstances.clear();
   });
+
+  function loadPopoverModules() {
+    popoverModulesPromise ||= Promise.all([
+      import('./video-popover.js'),
+      import('./popover-drag-scroll-snap.js')
+    ]).then(([videoModule, snapModule]) => ({
+      replaceVideoPlaceholdersInDialog: videoModule.default,
+      PopoverDragScrollSnap: snapModule.default
+    }));
+
+    return popoverModulesPromise;
+  }
 
   return {
     getCurrentPath,

@@ -1,631 +1,224 @@
 const HOME_VIEW = 'home';
 const PANEL_VIEWS = new Set(['work', 'about', 'contact']);
+const CENTERED_PANEL_VIEWS = new Set(['about', 'contact']);
+const PANEL_SHELL_INLINE_SIZES = {
+  work: '82rem',
+  about: '1000px',
+  contact: '30rem'
+};
+const ROUTE_VIEWS = new Set([HOME_VIEW, ...PANEL_VIEWS]);
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const SHELL_RESIZE_MS = 760;
 const CONTENT_FADE_MS = 880;
 const CONTENT_FADE_DELAY_MS = 72;
 const TRANSITION_BUFFER_MS = 80;
-const SCROLL_PRIME_MS = 220;
+const LIVE_SETTLE_MS = 360;
 
 function getPrimaryRoute(pathname = location.pathname) {
   const [segment] = pathname.split('/').filter(Boolean);
   return PANEL_VIEWS.has(segment) ? segment : HOME_VIEW;
 }
 
-function nextFrame() {
+function afterNextPaint() {
   return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 }
 
-function toStageRect(stage, element) {
-  const stageRect = stage.getBoundingClientRect();
-  const rect = element.getBoundingClientRect();
-
-  return {
-    left: Math.round(rect.left - stageRect.left),
-    top: Math.round(rect.top - stageRect.top),
-    width: Math.round(rect.width),
-    height: Math.round(rect.height)
-  };
+function getFormControls(scope) {
+  return Array.from(scope?.querySelectorAll?.('input, textarea, select') ?? []).filter((control) => {
+    return !['submit', 'button', 'reset', 'image', 'file'].includes((control.type || '').toLowerCase());
+  });
 }
 
-function collapseRect(rect) {
-  if (!rect) {
-    return { left: 0, top: 0, width: 0, height: 0 };
+function getControlStateKey(control, index) {
+  return control.id || control.name || `${control.tagName.toLowerCase()}-${index}`;
+}
+
+function captureFormState(scope) {
+  const controls = getFormControls(scope);
+
+  if (!controls.length) {
+    return null;
   }
 
-  return {
-    left: Math.round(rect.left + rect.width / 2),
-    top: Math.round(rect.top + rect.height / 2),
-    width: 0,
-    height: 0
-  };
+  return controls.map((control, index) => {
+    const key = getControlStateKey(control, index);
+    const tag = control.tagName.toLowerCase();
+    const type = (control.type || '').toLowerCase();
+    const baseState = { key, tag, type };
+
+    if (tag === 'select') {
+      return {
+        ...baseState,
+        value: control.value,
+        selectedValues: Array.from(control.options)
+          .filter((option) => option.selected)
+          .map((option) => option.value)
+      };
+    }
+
+    if (type === 'checkbox' || type === 'radio') {
+      return {
+        ...baseState,
+        value: control.value,
+        checked: control.checked
+      };
+    }
+
+    return {
+      ...baseState,
+      value: control.value
+    };
+  });
 }
 
-function getContentHeight(node) {
-  return Math.max(
-    Math.round(node.scrollHeight || 0),
-    Math.round(node.getBoundingClientRect().height)
+function applyFormState(scope, state) {
+  if (!scope || !state?.length) {
+    return;
+  }
+
+  const controlMap = new Map(
+    getFormControls(scope).map((control, index) => [getControlStateKey(control, index), control])
   );
+
+  state.forEach((entry) => {
+    const control = controlMap.get(entry.key);
+
+    if (!control) {
+      return;
+    }
+
+    if (entry.tag === 'select') {
+      const selectedValues = new Set(entry.selectedValues || []);
+      Array.from(control.options).forEach((option) => {
+        const selected = selectedValues.has(option.value);
+        option.selected = selected;
+        option.defaultSelected = selected;
+      });
+      control.value = entry.value ?? '';
+      return;
+    }
+
+    if (entry.type === 'checkbox' || entry.type === 'radio') {
+      control.checked = Boolean(entry.checked);
+      control.defaultChecked = Boolean(entry.checked);
+      return;
+    }
+
+    const value = entry.value ?? '';
+    control.value = value;
+
+    if ('defaultValue' in control) {
+      control.defaultValue = value;
+    }
+
+    if (entry.tag === 'textarea') {
+      control.textContent = value;
+    }
+  });
 }
 
-function getNaturalContentHeight(node) {
-  const content = node?.querySelector?.('.content-wrapper, .intro-container');
+function getShellChromeHeight(shell) {
+  const styles = window.getComputedStyle(shell);
+  const paddingTop = parseFloat(styles.paddingTop) || 0;
+  const paddingBottom = parseFloat(styles.paddingBottom) || 0;
+  const borderTop = parseFloat(styles.borderTopWidth) || 0;
+  const borderBottom = parseFloat(styles.borderBottomWidth) || 0;
+  return paddingTop + paddingBottom + borderTop + borderBottom;
+}
 
-  if (!content) {
-    return getContentHeight(node);
-  }
+function getShellChromeWidth(shell) {
+  const styles = window.getComputedStyle(shell);
+  const paddingLeft = parseFloat(styles.paddingLeft) || 0;
+  const paddingRight = parseFloat(styles.paddingRight) || 0;
+  const borderLeft = parseFloat(styles.borderLeftWidth) || 0;
+  const borderRight = parseFloat(styles.borderRightWidth) || 0;
+  return paddingLeft + paddingRight + borderLeft + borderRight;
+}
 
-  const styles = window.getComputedStyle(content);
-  const marginTop = parseFloat(styles.marginTop) || 0;
-  const marginBottom = parseFloat(styles.marginBottom) || 0;
+function createMeasureHost(shellSlot) {
+  const host = document.createElement('div');
+  host.className = 'panel-route-measure-host';
+  host.setAttribute('aria-hidden', 'true');
+  host.innerHTML = `
+    <div class="panel-route-measure-shell spacer">
+      <div class="panel-route-measure-body"></div>
+    </div>
+  `;
+  shellSlot.append(host);
 
-  return Math.round(content.getBoundingClientRect().height + marginTop + marginBottom);
+  return {
+    host,
+    shell: host.querySelector('.panel-route-measure-shell'),
+    body: host.querySelector('.panel-route-measure-body')
+  };
 }
 
 export function setupPanelRouteTransition({
   rootSelector = '.content-container',
-  panesSelector = '.tab-panes',
-  stageSelector = '[data-panel-stage]',
+  shellSlotSelector = '[data-panel-shell-slot]',
   shellSelector = '[data-panel-shell]',
+  scrollerSelector = '[data-panel-scroller]',
   swapSelector = '[data-panel-swap]',
   scrollSelector = '[data-panel-scroll]',
   bodySelector = '[data-panel-body]',
-  overlaySelector = '[data-panel-overlay]'
+  overlaySelector = '[data-panel-overlay]',
+  homeOverlaySelector = '[data-home-overlay]'
 } = {}) {
   const root = document.querySelector(rootSelector);
-  const panes = root?.querySelector(panesSelector);
-  const stage = root?.querySelector(stageSelector);
+  const shellSlot = root?.querySelector(shellSlotSelector);
   const shell = root?.querySelector(shellSelector);
+  const scroller = root?.querySelector(scrollerSelector);
   const swapHost = root?.querySelector(swapSelector);
   const scrollHost = root?.querySelector(scrollSelector);
   const bodyHost = root?.querySelector(bodySelector);
   const overlayHost = root?.querySelector(overlaySelector);
+  const homeContainer = root?.querySelector('#home.tab-pane-container');
+  const homeOverlayHost = root?.querySelector(homeOverlaySelector);
+  const routeTemplates = new Map(
+    Array.from(ROUTE_VIEWS, (view) => [view, document.getElementById(`route-template-${view}`)])
+  );
 
-  if (!root || !panes || !stage || !shell || !swapHost || !scrollHost || !bodyHost || !overlayHost) {
+  if (!root || !shellSlot || !shell || !scroller || !swapHost || !scrollHost || !bodyHost || !overlayHost || !homeContainer || !homeOverlayHost) {
     return null;
   }
 
-  const routes = ['home', 'work', 'about', 'contact'].reduce((map, view) => {
-    const container = root.querySelector(`#${view}.tab-pane-container`);
-    const spacer = container?.querySelector('.spacer') ?? null;
-    const scroller = container?.querySelector('.content-scroller') ?? null;
-    const pane = container?.querySelector('.tab-pane') ?? null;
-
-    if (!container || !spacer || !scroller || !pane) {
-      return map;
-    }
-
-    if (view !== HOME_VIEW) {
-      container.setAttribute('aria-hidden', 'true');
-      container.inert = true;
-    }
-
-    map[view] = { container, spacer, scroller, pane };
-    return map;
-  }, {});
-
-  if (!routes.home || !routes.work || !routes.about || !routes.contact) {
+  if (Array.from(routeTemplates.values()).some((template) => !(template instanceof HTMLTemplateElement))) {
     return null;
   }
 
-  root.classList.add('is-panel-shell-ready');
+  const reducedMotion = window.matchMedia?.(REDUCED_MOTION_QUERY);
   const routeFormState = new Map();
-
+  const routeScrollState = new Map();
+  const measure = createMeasureHost(shellSlot);
   let activeView = getPrimaryRoute(location.pathname);
-  let targetView = activeView;
-  let lastExpandedRect = toStageRect(stage, routes.work.spacer);
   let transitionToken = 0;
+  let settleToken = 0;
   let cleanupTimer = 0;
-  let pendingExitLayer = null;
-  let scrollResetFrame = 0;
-  let scrollPrimeTimer = 0;
-  let liveLayoutFrame = 0;
-  let liveLayoutTimeout = 0;
-  let deferredLayoutTimeout = 0;
-  const HOME_TRANSITION_OUT_CLASS = 'is-home-transition-out';
-  const HOME_TRANSITION_IN_CLASS = 'is-home-transition-in';
+  let currentShellInlineSize = 0;
+  let currentShellContentHeight = 0;
+  let scrollRestoreToken = 0;
+  let transitionScaleFrame = 0;
+  let isTransitionRunning = false;
+  let queuedView = null;
 
-  function isEditableElement(element) {
-    if (!(element instanceof HTMLElement)) {
+  function shouldFreezeForTransition(view, { involvesHome = false } = {}) {
+    if (!PANEL_VIEWS.has(view)) {
       return false;
     }
 
-    if (element.isContentEditable) {
-      return true;
-    }
-
-    return /^(INPUT|TEXTAREA|SELECT)$/.test(element.tagName);
+    return involvesHome || CENTERED_PANEL_VIEWS.has(view);
   }
 
-  function isEditingLivePanelControl() {
-    const activeElement = document.activeElement;
-
-    return isEditableElement(activeElement) && bodyHost.contains(activeElement);
-  }
-
-  function setLiveContentSettled(settled) {
-    const liveContent = bodyHost.querySelector('.panel-content.is-current');
-    if (liveContent) {
-      liveContent.classList.toggle('is-settled', settled);
-    }
-  }
-
-  function setBodyCentered(centered) {
-    bodyHost.classList.toggle('is-centered-flow', Boolean(centered));
-  }
-
-  function getSourceShellRect(view) {
-    if (!PANEL_VIEWS.has(view)) {
-      return null;
-    }
-
-    return toStageRect(stage, routes[view].spacer);
-  }
-
-  function getShellBoundaryRect(view) {
-    const shellRect = getSourceShellRect(view);
-
-    return shellRect;
-  }
-
-  function getShellFrameHeight() {
-    const styles = window.getComputedStyle(shell);
-    const paddingTop = parseFloat(styles.paddingTop) || 0;
-    const paddingBottom = parseFloat(styles.paddingBottom) || 0;
-    const borderTop = parseFloat(styles.borderTopWidth) || 0;
-    const borderBottom = parseFloat(styles.borderBottomWidth) || 0;
-
-    return Math.max(0, Math.round(paddingTop + paddingBottom + borderTop + borderBottom));
-  }
-
-  function getIntrinsicContentHeight(view, scroller, node) {
-    const naturalHeight = getNaturalContentHeight(node);
-    const scrollHeight = Math.max(
-      Math.ceil(scroller?.scrollHeight || 0),
-      Math.ceil(node?.scrollHeight || 0)
-    );
-    const boundaryRect = getShellBoundaryRect(view);
-    const availableInnerHeight = boundaryRect
-      ? Math.max(0, Math.round(boundaryRect.height - getShellFrameHeight()))
-      : Math.max(0, Math.ceil(scroller?.clientHeight || 0));
-
-    if (naturalHeight <= availableInnerHeight) {
-      return naturalHeight;
-    }
-
-    return Math.max(naturalHeight, scrollHeight);
-  }
-
-  function getSourceContentMetrics(view) {
-    if (!PANEL_VIEWS.has(view)) {
-      return null;
-    }
-
-    const height = getIntrinsicContentHeight(view, routes[view].scroller, routes[view].pane);
-    const paneRect = routes[view].pane.getBoundingClientRect();
-    const scrollerRect = routes[view].scroller.getBoundingClientRect();
-
-    return {
-      width: Math.round(paneRect.width),
-      height,
-      top: Math.round(paneRect.top - scrollerRect.top),
-      centered: height <= Math.round(scrollerRect.height)
-    };
-  }
-
-  function getPreferredShellRect(view, metrics = getSourceContentMetrics(view)) {
-    if (!PANEL_VIEWS.has(view)) {
-      return null;
-    }
-
-    const widthRect = getSourceShellRect(view);
-    const boundaryRect = getShellBoundaryRect(view);
-
-    if (!widthRect || !boundaryRect || !metrics) {
-      return widthRect;
-    }
-
-    const chromeHeight = getShellFrameHeight();
-    const preferredHeight = Math.min(
-      boundaryRect.height,
-      Math.max(chromeHeight, Math.round(metrics.height + chromeHeight))
-    );
-    const centeredTop = Math.round(
-      boundaryRect.top + Math.max(0, (boundaryRect.height - preferredHeight) / 2)
-    );
-
-    return {
-      left: widthRect.left,
-      top: centeredTop,
-      width: widthRect.width,
-      height: preferredHeight
-    };
-  }
-
-  function getSourceInitialScrollTop(view) {
-    if (!PANEL_VIEWS.has(view)) {
-      return 0;
-    }
-
-    const firstSnapTarget = routes[view].pane.querySelector('.content-wrapper');
-
-    if (!firstSnapTarget) {
-      return 0;
-    }
-
-    const styles = window.getComputedStyle(firstSnapTarget);
-    const scrollMarginTop = parseFloat(styles.scrollMarginTop) || 0;
-
-    return Math.max(0, Math.round(firstSnapTarget.offsetTop - scrollMarginTop));
-  }
-
-  function getCurrentShellRect() {
-    if (shell.classList.contains('is-collapsed')) {
-      return collapseRect(lastExpandedRect);
-    }
-
-    return toStageRect(stage, shell);
-  }
-
-  function getCurrentVisualContent() {
-    return (
-      overlayHost.querySelector('.panel-content.is-entering.is-visible') ||
-      overlayHost.querySelector('.panel-content.is-visible') ||
-      bodyHost.querySelector('.panel-content.is-current')
-    );
-  }
-
-  function getFormControls(scope) {
-    return Array.from(scope?.querySelectorAll?.('input, textarea, select') ?? []).filter((control) => {
-      return !['submit', 'button', 'reset', 'image', 'file'].includes((control.type || '').toLowerCase());
-    });
-  }
-
-  function getControlStateKey(control, index) {
-    return control.id || control.name || `${control.tagName.toLowerCase()}-${index}`;
-  }
-
-  function captureFormState(scope) {
-    const controls = getFormControls(scope);
-
-    if (!controls.length) {
-      return null;
-    }
-
-    return controls.map((control, index) => {
-      const key = getControlStateKey(control, index);
-      const tag = control.tagName.toLowerCase();
-      const type = (control.type || '').toLowerCase();
-      const baseState = { key, tag, type };
-
-      if (tag === 'select') {
-        return {
-          ...baseState,
-          value: control.value,
-          selectedValues: Array.from(control.options)
-            .filter((option) => option.selected)
-            .map((option) => option.value)
-        };
-      }
-
-      if (type === 'checkbox' || type === 'radio') {
-        return {
-          ...baseState,
-          value: control.value,
-          checked: control.checked
-        };
-      }
-
-      return {
-        ...baseState,
-        value: control.value
-      };
-    });
-  }
-
-  function applyFormState(scope, state) {
-    if (!scope || !state?.length) {
-      return;
-    }
-
-    const controlMap = new Map(
-      getFormControls(scope).map((control, index) => [getControlStateKey(control, index), control])
-    );
-
-    state.forEach((entry) => {
-      const control = controlMap.get(entry.key);
-
-      if (!control) {
-        return;
-      }
-
-      if (entry.tag === 'select') {
-        const selectedValues = new Set(entry.selectedValues || []);
-        Array.from(control.options).forEach((option) => {
-          const selected = selectedValues.has(option.value);
-          option.selected = selected;
-          option.defaultSelected = selected;
-        });
-        control.value = entry.value ?? '';
-        return;
-      }
-
-      if (entry.type === 'checkbox' || entry.type === 'radio') {
-        control.checked = Boolean(entry.checked);
-        control.defaultChecked = Boolean(entry.checked);
-        return;
-      }
-
-      const value = entry.value ?? '';
-      control.value = value;
-
-      if ('defaultValue' in control) {
-        control.defaultValue = value;
-      }
-
-      if (entry.tag === 'textarea') {
-        control.textContent = value;
-      }
-    });
-  }
-
-  function syncRouteFormState(view, scope) {
-    if (!PANEL_VIEWS.has(view) || !scope) {
-      return;
-    }
-
-    const state = captureFormState(scope);
-
-    if (!state?.length) {
-      return;
-    }
-
-    routeFormState.set(view, state);
-    applyFormState(routes[view].pane, state);
-  }
-
-  function persistCurrentLiveFormState() {
-    const liveContent = bodyHost.querySelector('.panel-content.is-current');
-    const view = liveContent?.dataset.view;
-
-    if (!view) {
-      return;
-    }
-
-    syncRouteFormState(view, liveContent);
-    scheduleLiveLayoutSync();
-    scheduleDeferredLiveLayoutSync();
-  }
-
-  function getLiveContentMetrics(view, node) {
-    const rect = node.getBoundingClientRect();
-    const scrollRect = scrollHost.getBoundingClientRect();
-    const height = getIntrinsicContentHeight(view, scrollHost, node);
-
-    return {
-      width: Math.round(rect.width),
-      height,
-      top: Math.round(rect.top - scrollRect.top),
-      centered: height <= Math.round(scrollRect.height)
-    };
-  }
-
-  function getResolvedContentMetrics(view, node) {
-    const liveMetrics = node ? getLiveContentMetrics(view, node) : null;
-    const sourceMetrics = PANEL_VIEWS.has(view) ? getSourceContentMetrics(view) : null;
-
-    if (!liveMetrics) {
-      return sourceMetrics;
-    }
-
-    if (!sourceMetrics) {
-      return liveMetrics;
-    }
-
-    return {
-      width: sourceMetrics.width || liveMetrics.width,
-      height: Math.max(liveMetrics.height, sourceMetrics.height),
-      top: Math.min(liveMetrics.top, sourceMetrics.top),
-      centered: liveMetrics.centered || sourceMetrics.centered
-    };
-  }
-
-  function shouldCenterContent(view, metrics) {
-    if (!PANEL_VIEWS.has(view) || !metrics) {
-      return false;
-    }
-
-    const boundaryRect = getShellBoundaryRect(view);
-    if (!boundaryRect) {
-      return Boolean(metrics.centered);
-    }
-
-    const availableInnerHeight = Math.max(0, boundaryRect.height - getShellFrameHeight());
-    return Math.round(metrics.height) <= Math.round(availableInnerHeight);
-  }
-
-  function applyContentMetrics(node, metrics) {
-    if (!node || !metrics) {
-      return;
-    }
-
-    node.style.width = `${metrics.width}px`;
-    node.style.minHeight = `${metrics.height}px`;
-    node.style.setProperty('--panel-layer-top', `${metrics.top}px`);
-    node.style.removeProperty('height');
-    node.classList.toggle('is-centered-layout', Boolean(metrics.centered));
-  }
-
-  function getFrozenContentMetrics(view, node, { preferSource = false } = {}) {
-    const liveMetrics = node ? getLiveContentMetrics(view, node) : null;
-    const sourceMetrics = PANEL_VIEWS.has(view) ? getSourceContentMetrics(view) : null;
-
-    if (preferSource && sourceMetrics) {
-      return sourceMetrics;
-    }
-
-    return liveMetrics || sourceMetrics;
-  }
-
-  function syncLivePanelLayout({ immediate = false, force = false } = {}) {
-    if (!PANEL_VIEWS.has(targetView) || (!force && swapHost.classList.contains('is-transitioning'))) {
-      return;
-    }
-
-    const liveContent = bodyHost.querySelector('.panel-content.is-current');
-
-    if (!liveContent) {
-      return;
-    }
-
-    const metrics = getResolvedContentMetrics(targetView, liveContent);
-    const centered = shouldCenterContent(targetView, metrics);
-    applyContentMetrics(liveContent, { ...metrics, centered });
-    setBodyCentered(centered);
-    setShellRect(getPreferredShellRect(targetView, metrics), { immediate, collapsed: false });
-  }
-
-  function scheduleLiveLayoutSync() {
-    window.cancelAnimationFrame(liveLayoutFrame);
-    window.clearTimeout(liveLayoutTimeout);
-    liveLayoutFrame = window.requestAnimationFrame(() => {
-      syncLivePanelLayout();
-    });
-    liveLayoutTimeout = window.setTimeout(() => {
-      syncLivePanelLayout();
-    }, 80);
-  }
-
-  function scheduleDeferredLiveLayoutSync(delay = 360) {
-    window.clearTimeout(deferredLayoutTimeout);
-    deferredLayoutTimeout = window.setTimeout(() => {
-      syncLivePanelLayout();
-    }, delay);
-  }
-
-  function cloneRouteContent(view) {
-    if (!PANEL_VIEWS.has(view)) {
-      return null;
-    }
-
-    const wrapper = document.createElement('div');
-    wrapper.className = 'panel-content';
-    wrapper.dataset.view = view;
-
-    const pane = routes[view].pane.cloneNode(true);
-    pane.dataset.livePanel = view;
-    wrapper.append(pane);
-
-    return wrapper;
-  }
-
-  function setImmediateScrollTop(top = 0) {
-    window.cancelAnimationFrame(scrollResetFrame);
-    scrollHost.classList.add('is-resetting-scroll');
-    scrollHost.scrollTo({ top, behavior: 'auto' });
-    scrollHost.scrollTop = top;
-    scrollResetFrame = window.requestAnimationFrame(() => {
-      scrollHost.classList.remove('is-resetting-scroll');
-    });
-  }
-
-  function clearScrollPrimeTimer() {
-    window.clearTimeout(scrollPrimeTimer);
-    scrollPrimeTimer = 0;
-  }
-
-  function setScrollPrimed(primed) {
-    clearScrollPrimeTimer();
-    scrollHost.classList.toggle('is-priming-scroll', primed);
-  }
-
-  function settleScrollHost(delay = SCROLL_PRIME_MS) {
-    clearScrollPrimeTimer();
-    scrollHost.classList.add('is-priming-scroll');
-    scrollPrimeTimer = window.setTimeout(() => {
-      scrollHost.classList.remove('is-priming-scroll');
-    }, delay);
-  }
-
-  function createFrozenLayer(node, metrics, stateClass) {
-    if (!node || !metrics) {
-      return null;
-    }
-
-    const layer = node.cloneNode(true);
-    layer.classList.remove('is-current', 'is-entering', 'is-exiting', 'is-visible');
-    layer.classList.add(stateClass);
-    applyContentMetrics(layer, metrics);
-    applyFormState(layer, captureFormState(node));
-    return layer;
-  }
-
-  function createLiveLayer(view) {
-    const content = cloneRouteContent(view);
-    const metrics = getSourceContentMetrics(view);
-
-    if (!content || !metrics) {
-      return null;
-    }
-
-    applyContentMetrics(content, metrics);
-    applyFormState(content, routeFormState.get(view));
-    content.classList.add('is-current', 'is-visible');
-    return content;
-  }
-
-  function mountLiveView(view, { resetScroll = true } = {}) {
-    persistCurrentLiveFormState();
-    bodyHost.replaceChildren();
-    setBodyCentered(false);
-    setScrollPrimed(true);
-
-    if (!PANEL_VIEWS.has(view)) {
-      if (resetScroll) {
-        setImmediateScrollTop(0);
-      }
-      return;
-    }
-
-    const content = createLiveLayer(view);
-
-    if (!content) {
-      return;
-    }
-
-    content.classList.remove('is-settled');
-    bodyHost.append(content);
-
-    if (resetScroll) {
-      setImmediateScrollTop(getSourceInitialScrollTop(view));
-    }
-
-    const metrics = getResolvedContentMetrics(view, content);
-    const centered = shouldCenterContent(view, metrics);
-    applyContentMetrics(content, { ...metrics, centered });
-    setBodyCentered(centered);
-
-    return content;
-  }
-
-  function setShellRect(rect, { immediate = false, collapsed = false } = {}) {
-    if (!rect) {
-      return;
-    }
+  function setShellSize({ inlineSize = currentShellInlineSize, blockSize = currentShellContentHeight } = {}, { immediate = false } = {}) {
+    currentShellInlineSize = Math.max(0, Number(inlineSize) || 0);
+    currentShellContentHeight = Math.max(0, Number(blockSize) || 0);
 
     if (immediate) {
       shell.classList.add('is-sizing-immediate');
     }
 
-    shell.classList.toggle('is-collapsed', collapsed);
-    shell.style.setProperty('--panel-shell-left', `${rect.left}px`);
-    shell.style.setProperty('--panel-shell-top', `${rect.top}px`);
-    shell.style.setProperty('--panel-shell-width', `${rect.width}px`);
-    shell.style.setProperty('--panel-shell-height', `${rect.height}px`);
-    shell.style.setProperty('--panel-shell-opacity', collapsed ? '0' : '1');
-
-    if (!collapsed && rect.width > 0 && rect.height > 0) {
-      lastExpandedRect = rect;
-    }
+    shell.style.inlineSize = `${currentShellInlineSize}px`;
+    shell.style.setProperty('--panel-shell-block-size', `${currentShellContentHeight}px`);
 
     if (immediate) {
       shell.getBoundingClientRect();
@@ -633,238 +226,791 @@ export function setupPanelRouteTransition({
     }
   }
 
-  function clearOverlay() {
-    clearTimeout(cleanupTimer);
-    overlayHost.replaceChildren();
-    swapHost.classList.remove('is-transitioning');
+  function setShellContentHeight(height, { immediate = false } = {}) {
+    setShellSize({ blockSize: height }, { immediate });
   }
 
-  function resetOverlay() {
-    pendingExitLayer = null;
-    clearOverlay();
-    root.classList.remove(HOME_TRANSITION_OUT_CLASS, HOME_TRANSITION_IN_CLASS);
-  }
-
-  function getExitLayerSnapshot() {
-    if (pendingExitLayer) {
-      const layer = pendingExitLayer;
-      pendingExitLayer = null;
-      return layer;
+  function measureShellInlineSize(view) {
+    if (!PANEL_VIEWS.has(view) || !measure.shell) {
+      return 0;
     }
 
-    const visualContent = getCurrentVisualContent();
-    return visualContent
-      ? createFrozenLayer(visualContent, getFrozenContentMetrics(targetView, visualContent), 'is-exiting')
-      : null;
+    const inlineSize = PANEL_SHELL_INLINE_SIZES[view];
+
+    if (!inlineSize) {
+      return 0;
+    }
+
+    measure.shell.style.setProperty('--panel-shell-inline-size', inlineSize);
+    const width = measure.shell.getBoundingClientRect().width || 0;
+    measure.shell.style.removeProperty('--panel-shell-inline-size');
+    return width;
   }
 
-  function capturePendingExitLayer(view) {
+  function setRouteState(view, { collapsed = view === HOME_VIEW, preserveShellSize = false } = {}) {
+    root.dataset.route = view;
+    homeContainer.inert = view !== HOME_VIEW;
+    homeContainer.setAttribute('aria-hidden', view === HOME_VIEW ? 'false' : 'true');
+    shell.classList.toggle('is-collapsed', collapsed);
+    shell.dataset.panelView = view;
+    shell.setAttribute('aria-hidden', view === HOME_VIEW && collapsed ? 'true' : 'false');
+
+    if (collapsed && !preserveShellSize) {
+      currentShellInlineSize = 0;
+      currentShellContentHeight = 0;
+      shell.style.inlineSize = '0px';
+      shell.style.setProperty('--panel-shell-block-size', '0px');
+    }
+  }
+
+  function restoreScrollPosition(scrollTop, { immediate = false } = {}) {
+    const nextScrollTop = Math.max(0, Math.round(scrollTop));
+    const token = ++scrollRestoreToken;
+
+    scrollHost.classList.add('is-restoring-scroll');
+    scrollHost.scrollTop = nextScrollTop;
+
+    if (immediate) {
+      scrollHost.getBoundingClientRect();
+      scrollHost.classList.remove('is-restoring-scroll');
+      return Promise.resolve();
+    }
+
+    return afterNextPaint().then(() => {
+      if (token !== scrollRestoreToken) {
+        return;
+      }
+
+      scrollHost.scrollTop = nextScrollTop;
+
+      return afterNextPaint().then(() => {
+        if (token !== scrollRestoreToken) {
+          return;
+        }
+
+        scrollHost.classList.remove('is-restoring-scroll');
+      });
+    });
+  }
+
+  function instantiateRoute(view) {
+    const template = routeTemplates.get(view);
+
+    if (!(template instanceof HTMLTemplateElement)) {
+      return null;
+    }
+
+    const fragment = template.content.cloneNode(true);
+    const routeRoot = fragment.firstElementChild;
+
+    if (!(routeRoot instanceof HTMLElement)) {
+      return null;
+    }
+
+    routeRoot.dataset.routeView = view;
+    routeRoot.classList.remove('is-settled');
+    applyFormState(routeRoot, routeFormState.get(view));
+
+    return { fragment, routeRoot };
+  }
+
+  function createLiveLayer(view) {
+    const mounted = instantiateRoute(view);
+
+    if (!mounted) {
+      return null;
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'panel-content is-current is-visible';
+    wrapper.dataset.view = view;
+
+    const viewport = document.createElement('div');
+    viewport.className = 'panel-live-viewport';
+
+    const track = document.createElement('div');
+    track.className = 'panel-live-track';
+    track.append(mounted.routeRoot);
+    viewport.append(track);
+    wrapper.append(viewport);
+
+    return {
+      wrapper,
+      routeRoot: mounted.routeRoot
+    };
+  }
+
+  function mountHomeView({ reset = false } = {}) {
+    const existingRouteRoot = homeContainer.querySelector(`[data-route-view="${HOME_VIEW}"]`);
+
+    if (reset && existingRouteRoot) {
+      homeContainer.replaceChildren();
+    }
+
+    if (!reset && existingRouteRoot) {
+      return existingRouteRoot;
+    }
+
+    const mounted = instantiateRoute(HOME_VIEW);
+    if (!mounted) {
+      return null;
+    }
+
+    homeContainer.replaceChildren(mounted.routeRoot);
+    window.observeLazyElements?.(mounted.routeRoot);
+    return mounted.routeRoot;
+  }
+
+  function unmountHomeView() {
+    homeContainer.replaceChildren();
+  }
+
+  function freezeAnimatedState(scope) {
+    if (!(scope instanceof Element)) {
+      return;
+    }
+
+    scope.getAnimations({ subtree: true }).forEach((animation) => {
+      try {
+        animation.commitStyles?.();
+      } catch (error) {
+        // Ignore animations that cannot commit their current styles.
+      }
+
+      try {
+        animation.cancel();
+      } catch (error) {
+        // Ignore animations that cannot be cancelled cleanly.
+      }
+    });
+  }
+
+  function createHomeExitLayer() {
+    const routeRoot = getLiveRouteRoot(HOME_VIEW);
+
+    if (!(routeRoot instanceof HTMLElement)) {
+      return null;
+    }
+
+    freezeAnimatedState(routeRoot.querySelector('.intro-container') ?? routeRoot);
+
+    const layer = document.createElement('div');
+    layer.className = 'home-transition-content';
+    layer.append(routeRoot);
+
+    return layer;
+  }
+
+  function getLiveRouteRoot(view) {
+    if (view === HOME_VIEW) {
+      return homeContainer.querySelector(`[data-route-view="${HOME_VIEW}"]`);
+    }
+
+    return bodyHost.querySelector(`.panel-content.is-current [data-route-view="${view}"]`);
+  }
+
+  function rememberActivePanelState() {
+    if (!PANEL_VIEWS.has(activeView)) {
+      return;
+    }
+
+    const liveWrapper = bodyHost.querySelector('.panel-content.is-current');
+
+    if (!liveWrapper) {
+      return;
+    }
+
+    routeScrollState.set(activeView, scrollHost.scrollTop);
+    const formState = captureFormState(liveWrapper);
+
+    if (formState?.length) {
+      routeFormState.set(activeView, formState);
+    }
+  }
+
+  function mountPanelView(view, { restoreScroll = true } = {}) {
+    bodyHost.replaceChildren();
+
     if (!PANEL_VIEWS.has(view)) {
-      pendingExitLayer = null;
-      return;
+      restoreScrollPosition(0, { immediate: true });
+      return null;
     }
 
-    const visualContent = getCurrentVisualContent();
-    const layer = visualContent
-      ? createFrozenLayer(visualContent, getFrozenContentMetrics(view, visualContent), 'is-exiting')
+    const liveLayer = createLiveLayer(view);
+
+    if (!liveLayer) {
+      return null;
+    }
+
+    bodyHost.append(liveLayer.wrapper);
+
+    const scrollTop = routeScrollState.get(view) ?? 0;
+    if (restoreScroll) {
+      void restoreScrollPosition(scrollTop);
+    }
+    window.observeLazyElements?.(liveLayer.routeRoot);
+    void afterNextPaint().then(() => {
+      window.observeLazyElements?.(liveLayer.routeRoot);
+    });
+
+    return {
+      ...liveLayer,
+      scrollTop
+    };
+  }
+
+  function measureRouteContentHeight(view) {
+    if (!PANEL_VIEWS.has(view)) {
+      measure.body.replaceChildren();
+      return 0;
+    }
+
+    const liveLayer = createLiveLayer(view);
+
+    if (!liveLayer || !measure.body || !measure.shell) {
+      measure.body.replaceChildren();
+      return 0;
+    }
+
+    measure.body.replaceChildren(liveLayer.wrapper);
+
+    const slotHeight = shellSlot.getBoundingClientRect().height;
+    const chromeHeight = getShellChromeHeight(shell);
+    const maxInnerHeight = Math.max(0, Math.floor(slotHeight - chromeHeight));
+    const routeRoot = liveLayer.routeRoot;
+    const measuredHeight = Math.max(
+      measure.body.scrollHeight || 0,
+      liveLayer.wrapper.scrollHeight || 0,
+      routeRoot.scrollHeight || 0,
+      routeRoot.getBoundingClientRect().height || 0
+    );
+
+    measure.body.replaceChildren();
+    return Math.min(measuredHeight, maxInnerHeight);
+  }
+
+  function measureRouteLayerSize(view, shellBlockSize, { freezeToShellViewport = false } = {}) {
+    if (!PANEL_VIEWS.has(view) || (!freezeToShellViewport && !CENTERED_PANEL_VIEWS.has(view))) {
+      return null;
+    }
+
+    const liveLayer = createLiveLayer(view);
+
+    if (!liveLayer || !measure.body) {
+      measure.body.replaceChildren();
+      return null;
+    }
+
+    measure.body.replaceChildren(liveLayer.wrapper);
+    const shellRect = measure.shell?.getBoundingClientRect();
+    const chromeWidth = getShellChromeWidth(shell);
+    const chromeHeight = getShellChromeHeight(shell);
+    const size = shellRect?.width && shellBlockSize
+      ? {
+          width: Math.max(0, shellRect.width - chromeWidth),
+          height: Math.max(0, shellBlockSize - chromeHeight)
+        }
       : null;
-    pendingExitLayer = layer;
+
+    measure.body.replaceChildren();
+    return size;
   }
 
-  function commitImmediate(view) {
-    targetView = view;
-    activeView = view;
-    resetOverlay();
-    mountLiveView(view);
-    setLiveContentSettled(PANEL_VIEWS.has(view));
+  function createFrozenLayer(liveWrapper, view, scrollTop, stateClass) {
+    if (!liveWrapper) {
+      return null;
+    }
 
-    if (PANEL_VIEWS.has(view)) {
-      syncLivePanelLayout({ immediate: true, force: true });
-      setImmediateScrollTop(getSourceInitialScrollTop(view));
-      settleScrollHost();
+    const routeRoot = liveWrapper.querySelector('[data-route-view]');
+
+    if (!(routeRoot instanceof HTMLElement)) {
+      return null;
+    }
+
+    const layer = document.createElement('div');
+    layer.className = `panel-content ${stateClass}`;
+    layer.dataset.view = view;
+    layer.style.setProperty('--panel-layer-scroll-top', `${-Math.max(0, scrollTop)}px`);
+
+    const viewport = document.createElement('div');
+    viewport.className = 'panel-freeze-viewport';
+
+    const track = document.createElement('div');
+    track.className = 'panel-freeze-track';
+
+    const routeClone = routeRoot.cloneNode(true);
+
+    const formState = captureFormState(liveWrapper);
+    if (formState?.length) {
+      applyFormState(routeClone, formState);
+    }
+
+    track.append(routeClone);
+    viewport.append(track);
+    layer.append(viewport);
+
+    return layer;
+  }
+
+  function freezeLayerSize(layer, source) {
+    if (!(layer instanceof HTMLElement) || !CENTERED_PANEL_VIEWS.has(layer.dataset.view)) {
       return;
     }
 
-    settleScrollHost();
-    setShellRect(collapseRect(lastExpandedRect), { immediate: true, collapsed: true });
+    const size = source instanceof HTMLElement
+      ? {
+          width: source.getBoundingClientRect().width,
+          height: source.getBoundingClientRect().height
+        }
+      : source;
+
+    if (!size?.width || !size?.height) {
+      return;
+    }
+
+    layer.dataset.freezeSize = 'true';
+    layer.style.setProperty('--panel-layer-inline-size', `${size.width}px`);
+    layer.style.setProperty('--panel-layer-block-size', `${size.height}px`);
   }
 
-  async function transitionTo(view) {
+  function clearLayerFreeze(layer) {
+    if (!(layer instanceof HTMLElement)) {
+      return;
+    }
+
+    delete layer.dataset.freezeSize;
+    layer.style.removeProperty('--panel-layer-inline-size');
+    layer.style.removeProperty('--panel-layer-block-size');
+    layer.style.removeProperty('--panel-layer-fit-scale');
+    layer.style.removeProperty('--panel-layer-offset-x');
+    layer.style.removeProperty('--panel-layer-offset-y');
+  }
+
+  function pinFrozenLayerToRect(layer, referenceRect) {
+    if (!(layer instanceof HTMLElement) || layer.dataset.freezeSize !== 'true' || !referenceRect) {
+      return;
+    }
+
+    const layerRect = layer.getBoundingClientRect();
+    const deltaX = Math.round((referenceRect.left - layerRect.left) * 1000) / 1000;
+    const deltaY = Math.round((referenceRect.top - layerRect.top) * 1000) / 1000;
+
+    layer.style.setProperty('--panel-layer-offset-x', `${deltaX}px`);
+    layer.style.setProperty('--panel-layer-offset-y', `${deltaY}px`);
+  }
+
+  function clearOverlay({ preserveSettlingLive = false } = {}) {
+    window.clearTimeout(cleanupTimer);
+    cleanupTimer = 0;
+    window.cancelAnimationFrame(transitionScaleFrame);
+    transitionScaleFrame = 0;
+    overlayHost.replaceChildren();
+    homeOverlayHost.replaceChildren();
+    swapHost.classList.remove('is-transitioning');
+    swapHost.classList.remove('is-home-route-transition');
+    shell.classList.remove('is-shell-transitioning');
+    shell.classList.remove('is-expanding-from-home', 'is-collapsing-to-home');
+    if (!preserveSettlingLive) {
+      scrollHost.classList.remove('is-settling-live');
+    }
+  }
+
+  function prepareLiveHandoff(layer, referenceRect, { lockScroll = true } = {}) {
+    if (!(layer instanceof HTMLElement) || !referenceRect) {
+      return false;
+    }
+
+    const liveRect = layer.getBoundingClientRect();
+    const deltaX = Math.round((referenceRect.left - liveRect.left) * 1000) / 1000;
+    const deltaY = Math.round((referenceRect.top - liveRect.top) * 1000) / 1000;
+    const scaleX = liveRect.width ? referenceRect.width / liveRect.width : 1;
+    const scaleY = liveRect.height ? referenceRect.height / liveRect.height : 1;
+    const supportsScaleHandoff = [scaleX, scaleY].every((value) => Number.isFinite(value) && value > 0)
+      && Math.abs(scaleX - 1) <= 0.08
+      && Math.abs(scaleY - 1) <= 0.08;
+    const needsScaleHandoff = supportsScaleHandoff
+      && (Math.abs(scaleX - 1) >= 0.002 || Math.abs(scaleY - 1) >= 0.002);
+
+    if (Math.abs(deltaX) < 0.5 && Math.abs(deltaY) < 0.5 && !needsScaleHandoff) {
+      return false;
+    }
+
+    if (lockScroll) {
+      scrollHost.classList.add('is-settling-live');
+    }
+    layer.classList.add('is-settling');
+    layer.style.transition = 'none';
+    layer.style.transformOrigin = '50% 0%';
+    layer.style.transform = needsScaleHandoff
+      ? `translate(${deltaX}px, ${deltaY}px) scale(${scaleX}, ${scaleY})`
+      : `translate(${deltaX}px, ${deltaY}px)`;
+    layer.getBoundingClientRect();
+    return true;
+  }
+
+  function animateLiveHandoff(layer, { releaseScrollLock = true } = {}) {
+    if (!(layer instanceof HTMLElement)) {
+      return Promise.resolve();
+    }
+
+    return afterNextPaint().then(() => {
+      layer.style.transition = `transform ${LIVE_SETTLE_MS}ms var(--panel-resize-easing)`;
+      layer.style.transform = 'translate(0px, 0px)';
+
+      return new Promise((resolve) => {
+        window.setTimeout(() => {
+          layer.classList.remove('is-settling');
+          layer.style.removeProperty('transform');
+          layer.style.removeProperty('transition');
+          layer.style.removeProperty('transform-origin');
+          if (releaseScrollLock) {
+            scrollHost.classList.remove('is-settling-live');
+          }
+          resolve();
+        }, LIVE_SETTLE_MS + 34);
+      });
+    });
+  }
+
+  function syncFrozenLayerScale(layer, availableSize) {
+    if (!(layer instanceof HTMLElement) || layer.dataset.freezeSize !== 'true') {
+      return;
+    }
+
+    const frozenWidth = parseFloat(layer.style.getPropertyValue('--panel-layer-inline-size')) || 0;
+
+    if (!frozenWidth || !availableSize?.width) {
+      layer.style.setProperty('--panel-layer-fit-scale', '1');
+      return;
+    }
+
+    const fitScale = availableSize.width / frozenWidth;
+
+    layer.style.setProperty('--panel-layer-fit-scale', `${fitScale}`);
+  }
+
+  function startTransitionScaleSync(layers) {
+    window.cancelAnimationFrame(transitionScaleFrame);
+
+    const step = () => {
+      if (!swapHost.classList.contains('is-transitioning')) {
+        transitionScaleFrame = 0;
+        return;
+      }
+
+      const availableSize = {
+        width: scrollHost.getBoundingClientRect().width || 0,
+        height: scrollHost.getBoundingClientRect().height || 0
+      };
+
+      layers.forEach((layer) => syncFrozenLayerScale(layer, availableSize));
+      transitionScaleFrame = window.requestAnimationFrame(step);
+    };
+
+    step();
+  }
+
+  function scheduleSettle(view) {
+    const currentSettleToken = ++settleToken;
+
+    return afterNextPaint().then(() => {
+      if (currentSettleToken !== settleToken) {
+        return;
+      }
+
+      const routeRoot = getLiveRouteRoot(view);
+      routeRoot?.classList.add('is-settled');
+    });
+  }
+
+  function finalizeTransitionQueue() {
+    isTransitionRunning = false;
+
+    if (queuedView && queuedView !== activeView) {
+      const queuedNextView = queuedView;
+      queuedView = null;
+      void transitionTo(queuedNextView);
+      return;
+    }
+
+    queuedView = null;
+  }
+
+  async function transitionTo(view, { immediate = false } = {}) {
     const nextView = PANEL_VIEWS.has(view) ? view : HOME_VIEW;
-    const currentView = targetView;
+
+    if (isTransitionRunning || scrollHost.classList.contains('is-settling-live')) {
+      queuedView = nextView;
+      return;
+    }
+
+    const currentView = activeView;
+    const involvesHome = currentView === HOME_VIEW || nextView === HOME_VIEW;
+    const shouldScaleWithShell = involvesHome
+      || CENTERED_PANEL_VIEWS.has(currentView)
+      || CENTERED_PANEL_VIEWS.has(nextView);
 
     if (nextView === currentView) {
       return;
     }
 
-    targetView = nextView;
+    isTransitionRunning = true;
+
+    if (currentView === HOME_VIEW) {
+      mountHomeView();
+    }
+
+    if (nextView === HOME_VIEW) {
+      mountHomeView({ reset: true });
+    }
+
+    rememberActivePanelState();
+
     const token = ++transitionToken;
-    const startRect = PANEL_VIEWS.has(currentView)
-      ? getCurrentShellRect()
-      : collapseRect(getPreferredShellRect(nextView) ?? getSourceShellRect(nextView) ?? lastExpandedRect);
-    const endRect = PANEL_VIEWS.has(nextView) ? getPreferredShellRect(nextView) : collapseRect(startRect);
-    const exitLayer = getExitLayerSnapshot();
-    const liveNextContent = PANEL_VIEWS.has(nextView) ? mountLiveView(nextView) : null;
-    const enterLayer = liveNextContent
-      ? createFrozenLayer(
-          liveNextContent,
-          getFrozenContentMetrics(nextView, liveNextContent, { preferSource: true }) ??
-            getResolvedContentMetrics(nextView, liveNextContent),
-          'is-entering'
-        )
+    const currentWrapper = bodyHost.querySelector('.panel-content.is-current');
+    const currentRouteRoot = currentWrapper?.querySelector('[data-route-view]');
+    const currentWrapperRect = currentWrapper?.getBoundingClientRect();
+    const homeExitLayer = currentView === HOME_VIEW
+      ? createHomeExitLayer()
       : null;
+    const exitLayer = PANEL_VIEWS.has(currentView)
+      ? createFrozenLayer(currentWrapper, currentView, scrollHost.scrollTop, 'is-exiting')
+      : null;
+    const startHeight = currentShellContentHeight;
 
     clearOverlay();
 
-    if (currentView === HOME_VIEW && PANEL_VIEWS.has(nextView)) {
-      root.classList.add(HOME_TRANSITION_OUT_CLASS);
-    }
-
-    if (nextView === HOME_VIEW && PANEL_VIEWS.has(currentView)) {
-      root.classList.add(HOME_TRANSITION_IN_CLASS);
-    }
-
-    if (!exitLayer && !enterLayer) {
-      commitImmediate(nextView);
+    if (immediate || reducedMotion?.matches) {
+      setRouteState(nextView, { collapsed: nextView === HOME_VIEW });
+      mountPanelView(nextView);
+      activeView = nextView;
+      setShellSize({
+        inlineSize: measureShellInlineSize(nextView),
+        blockSize: measureRouteContentHeight(nextView)
+      }, { immediate: true });
+      if (currentView === HOME_VIEW && nextView !== HOME_VIEW) {
+        unmountHomeView();
+      }
+      await scheduleSettle(nextView);
+      finalizeTransitionQueue();
       return;
     }
 
+    shell.classList.add('is-shell-transitioning');
+    shell.classList.toggle('is-expanding-from-home', currentView === HOME_VIEW && nextView !== HOME_VIEW);
+    shell.classList.toggle('is-collapsing-to-home', nextView === HOME_VIEW);
     swapHost.classList.add('is-transitioning');
+    swapHost.classList.toggle('is-home-route-transition', involvesHome);
+
+    if (homeExitLayer) {
+      homeExitLayer.classList.add('is-visible');
+      homeOverlayHost.append(homeExitLayer);
+    }
 
     if (exitLayer) {
+      if (shouldFreezeForTransition(currentView, { involvesHome })) {
+        freezeLayerSize(exitLayer, currentWrapperRect ?? currentWrapper ?? currentRouteRoot);
+      }
       exitLayer.classList.add('is-visible');
       overlayHost.append(exitLayer);
+      pinFrozenLayerToRect(exitLayer, currentWrapperRect);
+    }
+
+    setRouteState(nextView, {
+      collapsed: false,
+      preserveShellSize: nextView === HOME_VIEW
+    });
+    const endWidth = measureShellInlineSize(nextView);
+    const endHeight = measureRouteContentHeight(nextView);
+    const nextRouteSize = measureRouteLayerSize(nextView, endHeight, {
+      freezeToShellViewport: involvesHome
+    });
+    setShellSize({ inlineSize: currentShellInlineSize, blockSize: startHeight }, { immediate: true });
+    const liveLayer = mountPanelView(nextView, { restoreScroll: false });
+    activeView = nextView;
+
+    liveLayer?.routeRoot?.classList.add('is-settled');
+
+    const enterLayer = PANEL_VIEWS.has(nextView) && liveLayer
+      ? createFrozenLayer(liveLayer.wrapper, nextView, liveLayer.scrollTop, 'is-entering')
+      : null;
+
+    const nextFreezeSource = nextRouteSize ?? liveLayer?.routeRoot;
+
+    const shouldFreezeLiveLayer = shouldFreezeForTransition(nextView, { involvesHome });
+
+    if (shouldFreezeLiveLayer) {
+      freezeLayerSize(liveLayer?.wrapper, nextFreezeSource);
     }
 
     if (enterLayer) {
+      if (shouldFreezeForTransition(nextView, { involvesHome })) {
+        freezeLayerSize(enterLayer, nextFreezeSource);
+      }
       overlayHost.append(enterLayer);
     }
 
-    setShellRect(startRect, {
-      immediate: true,
-      collapsed: !PANEL_VIEWS.has(currentView)
-    });
+    if (shouldScaleWithShell) {
+      startTransitionScaleSync([exitLayer, enterLayer, shouldFreezeLiveLayer ? liveLayer?.wrapper : null]);
+    }
 
-    await nextFrame();
+    setShellSize({ inlineSize: endWidth, blockSize: endHeight });
+    await afterNextPaint();
 
     if (token !== transitionToken) {
+      finalizeTransitionQueue();
       return;
     }
 
-    if (enterLayer) {
-      enterLayer.classList.add('is-visible');
-    }
+    homeExitLayer?.classList.remove('is-visible');
+    enterLayer?.classList.add('is-visible');
+    exitLayer?.classList.remove('is-visible');
 
-    if (exitLayer) {
-      exitLayer.classList.remove('is-visible');
-    }
-
-    setShellRect(endRect, {
-      collapsed: !PANEL_VIEWS.has(nextView)
-    });
-
-    cleanupTimer = window.setTimeout(() => {
+    cleanupTimer = window.setTimeout(async () => {
       if (token !== transitionToken) {
         return;
       }
 
-      activeView = nextView;
+      const liveReferenceRect = enterLayer?.getBoundingClientRect() ?? liveLayer?.wrapper?.getBoundingClientRect();
+      const shouldReleaseLiveFreezeBeforeReveal = shouldFreezeLiveLayer && PANEL_VIEWS.has(nextView) && !involvesHome;
+
+      if (shouldReleaseLiveFreezeBeforeReveal) {
+        clearLayerFreeze(liveLayer?.wrapper);
+        liveLayer?.wrapper?.getBoundingClientRect();
+      }
+
+      const shouldLockLiveScroller = PANEL_VIEWS.has(nextView) && shouldFreezeForTransition(nextView, { involvesHome });
+      const preparedLiveHandoff = shouldFreezeForTransition(nextView, { involvesHome })
+        ? prepareLiveHandoff(liveLayer?.wrapper, liveReferenceRect, { lockScroll: shouldLockLiveScroller })
+        : false;
+
+      if (shouldLockLiveScroller) {
+        scrollHost.classList.add('is-settling-live');
+      }
+
+      if (preparedLiveHandoff) {
+        await animateLiveHandoff(liveLayer?.wrapper, {
+          releaseScrollLock: !shouldLockLiveScroller
+        });
+      }
+
+      clearOverlay({ preserveSettlingLive: shouldLockLiveScroller });
+
+      if (currentView === HOME_VIEW && nextView !== HOME_VIEW) {
+        unmountHomeView();
+      }
 
       if (PANEL_VIEWS.has(nextView)) {
-        setImmediateScrollTop(getSourceInitialScrollTop(nextView));
-        syncLivePanelLayout({ immediate: true, force: true });
-      }
-
-      setLiveContentSettled(PANEL_VIEWS.has(nextView));
-      resetOverlay();
-      settleScrollHost();
-
-      if (!PANEL_VIEWS.has(nextView)) {
+        await restoreScrollPosition(liveLayer?.scrollTop ?? routeScrollState.get(nextView) ?? 0);
+        if (shouldLockLiveScroller) {
+          await afterNextPaint();
+          scrollHost.classList.remove('is-settling-live');
+        }
+      } else {
         bodyHost.replaceChildren();
-        setImmediateScrollTop(0);
-        setShellRect(collapseRect(lastExpandedRect), { immediate: true, collapsed: true });
+        await restoreScrollPosition(0, { immediate: true });
+        setRouteState(nextView, { collapsed: true });
       }
+
+      await scheduleSettle(nextView);
+      if (shouldFreezeLiveLayer && !shouldReleaseLiveFreezeBeforeReveal) {
+        clearLayerFreeze(liveLayer?.wrapper);
+      }
+      finalizeTransitionQueue();
     }, Math.max(SHELL_RESIZE_MS, CONTENT_FADE_MS + CONTENT_FADE_DELAY_MS) + TRANSITION_BUFFER_MS);
+  }
+
+  function persistCurrentFormState() {
+    if (!PANEL_VIEWS.has(activeView)) {
+      return;
+    }
+
+    const liveWrapper = bodyHost.querySelector('.panel-content.is-current');
+
+    if (!liveWrapper) {
+      return;
+    }
+
+    const formState = captureFormState(liveWrapper);
+
+    if (formState?.length) {
+      routeFormState.set(activeView, formState);
+    }
+  }
+
+  function persistCurrentScrollState() {
+    if (!PANEL_VIEWS.has(activeView)) {
+      return;
+    }
+
+    routeScrollState.set(activeView, scrollHost.scrollTop);
   }
 
   function syncCurrentState() {
     transitionToken += 1;
-    activeView = targetView;
-    resetOverlay();
-    mountLiveView(targetView);
-    setLiveContentSettled(PANEL_VIEWS.has(targetView));
-
-    if (PANEL_VIEWS.has(targetView)) {
-      syncLivePanelLayout({ immediate: true, force: true });
-      setImmediateScrollTop(getSourceInitialScrollTop(targetView));
-      settleScrollHost(160);
-      return;
+    isTransitionRunning = false;
+    clearOverlay();
+    rememberActivePanelState();
+    if (activeView === HOME_VIEW) {
+      mountHomeView({ reset: true });
     }
-
-    settleScrollHost(160);
-    setShellRect(collapseRect(lastExpandedRect), { immediate: true, collapsed: true });
+    setRouteState(activeView, { collapsed: activeView === HOME_VIEW });
+    mountPanelView(activeView, { restoreScroll: false });
+    if (PANEL_VIEWS.has(activeView)) {
+      void restoreScrollPosition(routeScrollState.get(activeView) ?? 0, { immediate: true });
+    } else {
+      void restoreScrollPosition(0, { immediate: true });
+    }
+    setShellSize({
+      inlineSize: measureShellInlineSize(activeView),
+      blockSize: measureRouteContentHeight(activeView)
+    }, { immediate: true });
+    scrollHost.classList.remove('is-restoring-scroll');
+    void scheduleSettle(activeView);
   }
 
   function handleRouteChange(event) {
     const nextView = getPrimaryRoute(event.detail?.path);
-    transitionTo(nextView);
+    void transitionTo(nextView);
   }
 
-  function handleRouteWillChange(event) {
-    const nextView = getPrimaryRoute(event.detail?.path);
-
-    if (nextView !== targetView) {
-      capturePendingExitLayer(targetView);
-    }
-  }
-
-  function handleViewportChange() {
-    if (isEditingLivePanelControl()) {
+  function handleScroll() {
+    if (scrollHost.classList.contains('is-restoring-scroll')) {
       return;
     }
 
-    syncCurrentState();
+    persistCurrentScrollState();
   }
 
-  window.addEventListener('routewillchange', handleRouteWillChange);
+  mountHomeView();
+  setRouteState(activeView, { collapsed: activeView === HOME_VIEW });
+  mountPanelView(activeView);
+  setShellSize({
+    inlineSize: measureShellInlineSize(activeView),
+    blockSize: measureRouteContentHeight(activeView)
+  }, { immediate: true });
+  void scheduleSettle(activeView);
+
   window.addEventListener('routechange', handleRouteChange);
-  window.addEventListener('resize', handleViewportChange, { passive: true });
-  window.addEventListener('orientationchange', handleViewportChange, { passive: true });
-  window.visualViewport?.addEventListener('resize', handleViewportChange, { passive: true });
-  bodyHost.addEventListener('input', scheduleLiveLayoutSync, true);
-  bodyHost.addEventListener('change', scheduleLiveLayoutSync, true);
-  bodyHost.addEventListener('toggle', scheduleLiveLayoutSync, true);
-  bodyHost.addEventListener('load', scheduleLiveLayoutSync, true);
-  bodyHost.addEventListener('input', persistCurrentLiveFormState, true);
-  bodyHost.addEventListener('change', persistCurrentLiveFormState, true);
-
-  if (document.fonts?.ready) {
-    document.fonts.ready.then(() => {
-      syncCurrentState();
-    });
-  }
-
-  commitImmediate(activeView);
+  scrollHost.addEventListener('scroll', handleScroll, { passive: true });
+  bodyHost.addEventListener('input', persistCurrentFormState, true);
+  bodyHost.addEventListener('change', persistCurrentFormState, true);
+  window.addEventListener('resize', syncCurrentState, { passive: true });
+  window.addEventListener('orientationchange', syncCurrentState, { passive: true });
+  window.visualViewport?.addEventListener('resize', syncCurrentState, { passive: true });
 
   return {
     destroy() {
-      resetOverlay();
-      window.cancelAnimationFrame(scrollResetFrame);
-      window.cancelAnimationFrame(liveLayoutFrame);
-      window.clearTimeout(liveLayoutTimeout);
-      window.clearTimeout(deferredLayoutTimeout);
-      clearScrollPrimeTimer();
-      bodyHost.removeEventListener('input', scheduleLiveLayoutSync, true);
-      bodyHost.removeEventListener('change', scheduleLiveLayoutSync, true);
-      bodyHost.removeEventListener('toggle', scheduleLiveLayoutSync, true);
-      bodyHost.removeEventListener('load', scheduleLiveLayoutSync, true);
-      bodyHost.removeEventListener('input', persistCurrentLiveFormState, true);
-      bodyHost.removeEventListener('change', persistCurrentLiveFormState, true);
-      window.removeEventListener('routewillchange', handleRouteWillChange);
+      settleToken += 1;
+      clearOverlay();
+      measure.host.remove();
       window.removeEventListener('routechange', handleRouteChange);
-      window.removeEventListener('resize', handleViewportChange);
-      window.removeEventListener('orientationchange', handleViewportChange);
-      window.visualViewport?.removeEventListener('resize', handleViewportChange);
+      scrollHost.removeEventListener('scroll', handleScroll);
+      bodyHost.removeEventListener('input', persistCurrentFormState, true);
+      bodyHost.removeEventListener('change', persistCurrentFormState, true);
+      window.removeEventListener('resize', syncCurrentState);
+      window.removeEventListener('orientationchange', syncCurrentState);
+      window.visualViewport?.removeEventListener('resize', syncCurrentState);
     }
   };
 }

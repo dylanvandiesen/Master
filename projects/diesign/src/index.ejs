@@ -51,8 +51,11 @@
   <body style="background-color:hsl(285,96%,20%);">
     <div id="loader"></div>
     <div id="app" class="content-container"  style="display:none;">
+      <div class="signal-overlay" aria-hidden="true">
+        <canvas class="signal-overlay-canvas" data-effect="signal-noise"></canvas>
+      </div>
       <input type="radio" id="logo-home" name="d-tabs" checked="checked" style="display:none;visibillity:hidden;opacity:0">
-      <label class="nav-link" for="nav-home">
+      <label class="nav-link logo-link" for="nav-home">
         <div class="logo-container" >
           <svg id="logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1156.65 212.77" style="max-width:250px">
             <path d="M551.77,83.46c-1.79-.6-3.49-1.19-5.88-1.79C527.17,77,519.8,71.11,519.5,60.56c-.3-6.78,1.69-10,3.48-11.76,5.18-5.57,15.54-7.67,18.13-7.67,17.83,0,26.39,5.58,39.54,14L588,59.86,609.43,25l-6.77-4.38C587.72,11,571,.1,541.11.1c-10.56,0-32.57,4.38-47.81,20.22-10.55,11.15-15.83,25.49-14.94,41.93.9,19.62,10,35.45,26.4,46.31,11.75,7.87,26.09,11,32.57,13.15l.89.5c21.32,7.27,34,17.52,34,28.68,0,5.28-5.58,20.82-22.61,20.82-9.07,0-33.37,0-55.08-23.21l-29.88,28.19a114.81,114.81,0,0,0,49,31.07,122.23,122.23,0,0,0,36.06,5,62.54,62.54,0,0,0,47.21-21.12c10.25-11.45,16.43-26.39,16.43-40.73,0-14.64-5.58-28.39-16.14-40.14C586.63,99.3,571.39,90.24,551.77,83.46Z" fill="hsl(285,96%,65%)"/>
@@ -70,8 +73,25 @@
 
 
       <div class="tab-panes">
-        <div id="home" class="tab-pane-container">
-          <div class="spacer">
+        <div id="home" class="tab-pane-container"></div>
+        <div class="home-route-overlay" data-home-overlay aria-hidden="true"></div>
+        <% // Declare fields once, available to all popovers %>
+        <%
+          const fields = [
+            { key: 'title', label: 'Project' },
+            { key: 'client', label: 'Opdrachtgever' },
+            { key: 'year', label: 'Jaartal' },
+            { key: 'excerpt', label: 'Samenvatting' },
+            { key: 'goals', label: 'Doelstellingen' },
+            { key: 'role', label: 'Mijn rol' },
+            { key: 'challenges', label: 'Uitdagingen' },
+            { key: 'results', label: 'Resultaten' },
+            { key: 'toolset', label: 'Toolset' },
+            { key: 'skillset', label: 'Vaardigheden' }
+          ];
+        %>
+        <template id="route-template-home">
+          <div class="home-route-view spacer" data-route-view="home">
             <div class="content-scroller">
               <div id="home-tab" class="tab-pane active" role="tabpanel" aria-labelledby="home-tab">
                 <div class="intro-container">
@@ -106,29 +126,10 @@
               </div>
             </div>
           </div>
-        </div>
-        <div id="work" class="tab-pane-container" style="display:none;">
-          <div class="spacer">
-            <div class="content-bg"></div>
-            <div class="content-scroller">
-              <div id="work-tab" class="tab-pane" role="tabpanel" aria-labelledby="work-tab">
-              
-              <% // Declare fields once, available to all popovers %>
-              <%
-                const fields = [
-                  { key: 'title', label: 'Project' },
-                  { key: 'client', label: 'Opdrachtgever' },
-                  { key: 'year', label: 'Jaartal' },
-                  { key: 'excerpt', label: 'Samenvatting' },
-                  { key: 'goals', label: 'Doelstellingen' },
-                  { key: 'role', label: 'Mijn rol' },
-                  { key: 'challenges', label: 'Uitdagingen' },
-                  { key: 'results', label: 'Resultaten' },
-                  { key: 'toolset', label: 'Toolset' },
-                  { key: 'skillset', label: 'Vaardigheden' }
-                ];
-              %>
-
+        </template>
+        <template id="route-template-work">
+          <div class="panel-route-view panel-route-view--work" data-route-view="work">
+            <div id="work-tab" class="tab-pane" role="tabpanel" aria-labelledby="work-tab">
               <div class="content-wrapper">
                 <div class="thumbnails">
                   <% projects.forEach(function(project) { %>
@@ -148,210 +149,203 @@
                   <% }); %>
                 </div>
               </div>
+            </div>
+          </div>
+        </template>
 
-              <% projects.forEach(function(project) { %>
-                <template id="template-<%= project.id %>">
-                  <div id="<%= project.id %>" class="project-pop" popover tabindex="0">
-                    <div class="star-bg"></div>
-                    <div class="bg-overlay"></div>
-                    <div class="oversnap-scroller">
-                      <div class="oversnap-body">
-                        <% project.figures.forEach(function(fig, figIndex) { %>
-                          <figure>
-                            <% if (fig.type === "picture") { %>
-                              <picture class="<%= fig.class %>">
-                                <% fig.sources.forEach(function(source) { %>
-                                  <source srcset="/<%= source.srcset %>" type="<%= source.type %>">
-                                <% }); %>
-                                <img class="d-loading" src="/<%= fig.img.src %>" alt="<%= fig.img.alt %>" width="<%= fig.img.width %>" height="<%= fig.img.height %>" loading="lazy">
-                              </picture>
-                            <% } else if (fig.type === "video") { %>
-                              <div
-                                class="video-placeholder <%= fig.class %>"
-                                data-video='<%- JSON.stringify({
-                                  title: fig.title,
-                                  width: fig.width,
-                                  height: fig.height,
-                                  sources: fig.sources,
-                                  autoplay: true,
-                                  loop: true,
-                                  muted: true,
-                                  controls: true,
-                                  controlsList: "play nodownload noplaybackrate",
-                                  disableRemotePlayback: true,
-                                  disablePictureInPicture: true
-                                }) %>'
-                              ></div>
-                            <% } %>
+        <% projects.forEach(function(project) { %>
+          <template id="template-<%= project.id %>">
+            <div id="<%= project.id %>" class="project-pop" popover tabindex="0">
+              <div class="star-bg"></div>
+              <div class="bg-overlay"></div>
+              <div class="oversnap-scroller">
+                <div class="oversnap-body">
+                  <% project.figures.forEach(function(fig, figIndex) { %>
+                    <figure>
+                      <% if (fig.type === "picture") { %>
+                        <picture class="<%= fig.class %>">
+                          <% fig.sources.forEach(function(source) { %>
+                            <source srcset="/<%= source.srcset %>" type="<%= source.type %>">
+                          <% }); %>
+                          <img class="d-loading" src="/<%= fig.img.src %>" alt="<%= fig.img.alt %>" width="<%= fig.img.width %>" height="<%= fig.img.height %>" loading="lazy">
+                        </picture>
+                      <% } else if (fig.type === "video") { %>
+                        <div
+                          class="video-placeholder <%= fig.class %>"
+                          data-video='<%- JSON.stringify({
+                            title: fig.title,
+                            width: fig.width,
+                            height: fig.height,
+                            sources: fig.sources,
+                            autoplay: true,
+                            loop: true,
+                            muted: true,
+                            controls: true,
+                            controlsList: "play nodownload noplaybackrate",
+                            disableRemotePlayback: true,
+                            disablePictureInPicture: true
+                          }) %>'
+                        ></div>
+                      <% } %>
 
-                            <% if (figIndex === 0 && project.content) { %>
-                              <div class="project-content" style="opacity:0;">
-                                <figcaption class="content-bg">
-                                  <details>
-                                    <summary>
-                                      <div class="ripple wrapper" data-effect="ripple"></div>
-                                      <span>Projectdetails</span>
-                                    </summary>
-                                    <div class="content">
-                                      <% fields.forEach(function(field) { 
-                                        const value = project.content[field.key];
+                      <% if (figIndex === 0 && project.content) { %>
+                        <div class="project-content" style="opacity:0;">
+                          <figcaption class="content-bg">
+                            <details>
+                              <summary>
+                                <div class="ripple wrapper" data-effect="ripple"></div>
+                                <span>Projectdetails</span>
+                              </summary>
+                              <div class="content">
+                                <% fields.forEach(function(field) { 
+                                  const value = project.content[field.key];
 
-                                        if (value) { %>
+                                  if (value) { %>
+                                  
+                                    <h3><%= field.label %></h3>
+                                    
+                                    <% if (Array.isArray(value)) { %>
+                                    
+                                      <% 
+                                        // Check of het een array van objecten met een 'categorie'-key is
+                                        const hasCategories = value[0] && value[0].categorie; 
+                                      %>
+
+                                      <% if (hasCategories) { %>
+                                        <div class="subcategory">
+                                          <% 
+                                            // Groepeer de subitems per categorie
+                                            const categories = value.reduce((acc, item) => {
+                                              if (!acc[item.categorie]) {
+                                                acc[item.categorie] = [];
+                                              }
+                                              acc[item.categorie].push(item.subitem);
+                                              return acc;
+                                            }, {});
+                                          %>
+                                          <% value.forEach(function(category) { %>
+                                            <h4>* <%= category.categorie %></h4>
+                                            <ul>
+                                              <% category.subitems.forEach(function(subitem) { %>
+                                                <li><%= subitem %></li>
+                                              <% }); %>
+                                            </ul>
+                                          <% }); %>
+                                        </div>
+                                      <% } else { %>
+                                      
+                                        <ul>
+                                          <% value.forEach(function(item) { %>
+                                            <li><%= item %></li>
+                                          <% }); %>
+                                        </ul>
                                         
-                                          <h3><%= field.label %></h3>
-                                          
-                                          <% if (Array.isArray(value)) { %>
-                                          
-                                            <% 
-                                              // Check of het een array van objecten met een 'categorie'-key is
-                                              const hasCategories = value[0] && value[0].categorie; 
-                                            %>
+                                      <% } %>
 
-                                            <% if (hasCategories) { %>
-                                              <div class="subcategory">
-                                                <% 
-                                                  // Groepeer de subitems per categorie
-                                                  const categories = value.reduce((acc, item) => {
-                                                    if (!acc[item.categorie]) {
-                                                      acc[item.categorie] = [];
-                                                    }
-                                                    acc[item.categorie].push(item.subitem);
-                                                    return acc;
-                                                  }, {});
-                                                %>
-                                                <% value.forEach(function(category) { %>
-                                                  <h4>✦ <%= category.categorie %></h4>
-                                                  <ul>
-                                                    <% category.subitems.forEach(function(subitem) { %>
-                                                      <li><%= subitem %></li>
-                                                    <% }); %>
-                                                  </ul>
-                                                <% }); %>
-                                              </div>
-                                            <% } else { %>
-                                            
-                                              <ul>
-                                                <% value.forEach(function(item) { %>
-                                                  <li><%= item %></li>
-                                                <% }); %>
-                                              </ul>
-                                              
-                                            <% } %>
-
-                                          <% } else { %>
-                                          
-                                            <p><%= value %></p>
-                                            
-                                          <% } %>
-                                          
-                                      <% } }); %>
-                                    </div>
-                                  </details>
-                                </figcaption>
+                                    <% } else { %>
+                                    
+                                      <p><%= value %></p>
+                                      
+                                    <% } %>
+                                    
+                                <% } }); %>
                               </div>
-                            <% } %>
-                          </figure>
-                        <% }); %>
-                      </div>
+                            </details>
+                          </figcaption>
+                        </div>
+                      <% } %>
+                    </figure>
+                  <% }); %>
+                </div>
+              </div>
+              <ul class="pop-nav">
+                <li><button class="icon prev ripple"></button></li>
+                <li><button popovertarget="<%= project.id %>" class="icon close ripple"></button></li>
+                <li><button class="icon next ripple"></button></li>
+              </ul>
+            </div>
+          </template>
+        <% }); %>
+
+        <template id="route-template-about">
+          <div class="panel-route-view panel-route-view--about" data-route-view="about">
+            <div id="about-tab" class="tab-pane content" role="tabpanel" aria-labelledby="about-tab">
+              <div class="content-wrapper">
+                <div class="profile-pic"><div class="ripple wrapper" data-effect="ripple"></div></div>
+                <h2>Ik ben Dylan van Diesen, een ervaren autodidact met liefde voor design en front-end development</h2>
+                
+                <p>Mijn naam is Dylan van Diesen - een gedreven multimedia-designer en webdeveloper met ruim 25 jaar ervaring, gevormd door een combinatie van autodidactisch leren, praktijkervaring en een diepe interesse voor technologie en creatie. Wat op mijn twaalfde ooit begon met het bouwen van websites en ontwerpen van logo's en huisstijlen voor lokale ondernemers, groeide uit tot een carriere waarin ik brede expertise heb op mogen bouwen in onder andere (front-end) development, UX/UI design en webdesign.</p>
+
+                <p>Naast mijn werk ben getrouwd en vader van een zoontje. In mijn vrije tijd ga ik graag op pad met mijn gezin of ben ik bezig op de computer - meestal experimenterend met nieuwe tools of technieken. Die nieuwsgierigheid is niet alleen mijn hobby, maar ook de motor achter mijn werk.</p>
+
+                <p>Door de jaren heen heb ik mogen werken aan de meest uiteenlopende projecten, van conversiegerichte WordPress-websites tot complexe maatwerkplatformen en SaaS-oplossingen binnen diverse sectoren. Daarbij ligt mij kracht in het schrijven van schone, testbare code en het ontwikkelen van interfaces die zowel functioneel als visueel impactvol zijn. Mijn ervaring strekt zich uit over verschillende tech stacks en markten, waardoor ik snel kan schakelen en effectief kan inspelen op de behoeften van ieder project.</p>
+
+                <p>Op de werkvloer word ik omschreven als betrokken, loyaal, leergierig en word mijn humor veelal gewaardeerd. Een van mijn krachten is mijn vermogen om zowel strategisch als uitvoerend te kunnen denken; ik werk graag mee aan de inhoud en visie van een project, maar duik net zo enthousiast in de code of het design. Ik geloof in de kracht van samenwerking (van elkaar leren), open communicatie en een positieve werksfeer waar voldoende ruimte is voor creativiteit, experimenteren en groei.</p>
+
+                <p>Om mijn kennis nog verder te verbreden hoop ik in 2026 een functiediploma in Ethical Hacking af te ronden, waarmee ik mijn technische fundament nog sterker maak en nieuwe waarde kan toevoegen aan de digitale oplossingen die ik ontwikkel.</p>
+
+                <% 
+                // <p>Al sinds mijn twaalfde spendeer ik het liefst uren achter de computer om mezelf nieuwe technieken en vaardigheden aan te leren. In de jaren hierop volgend heb ik mijn creativiteit en kennis nog verder uit kunnen breiden door mijn werk bij uiteenlopende mediabureaus en het leiden van mijn eigen multimediabedrijf.</p>
+
+                // <p>Nu, 21 jaar later heb ik mezelf ontwikkeld tot een multimedia designer die zijn creativiteit en kennis op meerdere gebieden kan toepassen. Van grafisch ontwerp tot UX/UI design en van marketingadvies tot het salesgesprek. Ik heb hierdoor dan ook al vele projecten succesvol begeleid en uitgevoerd. Door mijn liefde voor computers, technologie en design ben ik expert geworden op het gebied van multimediatechnologieen en applicaties. Ook ben ik in begin 2016 de uitdaging aangegaan om mezelf tot professioneel niveau te ontwikkelen op het gebied van front-end development!</p>
+
+                // <p>Op de werkvloer word ik omschreven als iemand die hard werkt, loyaal is en een goede dosis humor bevat. Ik ben dan ook op zoek naar een uitdaging voor langere tijd met een open en gezellige werksfeer waarbij ik mezelf verder kan ontwikkelen.</p>
+                %>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <template id="route-template-contact">
+          <div class="panel-route-view panel-route-view--contact" data-route-view="contact">
+            <div id="contact-tab" class="tab-pane content" role="tabpanel" aria-labelledby="contact-tab">
+              <div class="content-wrapper">
+                <div class="contact-options">
+                  <a href="tel:0633835576" class="contact-option">
+                    <div class="ripple wrapper" data-effect="ripple"></div>
+                    <span class="icon sattelite"></span>
+                    <span>Bel 06 338 355 76</span>
+                  </a>
+                  <a href="/curriculum-vitae-dylan-van-diesen.pdf" target="_blank" class="contact-option">
+                    <div class="ripple wrapper" data-effect="ripple"></div>
+                    <span class="icon astronaut"></span>
+                    <span>Curricu&shy;lum Vitae</span>
+                  </a>
+                  <a href="https://www.linkedin.com/in/dylanvandiesen/" target="_blank" rel="noopener"  class="contact-option">
+                    <div class="ripple wrapper" data-effect="ripple"></div>
+                    <span class="icon linkedin"></span>
+                    <span>Mijn Linkedin</span>
+                  </a>
+                </div>
+                <form name="contact-form" action="https://formsubmit.co/dylanvandiesen@gmail.com" method="POST" >
+                  <div class="fieldset">
+                    <h2><span>Kom in contact</span> <span class="icon spock"></span></h2>
+                    <div class="input-container">
+                      <label for="contact-name">Naam</label>
+                      <input type="text" name="name" class="form-control" id="contact-name" placeholder="Naam" autocomplete="on" required="true">
                     </div>
-                    <ul class="pop-nav">
-                      <li><button class="icon prev ripple"></button></li>
-                      <li><button popovertarget="<%= project.id %>" class="icon close ripple"></button></li>
-                      <li><button class="icon next ripple"></button></li>
-                    </ul>
+                    <div class="input-container">
+                      <label for="contact-email">E-mail</label>
+                      <input type="email" name="email" class="form-control" id="contact-email" placeholder="E-mailadres" autocomplete="on" required="true">
+                    </div>
+                    <div class="input-container">
+                      <label for="contact-telephone">Telefoon</label>
+                      <input type="tel" name="tel" class="form-control" id="contact-telephone" placeholder="Telefoonnummer" autocomplete="on" required="true">
+                    </div>
+                    <div class="input-container">
+                      <label for="contact-message">Bericht</label>
+                      <textarea name="message" class="form-control" id="contact-message" rows="1" max-rows="6" placeholder="Bericht schrijven" required="true"></textarea>
+                    </div>
                   </div>
-                </template>
-              <% }); %>
+                  <button type="submit" class="btn btn-primary"><div class="ripple wrapper" data-effect="ripple"></div>Versturen <i class="fas fa-paper-plane"></i></button>
+                </form>
               </div>
             </div>
           </div>
-        </div>
-        <div id="about" class="tab-pane-container">
-          <div class="spacer">
-            <div class="content-bg"></div>
-            <div class="content-scroller">
-              <div id="about-tab" class="tab-pane content" role="tabpanel" aria-labelledby="about-tab">
-                <div class="content-wrapper">
+        </template>
 
-                  <div class="profile-pic"><div class="ripple wrapper" data-effect="ripple"></div></div>
-                  <h2>Ik ben Dylan van Diesen, een ervaren autodidact met liefde voor design en front-end development</h2>
-                  
-                  <p>Mijn naam is Dylan van Diesen - een gedreven multimedia-designer en webdeveloper met ruim 25 jaar ervaring, gevormd door een combinatie van autodidactisch leren, praktijkervaring en een diepe interesse voor technologie en creatie. Wat op mijn twaalfde ooit begon met het bouwen van websites en ontwerpen van logo's en huisstijlen voor lokale ondernemers, groeide uit tot een carrière waarin ik brede expertise heb op mogen bouwen in onder andere (front-end) development, UX/UI design en webdesign.</p>
-
-                  <p>Naast mijn werk ben getrouwd en vader van een zoontje. In mijn vrije tijd ga ik graag op pad met mijn gezin of ben ik bezig op de computer - meestal experimenterend met nieuwe tools of technieken. Die nieuwsgierigheid is niet alleen mijn hobby, maar ook de motor achter mijn werk.</p>
-
-                  <p>Door de jaren heen heb ik mogen werken aan de meest uiteenlopende projecten, van conversiegerichte WordPress-websites tot complexe maatwerkplatformen en SaaS-oplossingen binnen diverse sectoren. Daarbij ligt mij kracht in het schrijven van schone, testbare code en het ontwikkelen van interfaces die zowel functioneel als visueel impactvol zijn. Mijn ervaring strekt zich uit over verschillende tech stacks en markten, waardoor ik snel kan schakelen en effectief kan inspelen op de behoeften van ieder project.</p>
-
-                  <p>Op de werkvloer word ik omschreven als betrokken, loyaal, leergierig en word mijn humor veelal gewaardeerd. Eén van mijn krachten is mijn vermogen om zowel strategisch als uitvoerend te kunnen denken; ik werk graag mee aan de inhoud en visie van een project, maar duik net zo enthousiast in de code of het design. Ik geloof in de kracht van samenwerking (van elkaar leren), open communicatie en een positieve werksfeer waar voldoende ruimte is voor creativiteit, experimenteren en groei.</p>
-
-                  <p>Om mijn kennis nog verder te verbreden hoop ik in 2026 een functiediploma in Ethical Hacking af te ronden, waarmee ik mijn technische fundament nog sterker maak en nieuwe waarde kan toevoegen aan de digitale oplossingen die ik ontwikkel.</p>
-
-                  <% 
-                  // <p>Al sinds mijn twaalfde spendeer ik het liefst uren achter de computer om mezelf nieuwe technieken en vaardigheden aan te leren. In de jaren hierop volgend heb ik mijn creativiteit en kennis nog verder uit kunnen breiden door mijn werk bij uiteenlopende mediabureaus en het leiden van mijn eigen multimediabedrijf.</p>
-
-                  // <p>Nu, 21 jaar later heb ik mezelf ontwikkeld tot een multimedia designer die zijn creativiteit en kennis op meerdere gebieden kan toepassen. Van grafisch ontwerp tot UX/UI design en van marketingadvies tot het salesgesprek. Ik heb hierdoor dan ook al vele projecten succesvol begeleid en uitgevoerd. Door mijn liefde voor computers, technologie en design ben ik expert geworden op het gebied van multimediatechnologieën en applicaties. Ook ben ik in begin 2016 de uitdaging aangegaan om mezelf tot professioneel niveau te ontwikkelen op het gebied van front-end development!</p>
-
-                  // <p>Op de werkvloer word ik omschreven als iemand die hard werkt, loyaal is en een goede dosis humor bevat. Ik ben dan ook op zoek naar een uitdaging voor langere tijd met een open en gezellige werksfeer waarbij ik mezelf verder kan ontwikkelen.</p>
-                  %>
-                  
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div id="contact" class="tab-pane-container">
-          <div class="spacer">
-            <div class="content-bg"></div>
-            <div class="content-scroller">
-              <div id="contact-tab" class="tab-pane content" role="tabpanel" aria-labelledby="contact-tab">
-                <div class="content-wrapper">
-                  <div class="contact-options">
-                    <a href="tel:0633835576" class="contact-option">
-                      <div class="ripple wrapper" data-effect="ripple"></div>
-                      <span class="icon sattelite"></span>
-                      <span>Bel 06 338 355 76</span>
-                    </a>
-                    <a href="/curriculum-vitae-dylan-van-diesen.pdf" target="_blank" class="contact-option">
-                      <div class="ripple wrapper" data-effect="ripple"></div>
-                      <span class="icon astronaut"></span>
-                      <span>Curricu&shy;lum Vitae</span>
-                    </a>
-                    <a href="https://www.linkedin.com/in/dylanvandiesen/" target="_blank" rel="noopener"  class="contact-option">
-                      <div class="ripple wrapper" data-effect="ripple"></div>
-                      <span class="icon linkedin"></span>
-                      <span>Mijn Linkedin</span>
-                    </a>
-                  </div>
-                  <form name="contact-form" action="https://formsubmit.co/dylanvandiesen@gmail.com" method="POST" >
-                      <div class="fieldset">
-                        <h2><span>Kom in contact</span> <span class="icon spock"></span></h2>
-                        <div class="input-container">
-                          <label for="contact-name">Naam</label>
-                          <input type="text" name="name" class="form-control" id="contact-name" placeholder="Naam" autocomplete="on" required="true">
-                        </div>
-                        <div class="input-container">
-                          <label for="contact-email">E-mail</label>
-                          <input type="email" name="email" class="form-control" id="contact-email" placeholder="E-mailadres" autocomplete="on" required="true">
-                        </div>
-                        <div class="input-container">
-                          <label for="contact-telephone">Telefoon</label>
-                          <input type="tel" name="tel" class="form-control" id="contact-telephone" placeholder="Telefoonnummer" autocomplete="on" required="true">
-                        </div>
-                        <div class="input-container">
-                          <label for="contact-message">Bericht</label>
-                          <textarea name="message" class="form-control" id="contact-message" rows="1" max-rows="6" placeholder="Bericht schrijven" required="true"></textarea>
-                        </div>
-                        
-                      </div>
-                      <button type="submit" class="btn btn-primary"><div class="ripple wrapper" data-effect="ripple"></div>Versturen <i class="fas fa-paper-plane"></i></button>
-                    </form>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="panel-route-stage" data-panel-stage aria-hidden="true">
-          <div class="panel-route-shell spacer is-collapsed" data-panel-shell>
+        <div class="panel-route-shell-slot" data-panel-shell-slot aria-hidden="true">
+          <div class="panel-route-shell spacer is-collapsed" data-panel-shell data-panel-view="home" aria-hidden="true">
             <div class="content-bg"></div>
             <div class="content-scroller panel-route-scroller" data-panel-scroller>
               <div class="panel-swap" data-panel-swap>
@@ -363,8 +357,6 @@
             </div>
           </div>
         </div>
-      </div>
-
       <nav class="nav-main">
         <ul class="nav nav-tabs " id="myTab" role="tablist">
           <li class="nav-item" role="tab">

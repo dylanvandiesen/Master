@@ -1,9 +1,6 @@
 web_search = "live"
 
 [features]
-apps = true
-multi_agent = true
-js_repl = true
 prevent_idle_sleep = true
 
 [mcp_servers.filesystem_local]

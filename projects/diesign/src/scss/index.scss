@@ -704,7 +704,7 @@ label {
             height: -webkit-fit-content;
             height: -moz-fit-content;
             height: fit-content;
-            margin-bottom: var(--spacing-lg);
+            margin-bottom: var(--spacing-ms);
             row-gap: var(--spacing-ms);
             padding: var(--spacing-md);
             // min-height: 600px;
@@ -899,7 +899,7 @@ label {
     }
   }
 
-  .panel-content[data-view="contact"].is-settled {
+  .panel-route-view[data-route-view="contact"].is-settled {
     #contact-tab .content-wrapper {
       .contact-options,
       .contact-option,

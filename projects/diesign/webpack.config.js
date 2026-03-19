@@ -294,8 +294,8 @@ module.exports = (
 			host: 'local-ip',
 			port: 9000,
 			open: true,
-			hot: true,
-			liveReload: false,
+			hot: false,
+			liveReload: true,
 			compress: true,
 			headers: {
 				'Access-Control-Allow-Origin': '*'
