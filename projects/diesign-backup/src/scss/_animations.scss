@@ -1,0 +1,70 @@
+// Logo animations
+
+@keyframes fade-in {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes fade-out {
+    0% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes logo-move-right {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(23.7125%);
+    }
+}
+
+@keyframes logo-move-left {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-23.7125%);
+    }
+}
+
+@keyframes logo-intro-title {
+    0% {
+        opacity:0;
+    }
+
+    100% {
+        opacity:1;
+    }
+}
+@keyframes logo-intro-scale {
+    0% {
+        transform: scale(1);
+    }
+
+    100% {
+        transform: scale(1.9);
+    }
+}
+
+@keyframes logo-color {
+    0% {
+        fill: var(--white);
+    }
+
+    100% {
+        fill: var(--primary);
+    }
+}

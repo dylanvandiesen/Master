@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "C:\Users\SKIKK\Documents\websites\Playground\projects\diesign\tmp-verify-server.py", line 4, in <module>
+    ThreadingHTTPServer(("127.0.0.1", 9012), SimpleHTTPRequestHandler).serve_forever()
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\socketserver.py", line 457, in __init__
+    self.server_bind()
+    ~~~~~~~~~~~~~~~~^^
+  File "C:\Python313\Lib\http\server.py", line 136, in server_bind
+    socketserver.TCPServer.server_bind(self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Python313\Lib\socketserver.py", line 473, in server_bind
+    self.socket.bind(self.server_address)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [WinError 10013] Er is geprobeerd toegang te verkrijgen tot een socket op een volgens de toegangsmachtigingen niet toegestane manier

@@ -1,0 +1,30 @@
+<article class="panel-route-view panel-route-view--work" data-route-view="work">
+  <section id="work-tab" class="tab-pane" role="tabpanel" aria-labelledby="work-tab">
+    <div class="content-wrapper">
+      <div class="thumbnails">
+        <% projects.forEach(function(project) { %>
+          <div class="thumbnail">
+            <button popovertarget="<%= project.id %>" class="pop-btn open">
+              <div class="hoverBox">
+                <div class="ripple wrapper" data-effect="ripple"></div>
+              </div>
+              <picture>
+                <source srcset="/<%= project.thumb.avif %>" type="image/avif">
+                <source srcset="/<%= project.thumb.webp %>" type="image/webp">
+                <source srcset="/<%= project.thumb.jpg %>" type="image/jpeg">
+                <img
+                  src="/<%= project.thumb.jpg %>"
+                  alt="<%= project.thumb.alt %>"
+                  width="<%= project.thumb.width %>"
+                  height="<%= project.thumb.height %>"
+                  loading="lazy"
+                  style="aspect-ratio:<%= project.thumb.width %>/<%= project.thumb.height %>"
+                >
+              </picture>
+            </button>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  </section>
+</article>

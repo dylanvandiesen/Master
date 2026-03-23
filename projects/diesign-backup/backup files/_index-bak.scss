@@ -1,0 +1,502 @@
+@import 'components/preloader';
+
+@import 'variables';
+@import '_mixins';
+@import 'modern-normalize/modern-normalize.css';
+
+
+
+
+html, body {
+  background-color: var(--primary-dark);
+  height: 100%;
+  min-height: 100%;
+  max-height: 100dvh;
+  overflow: hidden;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+  position: relative;
+}
+
+body {
+  color: var(--white);
+  font-family: var(--body-font-family);
+  opacity: 0;
+  -webkit-animation: fade-in .6s .3s ease-out 1 forwards;
+          animation: fade-in .6s .3s ease-out 1 forwards;
+}
+
+body .panel {
+  -webkit-user-select: text;
+     -moz-user-select: text;
+      -ms-user-select: text;
+          user-select: text;
+}
+
+
+// to extend
+.heading-base {
+  font-family: var(--heading-font-family);
+  text-transform: uppercase;
+}
+
+// h1 {
+//   @extend .heading-base;
+//   color: #333;
+//   @include for-size(phone-only) {    
+//     font-size: 1rem; 
+//   }
+// }
+h2 {
+  @extend .heading-base;
+  @include break-up(xs){ font-size: 1rem; }
+  @include break-up(md){ font-size: 1.25rem; }
+  @include break-up(lg){ font-size: 1.5rem; }
+  @include break-up(xl){ font-size: 1.875rem; }
+}
+label {
+  @extend .heading-base;
+}
+
+.stage {
+  position: absolute;
+  /* Use inset to define all offsets at once */
+  inset: -1% -2%; /* top, right, bottom, left */
+  /* Use max() to support both dvh/dvw and vh/vw */
+  height: max(102dvh, 102vh);
+  width: max(104dvw, 104vw);
+  z-index: 1; /* Ensure it's on top */
+  /* Negative offsets create a slight overflow effect */
+
+
+  .content-container, .fg-container, .mg-container, .mbg-container, .bg-container {
+    height: 100%;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+
+    & > * {
+      height: 100%;
+    }
+  }
+}
+
+@-webkit-keyframes fade-out           {0% {opacity:1;} 100% {opacity:0;}}
+
+@keyframes fade-out           {0% {opacity:1;} 100% {opacity:0;}}
+@-webkit-keyframes fade-in            {0% {opacity:0;} 100% {opacity:1;}}
+@keyframes fade-in            {0% {opacity:0;} 100% {opacity:1;}}
+
+@-webkit-keyframes logo-move-right    {0% {transform: translateX(0);} 100% {transform: translateX(23.7125%);}}
+
+@keyframes logo-move-right    {0% {transform: translateX(0);} 100% {transform: translateX(23.7125%);}}
+@-webkit-keyframes logo-move-left     {0% {transform: translateX(0);} 100% {transform: translateX(-23.7125%);}}
+@keyframes logo-move-left     {0% {transform: translateX(0);} 100% {transform: translateX(-23.7125%);}}
+@-webkit-keyframes logo-intro-scale   {0% {transform: scale(1);} 100% {transform: scale(1.9); margin-top: 4.5%; margin-bottom: 4%;}}
+@keyframes logo-intro-scale   {0% {transform: scale(1);} 100% {transform: scale(1.9); margin-top: 4.5%; margin-bottom: 4%;}}
+@-webkit-keyframes logo-color         {0% {fill: #fff;} 100% {fill: var(--primary);}}
+@keyframes logo-color         {0% {fill: #fff;} 100% {fill: var(--primary);}}
+
+.logo-container {
+  // @extend .pt-3, .pt-sm-4, .pt-md-5;
+  position: absolute;
+  width: 100%;
+  top: 0;
+  right: 0;
+  bottom: auto;
+  left: 0;
+  z-index:10;
+  text-align: center;
+  opacity: 0;
+  transition: opacity .5s ease-in-out;
+
+
+  @media all and (min-height: 768px) {
+    padding-top: 3rem !important;
+  }
+  @media all and (min-height: 481px) and (max-height: 767px) {
+    padding-top: 1.5rem !important;
+  }
+  @media all and (min-height: 376px) and (max-height: 480px) {
+    padding-top: 1rem !important;
+  }
+  @media all and (max-height: 375px) {
+    padding-top: .5rem !important;
+  }
+
+  &.active {
+    opacity:1;
+  }
+  svg {
+    margin: 0 auto auto auto;
+    width: 100%;
+    max-width: 160px;
+    fill: #fff;
+
+    @include break-up(sm){
+      max-width: 200px;
+    }
+    @include break-up(md){
+      max-width: 250px;
+    }
+    @media screen and (max-height: 481px) and (max-height: 586px) {
+      max-width: 200px;
+    }
+    @media screen and (min-height: 376px) and (max-height: 480px) {
+      max-width: 160px;
+    }
+    @media all and (max-height: 375px) {
+      max-width: 100px;
+    }
+
+  }
+}
+
+.rippleJS[data-event="mousedown"] {
+  opacity:.4;
+}
+.rippleJS .ripple {
+  opacity:.3;
+  background: var(--accent);
+}
+
+
+#fg {
+  transform: translate3d(0,0,0);
+  padding: 1rem;
+  // background: url('../images/layer1.png') no-repeat;
+  // background-size: cover;
+  // background-position: left -15% bottom;
+  background:  url('../images/layer1.png') no-repeat center center / cover;
+  background:  -webkit-image-set(
+    "../images/layer1.avif" type("image/avif"),
+    "../images/layer1.webp" type("image/webp"),
+    "../images/layer1.png" type("image/png")
+  ) no-repeat left -15% bottom / cover;
+  background:  image-set(
+    "../images/layer1.avif" type("image/avif"),
+    "../images/layer1.webp" type("image/webp"),
+    "../images/layer1.png" type("image/png")
+  ) no-repeat left -15% bottom / cover;
+  transition: all 1s ease-in-out;
+}
+body.home #fg {
+  background-position: left 15% bottom;
+  @media all and (min-width:480px){background-position: left 18% bottom;}
+  @media all and (min-width:667px){background-position: left 5% bottom;}
+  @media all and (min-width:1200px){background-position: left 50% bottom;}
+}
+body.work #fg {
+  background-position: left -18vw bottom;
+}
+body.about #fg {
+  background-position: left -12vw bottom;
+}
+body.contact #fg {
+  background-position: left bottom;
+}
+#mg {
+  background: url('../images/layer2.png') right bottom / cover;
+  background:  -webkit-image-set(
+    "../images/layer2.avif" type("image/avif"),
+    "../images/layer2.webp" type("image/webp"),
+    "../images/layer2.png" type("image/png")
+  ) right bottom / cover;
+  background:  image-set(
+    "../images/layer2.avif" type("image/avif"),
+    "../images/layer2.webp" type("image/webp"),
+    "../images/layer2.png" type("image/png")
+  ) right bottom / cover;
+}
+#mbg {
+  background: url('../images/layer3.png') right bottom / cover;
+  background:  -webkit-image-set(
+    "../images/layer3.avif" type("image/avif"),
+    "../images/layer3.webp" type("image/webp"),
+    "../images/layer3.png" type("image/png")
+  ) right bottom / cover;
+  background:  image-set(
+    "../images/layer3.avif" type("image/avif"),
+    "../images/layer3.webp" type("image/webp"),
+    "../images/layer3.png" type("image/png")
+  ) right bottom / cover;
+}
+#bg {
+  background: url('../images/layer4.jpg') right bottom / cover;
+  background:  -webkit-image-set(
+    "../images/layer4.avif" type("image/avif"),
+    "../images/layer4.webp" type("image/webp"),
+    "../images/layer4.jpg" type("image/jpg")
+  ) right bottom / cover;
+  background:  image-set(
+    "../images/layer4.avif" type("image/avif"),
+    "../images/layer4.webp" type("image/webp"),
+    "../images/layer4.jpg" type("image/jpg")
+  ) right bottom / cover;
+}
+h3 {
+  // @extend .mt-2, .mt-xl-3;
+  display: block;
+  margin: 0 -2px 0 -2px;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0,0,0,.5);
+}
+
+.intro-container {
+  // @extend .mx-4;
+  margin: initial var(--spacing-md);
+  flex-direction: column;
+  width: 100%;
+  // opacity: 0;
+  position: relative;
+
+  @include break-up(xs){max-width: 220px;}
+  @include break-up(sm){max-width: 280px;}
+  @include break-up(md){max-width: 300px;}
+  @include break-up(lg){max-width: 360px;}
+  @include break-up(xl){max-width: 388px;}
+
+  h3 {
+    @include break-up(xs){font-size: .98rem;}
+    @include break-up(sm){font-size: 1.24rem;}
+    @include break-up(md){font-size: 1.33rem;}
+    @include break-up(lg){font-size: 1.59rem;}
+    @include break-up(xl){font-size: 1.72rem;}
+  }
+}
+
+.content-container {
+  z-index:10;
+  position: absolute;
+  height: 100% !important;
+  height: max(100dvh, 100vh) !important;
+  min-height: 100%;
+  max-height: max(100dvh, 100vh) !important;
+  width: 100%;
+  .d-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    max-width: 100%;
+    margin: 50px auto;
+    padding: 25px;
+    height: 100%;
+    // background: #fff;
+    input[type="radio"] {
+      display: none;
+    }
+    .tab-pane {
+      // width: 100%;
+      // padding: 20px;
+      order: 1;
+      display: none;
+    }
+    input[type='radio']:checked + label + .tab-pane {
+      display: block;
+    }
+    input[type="radio"]:checked + label {
+      background: #fff;
+    }
+  }
+}
+.tab-pane {
+  &:first-child {
+    -webkit-animation: fade-in 1s 1s ease-out 1 forwards;
+            animation: fade-in 1s 1s ease-out 1 forwards;
+  }
+  .intro-container {
+    overflow: hidden;
+    -webkit-animation: fade-in 1s 1s ease-out 1 forwards;
+            animation: fade-in 1s 1s ease-out 1 forwards;
+
+    svg.diesign-logo {
+      -webkit-filter: drop-shadow( 0 1px 2px rgba(0, 0, 0, .5));
+              filter: drop-shadow( 0 1px 2px rgba(0, 0, 0, .5));
+      -webkit-animation: logo-intro-scale 1s 4.8s ease-in-out 1 forwards;
+              animation: logo-intro-scale 1s 4.8s ease-in-out 1 forwards;
+
+      > * {
+        fill: #fff;
+      }
+      .logo-letter-05-e,
+      .logo-letter-06-n,
+      .logo-letter-07-d,
+      .logo-letter-08-e {
+        -webkit-animation: fade-out .7s 2.5s ease-in-out 1 forwards;
+                animation: fade-out .7s 2.5s ease-in-out 1 forwards;
+      }
+      .logo-letter-01-d,
+      .logo-letter-02-i,
+      .logo-letter-03-e,
+      .logo-letter-04-s {
+        transform: translateX(0);
+        -webkit-animation: logo-move-right 1s 3.4s ease-in-out 1 forwards;
+                animation: logo-move-right 1s 3.4s ease-in-out 1 forwards;
+      }
+      .logo-letter-09-s,
+      .logo-letter-10-i,
+      .logo-letter-11-g,
+      .logo-letter-12-n {
+        -webkit-animation: logo-move-left 1s 3.4s ease-in-out 1 forwards;
+                animation: logo-move-left 1s 3.4s ease-in-out 1 forwards;
+      }
+      .logo-letter-04-s {
+        transform: translateX(0);
+        -webkit-animation:logo-move-right 1s 3.4s ease-in-out 1 forwards, logo-color 2s 3.9s ease-out 1 forwards;
+                animation:logo-move-right 1s 3.4s ease-in-out 1 forwards, logo-color 2s 3.9s ease-out 1 forwards;
+      }
+      .logo-letter-09-s {
+        -webkit-animation:logo-move-left 1s 3.4s ease-in-out 1 forwards, logo-color 2s 3.9s ease-out 1 forwards, fade-out 2s 5s ease-out 1 forwards;
+                animation:logo-move-left 1s 3.4s ease-in-out 1 forwards, logo-color 2s 3.9s ease-out 1 forwards, fade-out 2s 5s ease-out 1 forwards;
+      }
+    }
+  }
+}
+
+
+
+.nav-main {
+  // @extend .p-0;
+  padding:0;
+  @include fixed-bottom;
+
+  .nav-tabs {
+    // @extend .p-0, .m-0;
+    @include make-row;
+    padding:0;
+    margin: 0;
+    width:100%;
+    list-style: none;
+    background: var(--primary-dark-70);
+    border: 1px solid var(--primary-light);
+    box-shadow: 0px 0px 4px 0px var(--primary), inset 0px 0px 4px 1px var(--primary);
+
+    .nav-item {
+      @include make-col-clean;
+      @extend h2;
+      justify-content: center;
+      align-items: center;
+      border-right: 1px solid var(--primary-light-80);
+      width: 25%;
+
+      &:last-child {
+        border-right: none;
+      }
+      .nav-link {
+        // @extend .py-2, .py-sm-2, .py-md-3;
+        position: relative;
+        color: var(--primary-light);
+        font-weight: 400;
+        text-align: center;
+        text-decoration: none;
+        border: none;
+        border-radius: 0;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        line-height: 1;
+        background: var(--primary-0);
+        text-shadow: 0 0 2px var(--primary);
+        box-shadow: inset 0px 0px 8px 0px var(--primary);
+        transition: all .3s ease-in-out;
+        padding: .5rem 0;
+        // @include make-col-clean;
+        
+        @include for-size(tablet-portrait-up) {    
+          padding: 1rem;
+          // padding: clamp(.5rem, 1rem, 1rem) 0;
+        }
+        
+        
+        &:hover, &.active {
+          text-shadow: 0 0 5px var(--white);
+          box-shadow: inset 0px 0px 40px 0px var(--primary), 0px 0px 20px 0px var(--primary);
+        }
+        &:hover {
+          background: var(--primary-40) !important;
+          color: var(--white);
+        }
+        &.active {
+          background: transparent;
+          color: #fff;
+          border-color: var(--primary-light);
+        }
+        span {
+          align-self: center;
+          margin: 6px 0 -4px 0;
+          flex-grow: 1;
+          letter-spacing: 1px;
+          font-size: .75rem;
+          text-transform: uppercase;
+
+          @include break-up(sm){margin: 0 0 -4px 0; letter-spacing: 2px;}
+          @include break-up(md){font-size: 1rem;}
+        }
+        i {
+          // @extend  .pb-2, .pb-sm-0;
+          width: 100%;
+          margin: auto;
+          align-self: flex-start;
+          margin-left: 0;
+        
+          @include break-up(xs){font-size:1.5rem;}
+          @include break-up(sm){width: auto;}
+          @include break-up(md){font-size:2.25rem;}
+        }
+      }
+    }
+  }
+}
+
+
+
+@import '@fortawesome/fontawesome-free/css/all.min.css';
+
+
+@font-face {
+  font-display: swap;
+  font-family: 'jaapokki';
+  src: url('../fonts/jaapokkisubtract-regular.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
+
+
+
+/* exo-2-100 - latin */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Exo 2';
+  font-style: normal;
+  font-weight: 100;
+  src: url('../fonts/exo-2-v24-latin-100.woff2') format('woff2');
+}
+/* exo-2-200 - latin */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Exo 2';
+  font-style: normal;
+  font-weight: 200;
+  src: url('../fonts/exo-2-v24-latin-200.woff2') format('woff2');
+}
+/* exo-2-300 - latin */
+@font-face {
+  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+  font-family: 'Exo 2';
+  font-style: normal;
+  font-weight: 300;
+  src: url('../fonts/exo-2-v24-latin-300.woff2') format('woff2');
+}
+
+
+
+
+
+
+
+

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="24px" height="28px" viewBox="0 0 24 28">
+  <defs>
+    <radialGradient gradientUnits="userSpaceOnUse" cx="11.015" cy="14.058" r="7.925" id="gradient-0" gradientTransform="matrix(-1.10124, 0.458774, -1.66969, -4.00793, 41.2452, 56.3724)" spreadMethod="pad">
+      <stop offset="0" style="stop-color: rgb(242, 205, 254);"/>
+      <stop offset="1" style="stop-opacity: 0.95; stop-color: rgb(209, 80, 251);"/>
+    </radialGradient>
+  </defs>
+  <ellipse style="paint-order: fill; fill: rgba(255, 255, 255, 0);" cx="6.088" cy="6.14" rx="3.683" ry="3.683"/>
+  <path d="M 5.642 5.083 L 5.642 27.503 L 12.202 20.933 L 21.492 20.933 L 5.642 5.083 Z" style="fill: url(&quot;#gradient-0&quot;); stroke-linejoin: round; stroke-linecap: round; stroke: rgb(255, 255, 255); vector-effect: non-scaling-stroke; filter: drop-shadow(rgba(0, 0, 0, 0.655) 1px 1px 1px);"/>
+</svg>

@@ -1,6 +1,7 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const path = require('path');
 const fs = require('fs');
+const ejs = require('ejs');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const CompressionPlugin = require('compression-webpack-plugin');
@@ -30,6 +31,33 @@ function getEntrypointFiles(compilation, name, extensionPattern) {
 	const files = entrypoint.getFiles().filter((file) => extensionPattern.test(file));
 
 	return [...new Set(files.map((file) => toPublicAssetPath(file, publicPath)))];
+}
+
+function getHtmlTemplateData(compilation, options, prod) {
+	const preloaderStyles = getEntrypointFiles(compilation, 'preloader', /\.css$/i);
+	const preloaderScripts = getEntrypointFiles(compilation, 'preloader', /\.js$/i);
+	const mainStyles = getEntrypointFiles(compilation, 'main', /\.css$/i);
+	const mainScripts = getEntrypointFiles(compilation, 'main', /\.js$/i)
+		.filter((file) => !preloaderScripts.includes(file));
+
+	return {
+		publicPath: compilation.options.output.publicPath,
+		webpackConfig: compilation.options,
+		isProduction: prod,
+		isDevelopment: !prod,
+		projects,
+		preloaderStyles,
+		preloaderScripts,
+		mainStyles,
+		mainScripts,
+		...options
+	};
+}
+
+function renderHtmlTemplate(templatePath, templateData) {
+	return ejs.render(fs.readFileSync(templatePath, 'utf8'), templateData, {
+		filename: templatePath
+	});
 }
 
 class RemoveDistArtifactsPlugin {
@@ -180,7 +208,6 @@ module.exports = (
 				filter: (file) => file.name?.startsWith('preloader') || file.name?.endsWith('.css')
 			}),
 			new HtmlWebpackPlugin({
-				template: './src/index.ejs',
 				filename: 'index.html',
 				minify: prod
 					? {
@@ -193,28 +220,11 @@ module.exports = (
 				inject: false,
 				chunks: ['main', 'vendors'],
 				chunksSortMode: 'manual',
-				templateParameters: (compilation, assets, assetTags, options) => {
-					const preloaderStyles = getEntrypointFiles(compilation, 'preloader', /\.css$/i);
-					const preloaderScripts = getEntrypointFiles(compilation, 'preloader', /\.js$/i);
-					const mainStyles = getEntrypointFiles(compilation, 'main', /\.css$/i);
-					const mainScripts = getEntrypointFiles(compilation, 'main', /\.js$/i)
-						.filter((file) => !preloaderScripts.includes(file));
-
-					return {
-						publicPath: compilation.options.output.publicPath,
-						webpackConfig: compilation.options,
-						isProduction: prod,
-						isDevelopment: !prod,
-						projects,
-						preloaderStyles,
-						preloaderScripts,
-						mainStyles,
-						mainScripts,
-						...options
-					};
+				templateContent: ({ compilation, htmlWebpackPlugin }) => {
+					const templatePath = path.resolve(__dirname, 'src/index.ejs');
+					const templateData = getHtmlTemplateData(compilation, htmlWebpackPlugin.options, prod);
+					return renderHtmlTemplate(templatePath, templateData);
 				}
-
-
 			}),
 
 			new MiniCssExtractPlugin({
@@ -304,7 +314,10 @@ module.exports = (
 			client: {
 				overlay: {
 					errors: true,
-					warnings: false
+					warnings: false,
+					runtimeErrors: (error) => {
+						return !/ResizeObserver loop completed with undelivered notifications/i.test(error?.message || String(error));
+					}
 				}
 			},
 			devMiddleware: {

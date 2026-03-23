@@ -1,0 +1,231 @@
+// viewport-render.js
+
+// function setAppHeight() {
+//   const doc = document.documentElement;
+//   doc.style.setProperty('--app-height', `${window.innerHeight}px`);
+// }
+
+// function updateHeight() {
+//   return new Promise(resolve => {
+//     requestAnimationFrame(() => {
+//       setAppHeight();
+//       resolve();
+//     });
+//   });
+// }
+
+// function simulateTap() {
+//   const touchEvent = new TouchEvent('touchstart', {
+//     bubbles: true,
+//     cancelable: true,
+//     view: window
+//   });
+//   document.body.dispatchEvent(touchEvent);
+// }
+
+// async function recalculateHeight() {
+//   await updateHeight();
+//   simulateTap();
+// }
+
+// function setupPeriodicRecalculation() {
+//   setInterval(recalculateHeight, 500); // Recalculate every 500ms
+// }
+
+// async function init() {
+//   await recalculateHeight();
+
+//   window.addEventListener('resize', recalculateHeight);
+//   window.addEventListener('orientationchange', () => {
+//     setTimeout(recalculateHeight, 100);
+//   });
+
+//   if (document.readyState === 'complete') {
+//     await recalculateHeight();
+//   } else {
+//     window.addEventListener('load', recalculateHeight);
+//   }
+
+//   // Setup periodic recalculation
+//   setupPeriodicRecalculation();
+
+//   // Recalculate on visibility change
+//   document.addEventListener('visibilitychange', () => {
+//     if (!document.hidden) {
+//       recalculateHeight();
+//     }
+//   });
+
+//   // Recalculate on any touch interaction
+//   document.addEventListener('touchstart', recalculateHeight, { passive: true });
+
+//   // MutationObserver to check for DOM changes
+//   const observer = new MutationObserver(recalculateHeight);
+//   observer.observe(document.body, { childList: true, subtree: true });
+// }
+
+// // Initialize everything
+// init();
+
+// // Fallback for stubborn mobile browsers
+// document.addEventListener('touchmove', recalculateHeight, { passive: true });
+// document.addEventListener('scroll', recalculateHeight, { passive: true });
+
+
+
+
+
+
+
+
+
+
+
+
+// ADVANCED VERSION: ///////////
+
+
+
+// viewport-render.js ////////////////////////////////
+
+// function setAppHeight() {
+//   const height = `${window.innerHeight}px`;
+//   const contentContainer = document.querySelector('.content-container');
+//   const html = document.documentElement;
+//   const body = document.body;
+  
+//   html.style.setProperty('--app-height', height);
+
+//   if (html) {
+//     html.style.height = height;
+//   }
+
+//   if (body) {
+//     body.style.height = height;
+//   }
+//   if (contentContainer) {
+//     contentContainer.style.height = height;
+//   }
+// }
+
+
+// function updateHeight() {
+//   return new Promise(resolve => {
+//     requestAnimationFrame(() => {
+//       setAppHeight();
+//       resolve();
+//     });
+//   });
+// }
+
+// function simulateTap(selectors = ['html', 'body', '.content-container']) {
+//   selectors.forEach(selector => {
+//     const elements = document.querySelectorAll(selector);
+//     elements.forEach(element => {
+//       const clickEvent = new MouseEvent('click', {
+//         bubbles: true,
+//         cancelable: true,
+//         view: window
+//       });
+//       element.dispatchEvent(clickEvent);
+//     });
+//   });
+// }
+
+// async function recalculateHeight() {
+//   await updateHeight();
+//   simulateTap();
+// }
+
+// function debounce(func, wait) {
+//   let timeout;
+//   return function(...args) {
+//     clearTimeout(timeout);
+//     timeout = setTimeout(() => func.apply(this, args), wait);
+//   };
+// }
+
+// function setupPeriodicRecalculation() {
+//   setInterval(recalculateHeight, 500); // Recalculate every 500ms
+// }
+
+// async function init() {
+//   await recalculateHeight();
+
+//   const debouncedRecalculateHeight = debounce(recalculateHeight, 100);
+
+//   window.addEventListener('resize', debouncedRecalculateHeight);
+//   window.addEventListener('orientationchange', () => {
+//     setTimeout(recalculateHeight, 100);
+//   });
+
+//   if (document.readyState === 'complete') {
+//     await recalculateHeight();
+//   } else {
+//     window.addEventListener('load', recalculateHeight);
+//   }
+
+//   // Setup periodic recalculation
+//   setupPeriodicRecalculation();
+
+//   // Recalculate on visibility change
+//   document.addEventListener('visibilitychange', () => {
+//     if (!document.hidden) {
+//       recalculateHeight();
+//     }
+//   });
+
+//   // Recalculate on any touch interaction
+//   document.addEventListener('touchstart', recalculateHeight, { passive: true });
+
+//   // MutationObserver to check for DOM changes
+//   const observer = new MutationObserver(recalculateHeight);
+//   observer.observe(document.body, { childList: true, subtree: true });
+//   // Recalculate on mobile keyboard close
+  
+//   document.querySelectorAll('input, textarea').forEach(input => {
+//     input.addEventListener('focusout', recalculateHeight);
+//   });
+// }
+
+// // Initialize everything
+// init();
+
+// // Fallback for stubborn mobile browsers
+// document.addEventListener('touchmove', recalculateHeight, { passive: true });
+// document.addEventListener('scroll', recalculateHeight, { passive: true });
+
+
+// END viewport-render.js ////////////////////////////////
+
+
+// import { gsap } from 'gsap';
+// import 'vanilla-ripplejs';
+
+
+// document.addEventListener('DOMContentLoaded', () => {
+//   const preloader = document.querySelector('.preloader');
+//   if (!preloader) return;
+  
+//   const removePreloader = () => {
+//     preloader.classList.add('preloader--fade');
+//     preloader.addEventListener('transitionend', () => {
+//       preloader.remove();
+//     }, { once: true });
+
+//     // Fallback removal in case transitionend never fires
+//     setTimeout(() => {
+//       if (document.body.contains(preloader)) {
+//         preloader.remove();
+//       }
+//     }, 1500);
+//   };
+
+//   if (document.readyState === 'complete') {
+//     requestAnimationFrame(removePreloader);
+//   } else {
+//     window.addEventListener('load', () => {
+//       requestAnimationFrame(removePreloader);
+//     });
+//   }
+// });

@@ -1,0 +1,187 @@
+
+
+
+// Define `.bottom` width dynamically
+$bottom-width: var(--bottom-width, 2048);
+
+// Cloud size configurations
+$cloud-sizes: (
+  bg-cloud1: (width: 750, height: 200),
+  bg-cloud2: (width: 800, height: 220),
+  bg-cloud3: (width: 850, height: 240)
+);
+
+// Cloud filters configuration
+$cloud-filters: (
+  base: "-filter-base",
+  back: "-filter-back",
+  mid: "-filter-mid",
+  front: "-filter-front"
+);
+
+// Layer-specific colors per cloud
+$cloud-layer-colors: (
+  bg-cloud1: (
+    base: rgba(255, 255, 255, 0.9),
+    back: rgba(215, 215, 215, 0.8),
+    mid: rgba(180, 180, 220, 0.7),
+    front: rgba(160, 160, 200, 0.6)
+  ),
+  bg-cloud2: (
+    base: rgba(245, 245, 255, 0.85),
+    back: rgba(200, 200, 255, 0.75),
+    mid: rgba(170, 170, 230, 0.65),
+    front: rgba(150, 150, 210, 0.55)
+  ),
+  bg-cloud3: (
+    base: rgba(235, 235, 255, 0.8),
+    back: rgba(190, 190, 240, 0.7),
+    mid: rgba(160, 160, 220, 0.6),
+    front: rgba(140, 140, 200, 0.5)
+  )
+);
+
+// Dynamic animation configurations per cloud
+$cloud-animation-config: (
+  bg-cloud1: (
+    // properties: {'transform', 'opacity'},
+    duration: 30,
+    delay: 0,
+    easing: ease-in-out,
+    direction: alternate,
+    repeat: infinite
+  ),
+  bg-cloud2: (
+    // properties: {'transform', 'opacity'},
+    duration: 40,
+    delay: 5,
+    easing: linear,
+    direction: alternate-reverse,
+    repeat: infinite
+  ),
+  bg-cloud3: (
+    // properties: {'transform', 'opacity'},
+    duration: 50,
+    delay: 2,
+    easing: ease-in,
+    direction: normal,
+    repeat: infinite
+  )
+);
+
+// Keyframes for cloud movement animation
+@keyframes cloud-move {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(10vw);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(-5vw);
+    opacity: 1;
+  }
+}
+
+// Function to calculate dynamic max-width
+@function max-width-percent($cloud-width) {
+  @return calc(#{$cloud-width} / #{$bottom-width} * 100%);
+}
+
+// General styles
+.bg-clouds {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  inset: auto 0 0 auto;
+  width: 100vw;
+  height: 100vh;
+  aspect-ratio: 2048/1365;
+  object-fit: cover;
+
+  .bottom {
+    position: relative;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 2048/855;
+    container-type: inline-size;
+    container-name: bottom-container;
+
+    // Capture `.bottom` width dynamically
+    @container bottom-container (min-width: 0px) {
+      --bottom-width: 100cqw; // Dynamic width
+    }
+
+    @each $cloud, $size in $cloud-sizes {
+      $width: map-get($size, width);
+      $height: map-get($size, height);
+      $max-width: max-width-percent($width);
+      $animation-props: map-get(map-get($cloud-animation-config, $cloud), properties);
+      $animation-duration: map-get(map-get($cloud-animation-config, $cloud), duration);
+      $animation-delay: map-get(map-get($cloud-animation-config, $cloud), delay);
+      $animation-easing: map-get(map-get($cloud-animation-config, $cloud), easing);
+      $animation-direction: map-get(map-get($cloud-animation-config, $cloud), direction);
+      $animation-repeat: map-get(map-get($cloud-animation-config, $cloud), repeat);
+
+      ##{$cloud} {
+        container-type: inline-size;
+        container-name: #{$cloud};
+        position: absolute;
+        height: auto;
+        width: auto;
+        aspect-ratio: #{$width} / #{$height};
+        max-width: $max-width;
+        will-change: #{$animation-props};
+        inset: 0;
+        z-index: 1;
+
+        animation: cloud-move $animation-duration $animation-easing $animation-delay $animation-direction $animation-repeat;
+
+        // div {
+        //   position: absolute;
+        //   width: 100%;
+        //   aspect-ratio: 600/100;
+        //   max-width: 80%;
+        //   border-radius: 75% 75% 25% 25%;
+        //   opacity: 1;
+        // }
+
+        @each $layer, $filter-suffix in $cloud-filters {
+          $layer-color: map-get(map-get($cloud-layer-colors, $cloud), $layer);
+
+          .#{$cloud}-#{$layer} {
+            filter: url(##{$cloud}#{$filter-suffix});
+            background: $layer-color;
+
+            @container #{$cloud} (min-width: 0px) {
+              @if $layer == base {
+                @include cloud-inset(90, -100, $width);
+                @include cloud-box-shadow(225, 170, 19, 40, $layer-color, $width);
+              } @else if $layer == back {
+                max-width: 66.666%;
+                aspect-ratio: 500 / 30;
+                @include cloud-inset(90, -100, $width);
+                @include cloud-box-shadow(200, 200, 10, 40, $layer-color, $width);
+              } @else if $layer == mid {
+                max-width: 77.33%;
+                aspect-ratio: 580 / 35;
+                @include cloud-inset(80, -100, $width);
+                @include cloud-box-shadow(210, 250, 28, 30, $layer-color, $width);
+              } @else if $layer == front {
+                max-width: 60%;
+                aspect-ratio: 450 / 40;
+                @include cloud-inset(70, -20, $width);
+                @include cloud-box-shadow(210, 272, 30, 0, $layer-color, $width);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+

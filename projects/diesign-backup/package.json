@@ -1,0 +1,35 @@
+{
+    "name": "diesign",
+    "version": "1.0.0",
+    "description": "",
+    "scripts": {
+        "start": "webpack serve --config webpack.config.js --mode development",
+        "generate": "node generate-responsive-imports.js",
+        "build": "webpack --config webpack.config.js --mode production"
+    },
+    "devDependencies": {
+        "clean-webpack-plugin": "^4.0.0",
+        "compression-webpack-plugin": "^11.1.0",
+        "copy-webpack-plugin": "^11.0.0",
+        "css-loader": "^6.8.1",
+        "css-minimizer-webpack-plugin": "^7.0.2",
+        "html-loader": "^5.1.0",
+        "html-webpack-plugin": "^5.5.0",
+        "mini-css-extract-plugin": "^2.7.6",
+        "parallax-js": "^3.1.0",
+        "raw-loader": "^4.0.2",
+        "responsive-loader": "^3.1.2",
+        "sass": "^1.86.0",
+        "sass-loader": "^16.0.5",
+        "sharp": "^0.34.2",
+        "style-loader": "^3.3.1",
+        "terser-webpack-plugin": "^5.3.11",
+        "webpack": "^5.88.2",
+        "webpack-cli": "^5.1.4",
+        "webpack-dev-server": "^5.2.2",
+        "webpack-manifest-plugin": "^5.0.0"
+    },
+    "dependencies": {
+        "modern-normalize": "^3.0.1"
+    }
+}

@@ -1,0 +1,45 @@
+<article class="panel-route-view panel-route-view--contact" data-route-view="contact">
+  <section id="contact-tab" class="tab-pane content" role="tabpanel" aria-labelledby="contact-tab">
+    <div class="content-wrapper">
+      <div class="contact-options">
+        <a href="tel:0633835576" class="contact-option">
+          <div class="ripple wrapper" data-effect="ripple"></div>
+          <span class="icon sattelite"></span>
+          <span>Bel 06 338 355 76</span>
+        </a>
+        <a href="/curriculum-vitae-dylan-van-diesen.pdf" target="_blank" class="contact-option">
+          <div class="ripple wrapper" data-effect="ripple"></div>
+          <span class="icon astronaut"></span>
+          <span>Curricu&shy;lum Vitae</span>
+        </a>
+        <a href="https://www.linkedin.com/in/dylanvandiesen/" target="_blank" rel="noopener" class="contact-option">
+          <div class="ripple wrapper" data-effect="ripple"></div>
+          <span class="icon linkedin"></span>
+          <span>Mijn Linkedin</span>
+        </a>
+      </div>
+      <form name="contact-form" action="https://formsubmit.co/dylanvandiesen@gmail.com" method="POST">
+        <div class="fieldset">
+          <h2><span>Kom in contact</span> <span class="icon spock"></span></h2>
+          <div class="input-container">
+            <label for="contact-name">Naam</label>
+            <input type="text" name="name" class="form-control" id="contact-name" placeholder="Naam" autocomplete="on" required="true">
+          </div>
+          <div class="input-container">
+            <label for="contact-email">E-mail</label>
+            <input type="email" name="email" class="form-control" id="contact-email" placeholder="E-mailadres" autocomplete="on" required="true">
+          </div>
+          <div class="input-container">
+            <label for="contact-telephone">Telefoon</label>
+            <input type="tel" name="tel" class="form-control" id="contact-telephone" placeholder="Telefoonnummer" autocomplete="on" required="true">
+          </div>
+          <div class="input-container">
+            <label for="contact-message">Bericht</label>
+            <textarea name="message" class="form-control" id="contact-message" rows="1" max-rows="6" placeholder="Bericht schrijven" required="true"></textarea>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary"><div class="ripple wrapper" data-effect="ripple"></div>Versturen <i class="fas fa-paper-plane"></i></button>
+      </form>
+    </div>
+  </section>
+</article>

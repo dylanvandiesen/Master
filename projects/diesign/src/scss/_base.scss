@@ -68,7 +68,8 @@ body .bg-container {
 
 .content-container {
   container-name: content; container-type: inline-size; 
-  position: relative; overflow: hidden; width: 100%; max-width: 100%; max-width: 100dvw; height: var(--app-height);
+  display: flex;
+  position: relative; overflow: hidden; width: 100%; max-width: 100%; max-width: 100dvw; height: var(--app-height); min-height: var(--app-height);
   flex-direction: column; justify-content: space-between; align-items: center;
   --panel-shell-radius: 1rem;
   --panel-resize-duration: 760ms;
@@ -100,6 +101,7 @@ body .bg-container {
     display: flex;
     justify-content: center;
     text-decoration: none;
+    pointer-events: none;
   }
 
 	.logo-container { z-index:1;
@@ -109,9 +111,11 @@ body .bg-container {
     justify-content: center;
     flex: 0 0 auto; 
     will-change: opacity;
-    transition: opacity 1s ease-in-out;
+    transition: opacity 560ms ease-out, visibility 0s linear 560ms;
     opacity:0;
+    visibility: hidden;
     pointer-events: none;
+    z-index: 30;
 	}
 
   .signal-overlay {
@@ -131,14 +135,16 @@ body .bg-container {
     mix-blend-mode: screen;
     pointer-events: none;
   }
-  &:has(nav input#nav-home:is(:checked)) .logo-container {
-    opacity: 0;
-    pointer-events: none;
-  }
-  &:has(nav input#nav-home:not(:checked)) .logo-container {
+  &[data-header-brand="visible"] .logo-container {
     opacity: 1;
+    visibility: visible;
     pointer-events: auto;
     z-index: 30;
+    transition-delay: 0s;
+  }
+
+  &[data-header-brand="visible"] .logo-link {
+    pointer-events: auto;
   }
 
   // SITE ICONS \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -247,6 +253,7 @@ body .bg-container {
   .tab-panes { 
     $pane-offset: 11px;
     display: flex;
+    flex: 1 1 auto;
     overflow: hidden;
     flex-flow: column nowrap; 
     position: relative;
@@ -457,8 +464,11 @@ body .bg-container {
     }
 
     .panel-swap.is-transitioning .panel-scroll {
-      opacity: 0;
       pointer-events: none;
+    }
+
+    &[data-route-transition-mode="home"] .panel-swap.is-transitioning .panel-scroll {
+      opacity: 0;
     }
 
     .panel-body {
@@ -482,6 +492,21 @@ body .bg-container {
     .panel-content.is-current {
       min-height: 100%;
       opacity: 1;
+    }
+
+    .panel-content.is-live-hidden {
+      opacity: 0 !important;
+    }
+
+    .panel-content.is-handoff-reveal {
+      transition: none !important;
+      opacity: 1 !important;
+    }
+
+    &[data-route-transition-mode="panel"].is-route-transition-running {
+      .panel-body > .panel-content.is-current {
+        opacity: 0;
+      }
     }
 
     .panel-content.is-current[data-freeze-size="true"] {
@@ -533,11 +558,9 @@ body .bg-container {
 
     .panel-live-viewport,
     .panel-freeze-viewport {
-      --panel-layer-fit-scale: 1;
-      --panel-layer-scale: 1;
       --panel-freeze-shift-x: 0px;
       --panel-freeze-shift-y: 0px;
-      transform: translate(var(--panel-freeze-shift-x), var(--panel-freeze-shift-y)) scale(var(--panel-layer-scale));
+      transform: translate(var(--panel-freeze-shift-x), var(--panel-freeze-shift-y));
       transform-origin: 50% 0%;
       will-change: transform;
       transition: transform var(--panel-resize-duration) var(--panel-resize-easing);
@@ -548,28 +571,25 @@ body .bg-container {
       min-height: 100%;
     }
 
-    .panel-content.is-entering .panel-freeze-viewport {
-      --panel-layer-scale: .982;
-    }
-
-    .panel-content.is-entering.is-visible .panel-freeze-viewport {
-      --panel-layer-scale: 1;
-    }
-
-    .panel-content.is-exiting:not(.is-visible) .panel-freeze-viewport {
-      --panel-layer-scale: 1.018;
-    }
-
     .panel-content > .panel-live-viewport > .panel-live-track > .panel-route-view,
     .panel-freeze-track > .panel-route-view {
       position: relative;
       top: var(--panel-layer-scroll-top, 0px);
       width: 100%;
+      min-height: 100%;
+      height: 100%;
     }
 
     .panel-body > .panel-content > .panel-live-viewport > .panel-live-track > .panel-route-view {
       top: 0;
       min-height: 100%;
+      height: 100%;
+    }
+
+    .panel-content > .panel-live-viewport > .panel-live-track > .panel-route-view > .tab-pane,
+    .panel-freeze-track > .panel-route-view > .tab-pane {
+      min-height: 100%;
+      height: 100%;
     }
 
     .panel-content[data-freeze-size="true"] {
@@ -787,7 +807,7 @@ body .bg-container {
   }
 
   &[data-route="work"] {
-    --panel-shell-inline-size: 82rem;
+    --panel-shell-inline-size: 1000px;
   }
 
   &[data-route="about"] {
@@ -833,6 +853,9 @@ body .bg-container {
     justify-content: inherit;
     visibility: visible;
     z-index: 1;
+    transition:
+      transform 560ms cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 420ms ease-out;
   }
 
   &[data-route="home"] .tab-panes #home,

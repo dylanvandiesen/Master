@@ -1,0 +1,17 @@
+C:\Users\SKIKK\Documents\websites\Playground\projects\diesign\node_modules\webpack-dev-server\lib\Server.js:2638
+        throw error;
+        ^
+
+Error: listen EADDRINUSE: address already in use 192.168.18.10:9000
+    at Server.setupListenHandle [as _listen2] (node:net:2008:16)
+    at listenInCluster (node:net:2065:12)
+    at node:net:2274:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '192.168.18.10',
+  port: 9000
+}
+
+Node.js v25.8.0

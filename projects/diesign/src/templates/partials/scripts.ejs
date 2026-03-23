@@ -1,0 +1,6 @@
+<% if (isDevelopment) { %>
+  <script src="/debug/resizeObserverMonkeyPatch.js"></script>
+<% } %>
+<% mainScripts.forEach(function(src) { %>
+  <script defer src="<%= src %>"></script>
+<% }); %>

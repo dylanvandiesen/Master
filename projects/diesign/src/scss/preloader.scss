@@ -156,9 +156,8 @@ body .content-container {
 // @keyframes         fade-in-preloader    {0% {display: flex !important; visibility: visible; opacity:0;} 100% {opacity:1;}}
 // @-webkit-keyframes fade-in-preloader-b  {0% {display: block !important; visibility: visible; opacity:0;} 100% {opacity:1;}}
 // @keyframes         fade-in-preloader-b  {0% {display: block !important; visibility: visible; opacity:0;} 100% {opacity:1;}}
-   .nav-link .logo-container{
-      opacity: 0;
-    }
     .logo-container #logo-svg {
         max-width: 250px;
+        // opacity: 0;
+        // will-change: opacity;
     }

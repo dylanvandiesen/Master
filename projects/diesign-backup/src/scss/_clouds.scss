@@ -1,0 +1,291 @@
+@use "sass:map";
+// @use "sass:meta";
+// @use 'mixins' as *;
+// @use 'variables' as *;
+
+
+
+
+.cloudsyes2 {
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* ===============================
+   Configuration: Variables & Mixins
+   =============================== */
+
+  :root {
+    --bottom-width: 2048px;
+    --aspect-ratio-bottom: 2048 / 455;
+  }
+  
+  $bottom-width: if(var(--bottom-width) != null, var(--bottom-width), 2048px);
+  $aspect-ratio-bottom: var(--aspect-ratio-bottom, 2048 / 455);
+  
+  // Cloud size configurations
+  $cloud-sizes: (
+    bg-cloud1: (width: 750, height: 200)  
+  );
+  
+  // Cloud filters configuration
+  $cloud-filters: (
+    base: "-filter-base",
+    back: "-filter-back",
+    mid: "-filter-mid",
+    front: "-filter-front"
+  );
+  
+  // Cloud colors
+  $cloud-layer-colors: (
+    bg-cloud1: (
+      base: rgba(255, 255, 255, 0.9),
+      back: rgba(215, 215, 215, 0.8),
+      mid: rgba(180, 180, 220, 0.7),
+      front: rgba(160, 160, 200, 0.6)
+    )
+  );
+   
+  // Cloud animation settings
+  $cloud-animation-config: (
+    bg-cloud1: (duration: 30s, delay: 0s, easing: ease-in-out, direction: alternate, repeat: infinite)
+  );
+  
+  // Mixin for cloud animation
+  @mixin cloud-animation($name) {
+    $config: map.get($cloud-animation-config, $name);
+    @if $config {
+      -webkit-animation: cloud-move 
+        map.get($config, duration) 
+        map.get($config, easing) 
+        map.get($config, delay) 
+        map.get($config, direction) 
+        map.get($config, repeat);
+              animation: cloud-move 
+        map.get($config, duration) 
+        map.get($config, easing) 
+        map.get($config, delay) 
+        map.get($config, direction) 
+        map.get($config, repeat);
+    } @else {
+      @warn "Animation configuration for #{$name} not found.";
+    }
+  }
+  
+  // Mixin for dynamic cloud styling
+  @mixin cloud-style($name, $size, $colors) {
+    @if not $size or not $colors {
+      @warn "Missing size or color configuration for #{$name}.";
+      // @return;
+    }
+    
+    $width: map.get($size, width);
+    $height: map.get($size, height);
+  
+    width: auto;
+    aspect-ratio: #{$width} / #{$height};
+    max-width: calc(#{$width} / #{$bottom-width} * 100%);
+    @include cloud-animation($name);
+  
+    @each $layer, $color in $colors {
+      .#{$name}-#{$layer} {
+        background: $color;
+        -webkit-filter: url("#"+#{$name}#{map.get($cloud-filters, $layer)});
+                filter: url("#"+#{$name}#{map.get($cloud-filters, $layer)});
+      }
+    }
+  }
+   
+  /* ===============================
+     Main Styles
+     =============================== */
+  
+  .bg-clouds {
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    inset: auto 0 0 auto;
+    width: 100vw;
+    height: 100vh;
+  
+    .bottom {
+      position: relative;
+      width: 100%;
+      height: auto;
+      aspect-ratio: #{$aspect-ratio-bottom};
+  
+      @each $cloud, $size in $cloud-sizes {
+        $colors: map.get($cloud-layer-colors, $cloud);
+        
+        ##{$cloud} {
+          position: absolute;
+          @include cloud-style($cloud, $size, $colors);
+        }
+      }
+    }
+  }
+  
+  /* ===============================
+     Animations
+     =============================== */
+  
+  @-webkit-keyframes cloud-move {
+    0% { transform: translateX(0); opacity: 1; }
+    50% { transform: translateX(10vw); opacity: 0.8; }
+    100% { transform: translateX(-5vw); opacity: 1; }
+  }
+  
+  @keyframes cloud-move {
+    0% { transform: translateX(0); opacity: 1; }
+    50% { transform: translateX(10vw); opacity: 0.8; }
+    100% { transform: translateX(-5vw); opacity: 1; }
+  }
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+svg.clouds1 {
+  -webkit-filter: url(#a);
+          filter: url(#a);
+  height: 102%;
+  width:104%;
+  position: absolute;
+  inset:-1% -2%;
+
+
+  g {  
+    // fill: url(#cloud-gradient);
+    // transform: scale(5.5) translate(-300px, 0);
+    -webkit-animation: clouds-move1 200s linear infinite both;
+            animation: clouds-move1 200s linear infinite both;
+    will-change: transform, opacity;
+    // filter: drop-shadow(0 0 10px rgba(255, 255, 255,.5));
+  }
+}
+
+@-webkit-keyframes clouds-move1 {
+  0% {
+    transform: scale(5) translate(-300px, 2%);
+    opacity: 0;
+  }
+  25% {
+    transform: scale(6) translate(-150px, 6%);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(6.5) translate(-100px, 8%);
+    opacity: 0.6;
+  }
+  75% {
+    transform: scale(7) translate(100px, 14%);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(7.5) translate(325px, 20%);
+    opacity: 0;
+  }
+}
+
+@keyframes clouds-move1 {
+  0% {
+    transform: scale(5) translate(-300px, 2%);
+    opacity: 0;
+  }
+  25% {
+    transform: scale(6) translate(-150px, 6%);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(6.5) translate(-100px, 8%);
+    opacity: 0.6;
+  }
+  75% {
+    transform: scale(7) translate(100px, 14%);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(7.5) translate(325px, 20%);
+    opacity: 0;
+  }
+}
+svg.clouds2 {
+  // filter: url(#clouds2-filter);
+  height: 102%;
+  width: 104%;
+  position: absolute;
+  inset: -1% -2%;
+  
+
+  g {
+    // animation: clouds-move2 60s linear infinite both;
+    will-change: transform, opacity;
+    // transform: scale(7.5) translate(0, 8%); 
+    transform: scale(15, 8) translate(-55PX, 8%);
+  }
+}
+
+@-webkit-keyframes clouds-move2 {
+  0% {
+    transform: scale(5.5) translate(-300px, 0);
+    opacity: 0;
+  }
+  25% {
+    transform: scale(6) translate(-150px, 4%);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(6.5) translate(-100px, 8%);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(7) translate(100px, 14%);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(7.5) translate(350px, 20%);
+    opacity: 0;
+  }
+}
+
+@keyframes clouds-move2 {
+  0% {
+    transform: scale(5.5) translate(-300px, 0);
+    opacity: 0;
+  }
+  25% {
+    transform: scale(6) translate(-150px, 4%);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(6.5) translate(-100px, 8%);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(7) translate(100px, 14%);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(7.5) translate(350px, 20%);
+    opacity: 0;
+  }
+}
+

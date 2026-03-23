@@ -1,0 +1,43 @@
+@use '../mixins' as *;
+
+.logo-container {
+  padding-top: var(--spacing-lg);
+
+  @include container-query(sm) {
+    padding-top: var(--spacing-lg);
+  }
+
+  @include container-query(md) {
+    padding-top: var(--spacing-xl);
+  }
+
+  @media all and (max-height: 375px) {
+    padding-top: var(--spacing-ms) !important;
+  }
+
+  #logo-svg {
+    margin: 0 auto auto auto;
+    width: 100%;
+    max-width: 160px !important;
+    height: auto;
+    fill: var(--white);
+
+    @include container-query(sm) {
+      max-width: 200px;
+    }
+    @include container-query(md) {
+      max-width: 250px !important;
+    }
+    @media screen and (max-height: 481px) and (max-height: 586px) {
+      max-width: 200px !important;
+    }
+
+    @media screen and (min-height: 376px) and (max-height: 480px) {
+      max-width: 160px !important;
+    }
+
+    @media all and (max-height: 375px) {
+      max-width: 100px !important;
+    }
+  }
+}

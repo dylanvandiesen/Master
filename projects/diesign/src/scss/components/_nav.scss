@@ -1,0 +1,259 @@
+@use '../mixins' as *;
+
+.nav-main {
+  .nav-tabs {
+    border-bottom: none;
+    background: linear-gradient(0deg, var(--primary-dark) var(--spacing-md), var(--primary-darker-0) 100%);
+
+    .nav-item {
+      @include make-col-clean;
+      @extend .flicker-fix;
+      @extend .heading-base;
+      position: relative;
+      font-size: var(--h2-font-size-xs);
+      letter-spacing: .5px;
+      font-weight: 400;
+      justify-content: center;
+      align-items: center;
+      width: 25%;
+      background: var(--primary-darker-90);
+      background: linear-gradient(0deg, var(--primary-darker) 0%, var(--primary-dark-90) 100%);
+      box-shadow: 0 0 10px 0 var(--primary);
+
+      input { display: none; }
+
+      @include container-query(md) {
+        font-size: var(--h2-font-size-md);
+      }
+
+      @include container-query(lg) {
+        font-size: var(--h2-font-size-lg);
+        letter-spacing: 1px;
+      }
+
+      @include container-query(xl) {
+        font-size: var(--h2-font-size-xl);
+        letter-spacing: 1px;
+      }
+
+      &:first-child {
+        border-radius: 16px 0 0 16px / 16px 0 0 16px;
+
+        &::after {
+          border-left: 1px solid var(--primary-light);
+        }
+
+        .nav-link,
+        &::before,
+        &::after {
+          border-radius: 14px 0 0 14px / 14px 0 0 14px;
+        }
+      }
+
+      &:last-child {
+        border-radius: 0 16px 16px 0 / 0 16px 16px 0;
+
+        .nav-link,
+        &::before,
+        &::after {
+          border-radius: 0 14px 14px 0 / 0 14px 14px 0;
+        }
+
+        &::after {
+          border-right: 1px solid var(--primary-light);
+        }
+      }
+
+      &::before {
+        z-index: 0;
+        content: '';
+        inset: 0;
+        position: absolute;
+        @extend .flicker-fix;
+        pointer-events: none;
+        will-change: opacity;
+        transition: opacity;
+        box-shadow: 0 0 20px 1px var(--primary), inset 0 0 20px 0 var(--primary);
+        border-right: none;
+        opacity: 0;
+      }
+
+      &::after {
+        z-index: 10;
+        content: '';
+        inset: 0;
+        position: absolute;
+        pointer-events: none;
+        border-block: 1px solid var(--primary-light);
+        border-inline: .5px solid var(--primary-light);
+      }
+
+      &:has(.nav-link:hover)::before,
+      &:has(input:checked)::before {
+        opacity: 1;
+      }
+
+      .nav-link {
+        width: 100%;
+        position: relative;
+        font-weight: 400;
+        text-align: center;
+        text-decoration: none;
+        border: none;
+        display: flex;
+        flex-flow: column nowrap;
+        justify-content: space-between;
+        align-items: center;
+        line-height: 1;
+        height: 100%;
+        outline: none;
+        background-color: var(--primary-0);
+        @extend .flicker-fix;
+        box-shadow: inset 0 0 15px 0 var(--primary);
+        padding: var(--spacing-ms);
+        contain: content;
+
+        @include container-query(sm) { flex-direction: row; }
+        @include container-query(md) { padding: var(--spacing-md); }
+
+        &::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background-color: var(--primary);
+          will-change: opacity;
+          transition: opacity;
+          opacity: 0;
+        }
+
+        span {
+          pointer-events: none;
+          display: flex;
+          flex-flow: column nowrap;
+          align-self: center;
+          padding-top: 4px;
+          flex-grow: 1;
+          letter-spacing: .5px;
+          font-size: .75rem;
+          text-transform: uppercase;
+          color: var(--white);
+          filter: drop-shadow(0 0 0 var(--white));
+          transform: scale(1);
+          will-change: transform;
+          transition: transform;
+          @extend .flicker-fix;
+
+          @include container-query(sm) { letter-spacing: 2px; }
+          @include container-query(md) { font-size: 1rem; }
+
+          &::before {
+            content: attr(title);
+            position: absolute;
+            inset: 4px 0 -4px;
+            font-weight: 100;
+            will-change: opacity, transform;
+            transition: opacity, transform;
+            text-shadow: 0 0 5px var(--white);
+            z-index: -1;
+            opacity: 0;
+          }
+        }
+
+        .icon {
+          position: relative;
+          will-change: transform;
+          transition: transform;
+          transform: perspective(12dvh) rotateY(0deg) scale(1);
+
+          &::before {
+            content: '';
+            position: absolute;
+            inset: 0 auto;
+            width: inherit;
+            height: inherit;
+            filter: drop-shadow(0 0 5px var(--white)) brightness(3.7);
+            will-change: opacity;
+            transition: opacity;
+            opacity: 0;
+          }
+
+          &.globe::before { background: url(../images/icons/earth-europe.svg); }
+          &.rocket::before { background: url(../images/icons/rocket.svg); }
+          &.astronaut::before { background: url(../images/icons/user-astronaut.svg); }
+          &.spock::before { background: url(../images/icons/hand-spock.svg); }
+
+          &::before {
+            background-repeat: no-repeat !important;
+            background-size: contain !important;
+            background-position: center center !important;
+          }
+        }
+
+        &:hover,
+        &:focus,
+        &:active {
+          &::before {
+            opacity: .5;
+          }
+
+          span {
+            transform: scale(1.05);
+
+            &::before {
+              opacity: 1;
+            }
+          }
+
+          .icon {
+            transform: perspective(12dvh) rotateY(360deg) scale(1.1);
+
+            &::before {
+              opacity: 1;
+            }
+          }
+        }
+
+        &:focus-within::before {
+          opacity: .7;
+        }
+      }
+
+      .nav-link::before,
+      &::before,
+      .nav-link span,
+      .nav-link span::before,
+      .nav-link .icon,
+      .nav-link .icon::before {
+        transition-duration: 1s;
+        transition-timing-function: cubic-bezier(0.785, 0.135, 0.15, 0.86);
+      }
+
+      input:checked + .nav-link {
+        &::before {
+          opacity: .5;
+        }
+
+        &:hover::before {
+          opacity: .7;
+        }
+
+        span {
+          color: var(--white);
+          transform: scale(1.05);
+
+          &::before {
+            opacity: 1;
+          }
+        }
+
+        .icon {
+          transform: perspective(12dvh) rotateY(360deg) scale(1.1);
+
+          &::before {
+            opacity: 1;
+          }
+        }
+      }
+    }
+  }
+}

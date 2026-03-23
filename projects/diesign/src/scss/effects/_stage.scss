@@ -1,0 +1,160 @@
+@use '../mixins' as *;
+
+.content-container {
+  #fg {
+    transform: translate3d(0, 0, 0);
+    padding: 1rem;
+    background: url('../images/layer1.png');
+    background: -webkit-image-set(
+      "../images/layer1.avif" type("image/avif"),
+      "../images/layer1.webp" type("image/webp"),
+      "../images/layer1.png" type("image/png")
+    );
+    background: image-set(
+      "../images/layer1.avif" type("image/avif"),
+      "../images/layer1.webp" type("image/webp"),
+      "../images/layer1.png" type("image/png")
+    );
+    background-repeat: no-repeat;
+    background-size: cover;
+    transition: background-position 1s ease-in-out;
+
+    @include container-query(xs) {
+      background-size: auto 112.5%;
+    }
+
+    @include container-query(md) {
+      background-size: cover;
+    }
+
+    @include container-query(xs) { background-position: left 20% bottom 8px; }
+    @include container-query(sm) { background-position: left 5% bottom; }
+    @include container-query(md) { background-position: left 5vw bottom; }
+    @include container-query(lg) { background-position: left 10vw bottom; }
+    @include container-query(xl) { background-position: left -5vw bottom; }
+  }
+
+  &:has(nav input#nav-home:checked) #fg {
+    @include container-query(xs) { background-position: left 20% bottom 8px; }
+    @include container-query(sm) { background-position: left 5% bottom; }
+    @include container-query(md) { background-position: left 5vw bottom; }
+    @include container-query(lg) { background-position: left 10vw bottom; }
+    @include container-query(xl) { background-position: left -5vw bottom; }
+  }
+
+  &:has(nav input#nav-work:checked) #fg {
+    @include container-query(xs) { background-position: left 20% bottom 8px; }
+    @include container-query(sm) { background-position: left 5% bottom; }
+    @include container-query(md) { background-position: left 5vw bottom; }
+    @include container-query(lg) { background-position: left 10vw bottom; }
+    @include container-query(xl) { background-position: left -20vw bottom; }
+  }
+
+  &:has(nav input#nav-about:checked) #fg {
+    @include container-query(xs) { background-position: left 20% bottom 8px; }
+    @include container-query(sm) { background-position: left 5% bottom; }
+    @include container-query(md) { background-position: left 5vw bottom; }
+    @include container-query(lg) { background-position: left -10vw bottom; }
+    @include container-query(xl) { background-position: left -18vw bottom; }
+  }
+
+  &:has(nav input#nav-contact:checked) #fg {
+    @include container-query(xs) { background-position: left 20% bottom 8px; }
+    @include container-query(sm) { background-position: left -30vw bottom; }
+    @include container-query(md) { background-position: left -25vw bottom; }
+    @include container-query(lg) { background-position: left -20vw bottom; }
+    @include container-query(xl) { background-position: left -10vw bottom; }
+  }
+
+  #mg {
+    background: url('../images/layer2.png');
+    background: -webkit-image-set(
+      "../images/layer2.avif" type("image/avif"),
+      "../images/layer2.webp" type("image/webp"),
+      "../images/layer2.png" type("image/png")
+    );
+    background: image-set(
+      "../images/layer2.avif" type("image/avif"),
+      "../images/layer2.webp" type("image/webp"),
+      "../images/layer2.png" type("image/png")
+    );
+    background-repeat: no-repeat;
+    background-position: right bottom;
+    background-size: cover;
+
+    @include container-query(xs) {
+      background-position: right bottom 8dvh;
+    }
+
+    @include container-query(md) {
+      background-position: right bottom;
+    }
+  }
+
+  #mbg {
+    background: url('../images/layer3.png');
+    background: -webkit-image-set(
+      "../images/layer3.avif" type("image/avif"),
+      "../images/layer3.webp" type("image/webp"),
+      "../images/layer3.png" type("image/png")
+    );
+    background: image-set(
+      "../images/layer3.avif" type("image/avif"),
+      "../images/layer3.webp" type("image/webp"),
+      "../images/layer3.png" type("image/png")
+    );
+    background-repeat: no-repeat;
+    background-size: cover;
+
+    @include container-query(xs) {
+      background-position: right bottom 7dvh;
+    }
+
+    @include container-query(md) {
+      background-position: right bottom;
+    }
+  }
+
+  #bg {
+    background: url('../images/layer4.jpg');
+    background: -webkit-image-set(
+      "../images/layer4.avif" type("image/avif"),
+      "../images/layer4.webp" type("image/webp"),
+      "../images/layer4.jpg" type("image/jpg")
+    );
+    background: image-set(
+      "../images/layer4.avif" type("image/avif"),
+      "../images/layer4.webp" type("image/webp"),
+      "../images/layer4.jpg" type("image/jpg")
+    );
+    background-repeat: no-repeat;
+    background-position: right bottom;
+    background-size: cover;
+
+    @include container-query(xs) {
+      background-position: right bottom 4dvh;
+    }
+
+    @include container-query(md) {
+      background-position: right bottom;
+    }
+  }
+
+  #stars {
+    position: absolute;
+    inset: 0;
+    mix-blend-mode: plus-lighter;
+    isolation: isolate;
+
+    .starfield {
+      position: absolute;
+      inset: 0;
+      width: 100% !important;
+      height: auto !important;
+      opacity: 0;
+      will-change: opacity;
+      transition: opacity .9s linear;
+      transition-delay: .1s;
+    }
+  }
+}

@@ -144,6 +144,7 @@ export function observeAllCanvases({
   const effects = [];
   const observers = [];
   const handled = new WeakSet();
+  const activeCanvasEntries = new WeakMap();
 
   function parseDataConfig(canvas, type) {
     try {
@@ -201,7 +202,44 @@ export function observeAllCanvases({
     );
 
     observers.push(observer);
+    activeCanvasEntries.set(canvas, { observer, effect });
     handled.add(node);
+  }
+
+  function cleanupCanvas(node) {
+    if (!(node instanceof HTMLElement)) {
+      return;
+    }
+
+    const candidates = [];
+    if (node instanceof HTMLCanvasElement && node.matches?.(selector)) {
+      candidates.push(node);
+    }
+    if (node.matches?.(selector)) {
+      candidates.push(node);
+    }
+    node.querySelectorAll?.(selector).forEach((candidate) => {
+      candidates.push(candidate);
+    });
+
+    candidates.forEach((candidate) => {
+      const canvas = candidate instanceof HTMLCanvasElement
+        ? candidate
+        : candidate.querySelector?.('canvas[data-effect]');
+
+      if (!(canvas instanceof HTMLCanvasElement)) {
+        return;
+      }
+
+      const entry = activeCanvasEntries.get(canvas);
+      if (!entry) {
+        return;
+      }
+
+      entry.observer?.disconnect?.();
+      entry.effect?.onDestroy?.();
+      activeCanvasEntries.delete(canvas);
+    });
   }
 
   document.querySelectorAll(selector).forEach(processCanvas);
@@ -214,6 +252,10 @@ export function observeAllCanvases({
           if (!(node instanceof HTMLElement)) return;
           if (node.matches?.(selector)) processCanvas(node);
           node.querySelectorAll?.(selector).forEach(processCanvas);
+        });
+        m.removedNodes.forEach((node) => {
+          if (!(node instanceof HTMLElement)) return;
+          cleanupCanvas(node);
         });
       }
     });

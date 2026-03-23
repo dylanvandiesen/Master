@@ -1,0 +1,58 @@
+@use '../mixins' as *;
+
+figure {
+  picture {
+    display: block;
+    position: relative;
+    @extend .flicker-fix;
+
+    &::before {
+      @extend .flicker-fix;
+      will-change: opacity, display;
+      transition: opacity, display allow-discrete;
+      transition-duration: .8s;
+      transition-timing-function: cubic-bezier(0.785, 0.135, 0.15, 0.86);
+    }
+
+    img {
+      @extend .flicker-fix;
+      will-change: opacity;
+      transition: opacity .8s .2s cubic-bezier(0.445, 0.05, 0.55, 0.95);
+    }
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--primary-40) url("../images/icons/loading-min.svg") no-repeat center center / 50px 50px;
+      display: block;
+      opacity: 1;
+      z-index: 10;
+
+      @include container-query(md) {
+        background-size: 70px 70px;
+      }
+    }
+
+    img {
+      opacity: 0;
+    }
+
+    img.d-loaded {
+      opacity: 1;
+    }
+
+    &:has(img.d-loaded)::before {
+      opacity: 0 !important;
+      display: none;
+      transition-duration: .6s;
+      transition-delay: .2s;
+    }
+
+    &.portrait::before {
+      background-position: center calc(50vh - 20px - var(--spacing-md));
+    }
+  }
+}

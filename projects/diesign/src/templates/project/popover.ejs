@@ -1,0 +1,95 @@
+<div id="<%= project.id %>" class="project-pop" popover tabindex="0">
+  <div class="star-bg"></div>
+  <div class="bg-overlay"></div>
+  <div class="oversnap-scroller">
+    <div class="oversnap-body">
+      <% project.figures.forEach(function(fig, figIndex) { %>
+        <figure>
+          <% if (fig.type === 'picture') { %>
+            <picture class="<%= fig.class %>">
+              <% fig.sources.forEach(function(source) { %>
+                <source srcset="/<%= source.srcset %>" type="<%= source.type %>">
+              <% }); %>
+              <img
+                class="d-loading"
+                src="/<%= fig.img.src %>"
+                alt="<%= fig.img.alt %>"
+                width="<%= fig.img.width %>"
+                height="<%= fig.img.height %>"
+                loading="lazy"
+              >
+            </picture>
+          <% } else if (fig.type === 'video') { %>
+            <div
+              class="video-placeholder <%= fig.class %>"
+              data-video='<%- JSON.stringify({
+                title: fig.title,
+                width: fig.width,
+                height: fig.height,
+                sources: fig.sources,
+                autoplay: true,
+                loop: true,
+                muted: true,
+                controls: true,
+                controlsList: "play nodownload noplaybackrate",
+                disableRemotePlayback: true,
+                disablePictureInPicture: true
+              }) %>'
+            ></div>
+          <% } %>
+
+          <% if (figIndex === 0 && project.content) { %>
+            <div class="project-content" style="opacity:0;">
+              <figcaption class="content-bg">
+                <details>
+                  <summary>
+                    <div class="ripple wrapper" data-effect="ripple"></div>
+                    <span>Projectdetails</span>
+                  </summary>
+                  <div class="content">
+                    <% fields.forEach(function(field) {
+                      const value = project.content[field.key];
+                      const hasGroupedItems = Array.isArray(value) && value[0] && value[0].categorie && Array.isArray(value[0].subitems);
+
+                      if (!value) {
+                        return;
+                      }
+                    %>
+                      <h3><%= field.label %></h3>
+
+                      <% if (hasGroupedItems) { %>
+                        <div class="subcategory">
+                          <% value.forEach(function(category) { %>
+                            <h4>* <%= category.categorie %></h4>
+                            <ul>
+                              <% category.subitems.forEach(function(subitem) { %>
+                                <li><%= subitem %></li>
+                              <% }); %>
+                            </ul>
+                          <% }); %>
+                        </div>
+                      <% } else if (Array.isArray(value)) { %>
+                        <ul>
+                          <% value.forEach(function(item) { %>
+                            <li><%= item %></li>
+                          <% }); %>
+                        </ul>
+                      <% } else { %>
+                        <p><%= value %></p>
+                      <% } %>
+                    <% }); %>
+                  </div>
+                </details>
+              </figcaption>
+            </div>
+          <% } %>
+        </figure>
+      <% }); %>
+    </div>
+  </div>
+  <ul class="pop-nav">
+    <li><button class="icon prev ripple"></button></li>
+    <li><button popovertarget="<%= project.id %>" class="icon close ripple"></button></li>
+    <li><button class="icon next ripple"></button></li>
+  </ul>
+</div>

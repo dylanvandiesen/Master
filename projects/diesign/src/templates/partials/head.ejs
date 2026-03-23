@@ -1,0 +1,53 @@
+<meta charset="utf-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1, maximum-scale=3, viewport-fit=cover, interactive-widget=overlays-content"
+>
+<meta name="robots" content="index, nofollow">
+
+<% preloaderStyles.forEach(function(href) { %>
+  <link rel="preload" href="<%= href %>" as="style">
+  <link href="<%= href %>" rel="stylesheet">
+<% }); %>
+<% mainStyles.forEach(function(href) { %>
+  <link href="<%= href %>" rel="stylesheet">
+<% }); %>
+<% preloaderScripts.forEach(function(src) { %>
+  <link rel="preload" href="<%= src %>" as="script">
+  <script src="<%= src %>"></script>
+<% }); %>
+
+<link rel="preload" href="/images/icons/loading-spinner.svg" as="image" type="image/svg+xml">
+<link rel="preload" href="/fonts/jaapokkisubtract-regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/exo-2-v24-latin-300.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/exo-2-v24-latin-200.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/images/layer4.avif" as="image" type="image/avif">
+<link rel="preload" href="/images/layer3.avif" as="image" type="image/avif">
+<link rel="preload" href="/images/layer2.avif" as="image" type="image/avif">
+<link rel="preload" href="/images/layer1.avif" as="image" type="image/avif">
+<link rel="prefetch" href="/images/sky.avif" as="image" type="image/avif">
+
+<meta property="og:title" content="DIESIGN | Designer & front-end astronaut">
+<meta
+  property="og:description"
+  content="Ik ben Dylan van Diesen, een ervaren autodidact met liefde voor design en front-end development. Al sinds mijn twaalfde besteed ik het liefst uren achter de computer om mezelf nieuwe technieken en vaardigheden aan te leren. In de jaren hierop volgend heb ik mijn creativiteit en kennis nog verder uit kunnen breiden door mijn werk bij uiteenlopende mediabureaus en het leiden van mijn eigen multimediabedrijf."
+>
+<meta property="og:image" content="/images/social-intro.jpg">
+<meta property="og:url" content="https://www.diesign.space">
+<meta property="og:site_name" content="DIESIGN">
+
+<link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png">
+<link rel="manifest" href="/favicons/site.webmanifest">
+<link rel="mask-icon" href="/favicons/safari-pinned-tab.svg" color="hsl(285,96%,20%)">
+<link rel="shortcut icon" href="/favicons/favicon.ico">
+<meta name="msapplication-TileColor" content="hsl(285,96%,20%)">
+<meta name="msapplication-config" content="/favicons/browserconfig.xml">
+<meta name="theme-color" content="hsl(285,96%,20%)">
+<title>&lt;DIESIGN/&gt; Designer & front-end astronaut</title>
+<meta name="Title" content="&lt;DIESIGN/&gt; - Designer & front-end astronaut">
+<meta
+  name="Description"
+  content="Ik ben Dylan van Diesen, een ervaren autodidact met liefde voor design en front-end development"
+>

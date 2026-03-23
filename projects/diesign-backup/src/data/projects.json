@@ -1,0 +1,2144 @@
+[
+  {
+    "id": "bl-project",
+    "content": {
+      "title": "Vernieuwing en internationale uitrol van de Alta Genetics-website",
+      "client": "Alta Genetics via Urus Group",
+      "year": 2022,
+      "excerpt": "Als Global Webmaster bij Urus Group leidde ik het redesign en de wereldwijde uitrol van de vernieuwde website van Alta Genetics. Naast ontwerp en technische ontwikkeling gaf ik strategisch advies op het gebied van marketing en beveiliging. Ook ontwierp en ontwikkelde ik zelfstandig een apart gedeelte voor Alta Blue Link, die ook internationaal geïmplementeerd zou worden.",
+      "goals": "Het verbeteren, professionaliseren en beveiligen van de online aanwezigheid van de organisatie en haar dochterondernemingen via een toekomstbestendige WordPress-websites",
+      "role": "Ik was verantwoordelijk voor projectmanagement, ontwerp, front-end development en internationale coördinatie, met directe rapportage aan de CTO. Samenwerking vond plaats met een illustrator, marketingteams en het hoofd Cybersecurity.",
+      "tools": [
+        "WordPress", 
+        "ACF",
+        "WP CLI",
+        "Elementor", 
+        "Dynamic.ooo",
+        "WP Rocket",
+        "Perfmatters",
+        "WordFence",
+        "Yoast",
+        "HTML",
+        "CSS",
+        "Javascript",
+        "PHP",
+        "Node.js",
+        "Azure",
+        "WP Engine",
+        "Photoshop",
+        "Illustrator",
+        "After Effects",
+        "LottieFiles",
+        "Google Analytics"
+      ],
+      "toolset": [
+        {
+          "categorie": "Design",
+          "subitems": [
+            "Photoshop",
+            "Illustrator",
+            "After Effects"
+          ]
+        },
+        {
+          "categorie": "Stack",
+          "subitems": [
+            "WordPress", 
+            "WP CLI",
+            "Elementor", 
+            "Dynamic.ooo",
+            "WP Rocket",
+            "Perfmatters",
+            "WordFence"
+          ]
+        },
+        {
+          "categorie": "Code",
+          "subitems": [
+            "Node.js",
+            "PHP",
+            "Javascript",
+            "HTML",
+            "CSS",
+            "LottieFiles"
+          ]
+        },
+        {
+          "categorie": "Hosting",
+          "subitems": [
+            "Azure",
+            "WP Engine"
+          ]
+        },
+        {
+          "categorie": "Analytics en marketing",
+          "subitems": [
+            "Google Analytics"
+          ]
+        }
+      ],
+      "skillset": [
+        {
+          "categorie": "Strategie en advies",
+          "subitems": [
+            "Strategisch advies",
+            "Strategische ontwikkeling",
+            "Marketingadvies",
+            "Technisch advies",
+            "Consultancy"
+          ]
+        },
+        {
+          "categorie": "Concept en richting",
+          "subitems": [
+            "Conceptontwikkeling",
+            "Storytelling",
+            "Creative direction",
+            "Technical direction",
+            "Stakeholder direction",
+            "Stakeholder management",
+            "Internationale stakeholdercommunicatie"
+          ]
+        },
+        {
+          "categorie": "Creatie en ontwerp",
+          "subitems": [
+            "Animatie",
+            "Motion design",
+            "Visual design",
+            "UX/UI design",
+            "Interaction design",
+            "Webdesign"
+          ]
+        },
+        {
+          "categorie": "Ontwikkeling en techniek",
+          "subitems": [
+            "Front-end",
+            "Back-end",
+            "Full-stack",
+            "Technische architectuur",
+            "Cloud infrastructuur",
+            "DevOps",
+            "Cybersecurity",
+            "Cybersecurity advies"
+          ]
+        },
+        {
+          "categorie": "Optimalisatie en groei",
+          "subitems": [
+            "Conversie-optimalisatie",
+            "SEO/SEA strategie",
+            "Website optimalisatie",
+            "Data-analyse"
+          ]
+        },
+        {
+          "categorie": "Product en projectmanagement",
+          "subitems": [
+            "Projectmanagement",
+            "Service design",
+            "Team coaching",
+            "Verwachtingsmanagement"
+          ]
+        }
+      ],
+      "challenges": "Het project vereiste afstemming met teams in verschillende tijdzones, wat strakke planning en duidelijke communicatie vroeg. Vanwege eerdere cyberaanvallen lag de focus op een solide beveiliging. Daarnaast zorgden de meertalige content en lokale eisen in 28 landen voor extra technische en organisatorische uitdagingen.",
+      "results": "Een veilige, snelle en visueel krachtige website, succesvol uitgerold in 28 landen."
+    },
+    "thumb": {
+      "avif": "images/portfolio/thumb-bl.avif",
+      "webp": "images/portfolio/thumb-bl.webp",
+      "jpg": "images/portfolio/thumb-bl.jpg",
+      "alt":"thumb-alt",
+      "width": 1000,
+      "height": 660
+    },
+    "figures": [
+      {
+        "type": "picture",
+        "class": "thumb",
+        "sources": [
+          { "srcset": "images/portfolio/thumb-bl.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/thumb-bl.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/thumb-bl.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/thumb-bl.jpg", "alt":"image-alt", "width": 1000, "height": 660 }
+      },
+      {
+        "type": "video",
+        "class": "",
+        "title": "video-title",
+        "width": 1920,
+        "height": 1080,
+        "sources": [
+          { "src": "videos/bl-01-desk.mp4", "type": "video/mp4" },
+          { "src": "videos/bl-01-desk.webm", "type": "video/webm" }
+        ]
+      },
+      {
+        "type": "video",
+        "class": "",
+        "title": "video-title",
+        "width": 730,
+        "height": 1620,
+        "sources": [
+          { "src": "videos/bl-02-mob.mp4", "type": "video/mp4" },
+          { "src": "videos/bl-02-mob.webm", "type": "video/webm" }
+        ]
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/bl-03.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/bl-03.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/bl-03.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/bl-03.jpg", "alt":"image-alt", "width": 1920, "height": 4213 }
+      },
+      {
+        "type": "picture",
+        "class": "mobile",
+        "sources": [
+          { "srcset": "images/portfolio/bl-04.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/bl-04.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/bl-04.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/bl-04.jpg", "alt":"image-alt", "width": 734, "height": 8947 }
+      }
+    ]
+  },
+  {
+    "id": "fs-project",
+    "content": {
+      "title": "Ontwerp en ontwikkeling van de Farm Systems-website",
+      "client": "Farm Systems via Urus Group",
+      "year": 2022,
+      "excerpt": "Als Global Webmaster bij Urus Group heb ik de nieuwe website van Farm Systems vanaf de basis ontwikkeld in WordPress. De site moest dienen als professioneel visitekaartje voor het bedrijf en visueel aansluiten bij de andere dochterondernemingen van Urus.",
+      "goals": "Het creëren van een veilige, visueel samenhangende en internationaal toepasbare website.",
+      "role": "Ik was verantwoordelijk voor het volledige traject: projectmanagement, ontwerp, front-end development, contentcoördinatie en internationale uitrol. Ik werkte nauw samen met het hoofd Cybersecurity en marketingteams, en rapporteerde aan de CTO.",
+      "toolset": [
+        {
+          "categorie": "Design",
+          "subitems": [
+            "Photoshop",
+            "Illustrator",
+            "After Effects"
+          ]
+        },
+        {
+          "categorie": "Stack",
+          "subitems": [
+            "WordPress", 
+            "WP CLI",
+            "Elementor", 
+            "Dynamic.ooo",
+            "WP Rocket",
+            "Perfmatters",
+            "WordFence"
+          ]
+        },
+        {
+          "categorie": "Code",
+          "subitems": [
+            "Node.js",
+            "PHP",
+            "Javascript",
+            "HTML",
+            "CSS",
+            "LottieFiles"
+          ]
+        },
+        {
+          "categorie": "Hosting",
+          "subitems": [
+            "Azure",
+            "WP Engine"
+          ]
+        },
+        {
+          "categorie": "Analytics en marketing",
+          "subitems": [
+            "Google Analytics"
+          ]
+        }
+      ],
+      "skillset": [
+        {
+          "categorie": "Strategie en advies",
+          "subitems": [
+            "Strategisch advies",
+            "Strategische ontwikkeling",
+            "Marketingadvies"
+          ]
+        },
+        {
+          "categorie": "Concept en richting",
+          "subitems": [
+            "Conceptontwikkeling",
+            "Art direction",
+            "Creative direction",
+            "Technical direction",
+            "Stakeholder direction",
+            "Stakeholder management"
+          ]
+        },
+        {
+          "categorie": "Creatie en ontwerp",
+          "subitems": [
+            "Illustratie",
+            "Motion design",
+            "Visual design",
+            "Branding",
+            "Corporate identity",
+            "Interaction design",
+            "Webdesign"
+          ]
+        },
+        {
+          "categorie": "Ontwikkeling en techniek",
+          "subitems": [
+            "Front-end development",
+            "Back-end development",
+            "Full-stack development",
+            "Cloud infrastructuur",
+            "Cyber security",
+            "DevOps"
+          ]
+        },
+        {
+          "categorie": "Optimalisatie en groei",
+          "subitems": [
+            "Conversie-optimalisatie",
+            "SEO strategie",
+            "Website optimalisatie"
+          ]
+        },
+        {
+          "categorie": "Product en projectmanagement",
+          "subitems": [
+            "Projectmanagement",
+            "Verwachtingsmanagement"
+          ]
+        }
+      ],
+
+      "challenges": "Het project moest in korte tijd gerealiseerd worden, zonder bestaande content of structuur als basis. Door tijdsverschillen en beperkte beschikbaarheid van input vereiste het veel flexibiliteit en strakke planning. Daarnaast was een solide beveiliging benodigd. ",
+      "results": "Een professioneel ogende, goed beveiligde en internationaal uitgerolde website die goed presteert en inmiddels succesvol wordt ingezet."
+    },
+    "thumb": {
+      "avif": "images/portfolio/thumb-fs.avif",
+      "webp": "images/portfolio/thumb-fs.webp",
+      "jpg": "images/portfolio/thumb-fs.jpg",
+      "alt":"thumb-alt",
+      "width": 1000,
+      "height": 660
+    },
+    "figures": [
+      {
+        "type": "picture",
+        "class": "thumb",
+        "sources": [
+          { "srcset": "images/portfolio/thumb-fs.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/thumb-fs.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/thumb-fs.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/thumb-fs.jpg", "alt":"image-alt", "width": 1000, "height": 660 }
+      },
+      {
+        "type": "video",
+        "class": "",
+        "title": "video-title",
+        "width": 730,
+        "height": 1620,
+        "sources": [
+          { "src": "videos/fs-02-mob.mp4", "type": "video/mp4" },
+          { "src": "videos/fs-02-mob.webm", "type": "video/webm" }
+        ]
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/fs-03.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/fs-03.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/fs-03.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/fs-03.jpg", "alt":"image-alt", "width": 3840, "height": 2160 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/fs-04.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/fs-04.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/fs-04.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/fs-04.jpg", "alt":"image-alt", "width": 3840, "height": 2160 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/fs-05.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/fs-05.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/fs-05.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/fs-05.jpg", "alt":"image-alt", "width": 3840, "height": 2160 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/fs-06.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/fs-06.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/fs-06.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/fs-06.jpg", "alt":"image-alt", "width": 3840, "height": 11372 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/fs-07.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/fs-07.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/fs-07.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/fs-07.jpg", "alt":"image-alt", "width": 3840, "height": 6405 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/fs-08.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/fs-08.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/fs-08.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/fs-08.jpg", "alt":"image-alt", "width": 3840, "height": 6861 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/fs-09.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/fs-09.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/fs-09.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/fs-09.jpg", "alt":"image-alt", "width": 3840, "height": 4446 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/fs-10.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/fs-10.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/fs-10.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/fs-10.jpg", "alt":"image-alt", "width": 3840, "height": 3775 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/fs-11.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/fs-11.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/fs-11.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/fs-11.jpg", "alt":"image-alt", "width": 3840, "height": 9241 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/fs-12.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/fs-12.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/fs-12.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/fs-12.jpg", "alt":"image-alt", "width": 3840, "height": 4649 }
+      },
+      {
+        "type": "picture",
+        "class": "mobile",
+        "sources": [
+          { "srcset": "images/portfolio/fs-13.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/fs-13.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/fs-13.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/fs-13.jpg", "alt":"image-alt", "width": 734, "height": 1628}
+      },
+      {
+        "type": "picture",
+        "class": "mobile",
+        "sources": [
+          { "srcset": "images/portfolio/fs-14.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/fs-14.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/fs-14.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/fs-14.jpg", "alt":"image-alt", "width": 734, "height": 1628}
+      },
+      {
+        "type": "picture",
+        "class": "mobile",
+        "sources": [
+          { "srcset": "images/portfolio/fs-15.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/fs-15.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/fs-15.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/fs-15.jpg", "alt":"image-alt", "width": 734, "height": 1628}
+      },
+      {
+        "type": "picture",
+        "class": "mobile",
+        "sources": [
+          { "srcset": "images/portfolio/fs-16.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/fs-16.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/fs-16.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/fs-16.jpg", "alt":"image-alt", "width": 734, "height": 13947}
+      },
+      {
+        "type": "picture",
+        "class": "mobile",
+        "sources": [
+          { "srcset": "images/portfolio/fs-17.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/fs-17.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/fs-17.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/fs-17.jpg", "alt":"image-alt", "width": 734, "height": 7286}
+      },
+      {
+        "type": "picture",
+        "class": "mobile",
+        "sources": [
+          { "srcset": "images/portfolio/fs-18.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/fs-18.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/fs-18.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/fs-18.jpg", "alt":"image-alt", "width": 734, "height": 7498}
+      },
+      {
+        "type": "picture",
+        "class": "mobile",
+        "sources": [
+          { "srcset": "images/portfolio/fs-19.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/fs-19.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/fs-19.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/fs-19.jpg", "alt":"image-alt", "width": 734, "height": 5758}
+      },
+      {
+        "type": "picture",
+        "class": "mobile",
+        "sources": [
+          { "srcset": "images/portfolio/fs-20.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/fs-20.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/fs-20.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/fs-20.jpg", "alt":"image-alt", "width": 734, "height": 4430}
+      },
+      {
+        "type": "picture",
+        "class": "mobile",
+        "sources": [
+          { "srcset": "images/portfolio/fs-21.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/fs-21.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/fs-21.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/fs-21.jpg", "alt":"image-alt", "width": 734, "height": 7229}
+      },
+      {
+        "type": "picture",
+        "class": "mobile",
+        "sources": [
+          { "srcset": "images/portfolio/fs-22.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/fs-22.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/fs-22.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/fs-22.jpg", "alt":"image-alt", "width": 734, "height": 5653}
+      }
+
+    ]
+  },
+  {
+    "id": "su-project",
+    "thumb": {
+      "avif": "images/portfolio/thumb-su.avif",
+      "webp": "images/portfolio/thumb-su.webp",
+      "jpg": "images/portfolio/thumb-su.jpg",
+      "alt":"thumb-alt",
+      "width": 1000,
+      "height": 660
+    },
+    "figures": [
+      {
+        "type": "picture",
+        "class": "thumb",
+        "sources": [
+          { "srcset": "images/portfolio/thumb-su.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/thumb-su.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/thumb-su.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/su-thumb.jpg",  "alt":"image-alt", "width": 1000, "height": 660 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/su-01.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/su-01.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/su-01.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/su-01.jpg",  "alt":"image-alt", "width": 1000, "height": 3205 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/su-02.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/su-02.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/su-02.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/su-02.jpg",  "alt":"image-alt", "width": 1000, "height": 3585 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/su-03.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/su-03.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/su-03.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/su-03.jpg",  "alt":"image-alt", "width": 1000, "height": 2836 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/su-04.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/su-04.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/su-04.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/su-04.jpg", "alt":"image-alt", "width": 1000, "height": 1671 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/su-05.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/su-05.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/su-05.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/su-05.jpg", "alt":"image-alt", "width": 1000, "height": 2643 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/su-06.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/su-06.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/su-06.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/su-06.jpg", "alt":"image-alt", "width": 1000, "height": 1666 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/su-07.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/su-07.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/su-07.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/su-07.jpg", "alt":"image-alt", "width": 1000, "height": 1693 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/su-08.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/su-08.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/su-08.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/su-08.jpg", "alt":"image-alt", "width": 1000, "height": 1063 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/su-09.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/su-09.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/su-09.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/su-09.jpg", "alt":"image-alt", "width": 1000, "height": 2284 }
+      }
+    ]
+  },
+  {
+    "id": "tt-project",
+    "content": {
+      "title": "Rebranding en websiteontwikkeling voor een medische pedicurepraktijk",
+      "client": "Freelance via DIESIGN",
+      "year": 2021,
+      "excerpt": "Voor medisch pedicurepraktijk Tip Top realiseerde ik een complete website en visuele rebranding ter ondersteuning van de verhuizing naar een nieuwe praktijklocatie. De focus lag op het vergroten van de online zichtbaarheid en het aantrekken van nieuwe cliënten.",
+      "goals": "Het ontwikkelen van een toegankelijke, professionele website die aansluit bij de bestaande merkidentiteit (inclusief het behouden van het iconische ‘voetjes’-element) en optimaal scoort op gebruiksvriendelijkheid, snelheid en vindbaarheid (SEO).",
+      "role": "Ik was verantwoordelijk voor het volledige traject: van conceptontwikkeling, UX/UI-ontwerp en fotografie tot technische realisatie en contentproductie (in samenwerking met een copywriter). Daarnaast verzorg ik tot op heden het onderhoud, de hosting en de doorontwikkeling van de website.",
+      "tools": [
+        "WordPress", 
+        "WP CLI",
+        "ACF",
+        "Elementor", 
+        "Dynamic.ooo",
+        "WP Rocket",
+        "Perfmatters",
+        "RankMath",
+        "HTML",
+        "CSS",
+        "Javascript",
+        "PHP",
+        "Node.js",
+        "Photoshop",
+        "Illustrator",
+        "Google Analytics"
+      ],
+      "skillset": [
+        {
+          "categorie": "Strategie en advies",
+          "subitems": [
+            "Strategisch advies",
+            "Strategische ontwikkeling",
+            "Marketingadvies",
+            "Technisch advies",
+            "Consultancy"
+          ]
+        },
+        {
+          "categorie": "Concept en richting",
+          "subitems": [
+            "Conceptontwikkeling",
+            "Storytelling",
+            "Art direction",
+            "Creative direction",
+            "Technical direction",
+            "Stakeholder direction",
+            "Stakeholder management"
+          ]
+        },
+        {
+          "categorie": "Onderzoek en validatie",
+          "subitems": [
+            "User research",
+            "Contentstrategie"
+          ]
+        },
+        {
+          "categorie": "Creatie en ontwerp",
+          "subitems": [
+            "Illustratie",
+            "Animatie",
+            "Motion design",
+            "Visual design",
+            "Grafisch ontwerp",
+            "Branding",
+            "Corporate identity",
+            "UX/UI design",
+            "Interaction design",
+            "Webdesign",
+            "Design systems"
+          ]
+        },
+        {
+          "categorie": "Ontwikkeling en techniek",
+          "subitems": [
+            "Front-end webdevelopment",
+            "Back-end webdevelopment",
+            "Full-stack webdevelopment",
+            "Technische architectuur",
+            "Hosting infrastructuur",
+            "DevOps",
+            "Cybersecurity",
+            "Cybersecurity advies"
+          ]
+        },
+        {
+          "categorie": "Optimalisatie en groei",
+          "subitems": [
+            "Conversie-optimalisatie",
+            "SEO strategie",
+            "Website optimalisatie",
+            "Data-analyse"
+          ]
+        },
+        {
+          "categorie": "Product en projectmanagement",
+          "subitems": [
+            "Productontwikkeling",
+            "Productmanagement",
+            "Projectmanagement",
+            "Verwachtingsmanagement",
+            "Service design"
+          ]
+        }
+      ],
+
+      "challenges": "Het ontwerp moest volledig vanaf nul worden opgebouwd, met uitzondering van het bestaande logo. De wens om het beeldmerk (‘de voetjes’) te behouden, vereiste een subtiele integratie in een modern en professioneel ontwerp.",
+      "results": "Een snelle, goed converterende website met een hoge PageSpeed-score. Dankzij de verbeterde vindbaarheid en professionele uitstraling is het klantenbestand zo sterk gegroeid dat de praktijk inmiddels een cliëntenstop heeft ingevoerd."
+    },
+    "thumb": {
+      "avif": "images/portfolio/thumb-tt.avif",
+      "webp": "images/portfolio/thumb-tt.webp",
+      "jpg": "images/portfolio/thumb-tt.jpg",
+      "alt":"thumb-alt",
+      "width": 1000,
+      "height": 660
+    },
+    "figures": [
+      {
+        "type": "picture",
+        "class": "thumb",
+        "sources": [
+          { "srcset": "images/portfolio/thumb-tt.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/thumb-tt.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/thumb-tt.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/thumb-tt.jpg", "alt":"image-alt", "width": 1000, "height": 660 }
+      },
+      {
+        "type": "video",
+        "class": "",
+        "title": "video-title",
+        "width": 754,
+        "height": 1680,
+        "sources": [
+          { "src": "videos/tt-01-mob.mp4", "type": "video/mp4" },
+          { "src": "videos/tt-01-mob.webm", "type": "video/webm" }
+        ]
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/tt-03.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/tt-03.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/tt-03.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/tt-03.jpg", "alt":"image-alt", "width": 3840, "height": 1890 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/tt-04.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/tt-04.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/tt-04.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/tt-04.jpg", "alt":"image-alt", "width": 3840, "height": 7774 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/tt-05.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/tt-05.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/tt-05.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/tt-05.jpg", "alt":"image-alt", "width": 3840, "height": 9696 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/tt-06.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/tt-06.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/tt-06.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/tt-06.jpg", "alt":"image-alt", "width": 3840, "height": 10924 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/tt-07.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/tt-07.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/tt-07.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/tt-07.jpg", "alt":"image-alt", "width": 3840, "height": 4518 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/tt-08.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/tt-08.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/tt-08.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/tt-08.jpg", "alt":"image-alt", "width": 3840, "height": 1890 }
+      },
+            {
+        "type": "picture",
+        "class": "mobile",
+        "sources": [
+          { "srcset": "images/portfolio/tt-10.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/tt-10.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/tt-10.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/tt-10.jpg", "alt":"image-alt", "width": 734, "height": 1684 }
+      },
+            {
+        "type": "picture",
+        "class": "mobile",
+        "sources": [
+          { "srcset": "images/portfolio/tt-11.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/tt-11.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/tt-11.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/tt-11.jpg", "alt":"image-alt", "width": 734, "height": 1684 }
+      },
+      {
+        "type": "picture",
+        "class": "mobile",
+        "sources": [
+          { "srcset": "images/portfolio/tt-12.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/tt-12.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/tt-12.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/tt-12.jpg", "alt":"image-alt", "width": 734, "height": 8517 }
+      }
+    ]
+  },
+  {
+    "id": "mo-project",
+    "thumb": {
+      "avif": "images/portfolio/thumb-mo.avif",
+      "webp": "images/portfolio/thumb-mo.webp",
+      "jpg": "images/portfolio/thumb-mo.jpg",
+      "alt":"thumb-alt",
+      "width": 1000,
+      "height": 660
+    },
+    "figures": [
+      {
+        "type": "picture",
+        "class": "thumb",
+        "sources": [
+          { "srcset": "images/portfolio/thumb-mo.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/thumb-mo.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/thumb-mo.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/thumb-mo.jpg", "alt":"image-alt", "width": 1000, "height": 660 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mo-01.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mo-01.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mo-01.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mo-01.jpg",  "alt":"image-alt", "width": 1920, "height": 1280 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mo-02.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mo-02.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mo-02.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mo-02.jpg",  "alt":"image-alt", "width": 1920, "height": 1280 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mo-03.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mo-03.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mo-03.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mo-03.jpg",  "alt":"image-alt", "width": 1920, "height": 1280 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mo-04.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mo-04.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mo-04.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mo-04.jpg", "alt":"image-alt", "width": 1920, "height": 1280 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mo-05.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mo-05.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mo-05.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mo-05.jpg", "alt":"image-alt", "width": 1920, "height": 1280 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mo-06.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mo-06.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mo-06.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mo-06.jpg", "alt":"image-alt", "width": 1920, "height": 1280 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mo-07.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mo-07.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mo-07.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mo-07.jpg", "alt":"image-alt", "width": 1920, "height": 1280 }
+      }
+    ]
+  },
+  {
+    "id": "jhp-project",
+    "thumb": {
+      "avif": "images/portfolio/thumb-jhp.avif",
+      "webp": "images/portfolio/thumb-jhp.webp",
+      "jpg": "images/portfolio/thumb-jhp.jpg",
+      "alt":"thumb-alt",
+      "width": 1000,
+      "height": 660
+    },
+    "figures": [
+      {
+        "type": "picture",
+        "class": "thumb",
+        "sources": [
+          { "srcset": "images/portfolio/thumb-jhp.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/thumb-jhp.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/thumb-jhp.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/thumb-jhp.jpg", "alt":"image-alt", "width": 1000, "height": 660 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/jhp-1.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/jhp-1.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/jhp-1.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/jhp-1.jpg",  "alt":"image-alt", "width": 1200, "height": 1216 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/jhp-2.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/jhp-2.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/jhp-2.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/jhp-2.jpg",  "alt":"image-alt", "width": 1200, "height": 1907 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/jhp-3.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/jhp-3.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/jhp-3.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/jhp-3.jpg",  "alt":"image-alt", "width": 1200, "height": 1402 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/jhp-4.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/jhp-4.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/jhp-4.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/jhp-4.jpg", "alt":"image-alt", "width": 1200, "height": 1339 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/jhp-5.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/jhp-5.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/jhp-5.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/jhp-5.jpg", "alt":"image-alt", "width": 1200, "height": 851 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/jhp-6.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/jhp-6.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/jhp-6.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/jhp-6.jpg", "alt":"image-alt", "width": 1200, "height": 1340 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/jhp-7.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/jhp-7.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/jhp-7.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/jhp-7.jpg", "alt":"image-alt", "width": 1200, "height": 1214 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/jhp-8.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/jhp-8.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/jhp-8.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/jhp-8.jpg", "alt":"image-alt", "width": 1200, "height": 964 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/jhp-9.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/jhp-9.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/jhp-9.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/jhp-9.jpg", "alt":"image-alt", "width": 1200, "height": 964 }
+      }
+    ]
+  },
+  {
+    "id": "mm-project",
+    "thumb": {
+      "avif": "images/portfolio/thumb-mm.avif",
+      "webp": "images/portfolio/thumb-mm.webp",
+      "jpg": "images/portfolio/thumb-mm.jpg",
+      "alt":"thumb-alt",
+      "width": 1000,
+      "height": 660
+    },
+    "figures": [
+      {
+        "type": "picture",
+        "class": "thumb",
+        "sources": [
+          { "srcset": "images/portfolio/thumb-mm.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/thumb-mm.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/thumb-mm.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/thumb-mm.jpg", "alt":"image-alt", "width": 1000, "height": 660 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mm-01.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mm-01.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mm-01.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mm-01.jpg",  "alt":"image-alt", "width": 1200, "height": 681 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mm-02.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mm-02.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mm-02.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mm-02.jpg",  "alt":"image-alt", "width": 1200, "height": 681 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mm-03.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mm-03.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mm-03.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mm-03.jpg",  "alt":"image-alt", "width": 1200, "height": 681 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mm-04.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mm-04.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mm-04.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mm-04.jpg", "alt":"image-alt", "width": 1200, "height": 681 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mm-05.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mm-05.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mm-05.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mm-05.jpg", "alt":"image-alt", "width": 1200, "height": 681 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mm-06.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mm-06.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mm-06.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mm-06.jpg", "alt":"image-alt", "width": 1200, "height": 711 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mm-07.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mm-07.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mm-07.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mm-07.jpg", "alt":"image-alt", "width": 1200, "height": 681 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mm-08.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mm-08.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mm-08.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mm-08.jpg", "alt":"image-alt", "width": 1200, "height": 681 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mm-09.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mm-09.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mm-09.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mm-09.jpg", "alt":"image-alt", "width": 1200, "height": 681 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mm-10.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mm-10.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mm-10.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mm-10.jpg", "alt":"image-alt", "width": 1200, "height": 681 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mm-11.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mm-11.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mm-11.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mm-11.jpg", "alt":"image-alt", "width": 1200, "height": 681 }
+      }
+    ]
+  },
+  {
+    "id": "ni-project",
+    "thumb": {
+      "avif": "images/portfolio/thumb-ni.avif",
+      "webp": "images/portfolio/thumb-ni.webp",
+      "jpg": "images/portfolio/thumb-ni.jpg",
+      "alt":"thumb-alt",
+      "width": 1000,
+      "height": 660
+    },
+    "figures": [
+      {
+        "type": "picture",
+        "class": "thumb",
+        "sources": [
+          { "srcset": "images/portfolio/thumb-ni.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/thumb-ni.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/thumb-ni.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/thumb-ni.jpg", "alt":"image-alt", "width": 1000, "height": 660 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/ni01.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/ni01.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/ni01.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/ni01.jpg",  "alt":"image-alt", "width": 1200, "height": 677 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/ni02.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/ni02.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/ni02.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/ni02.jpg",  "alt":"image-alt", "width": 1200, "height": 677 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/ni03.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/ni03.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/ni03.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/ni03.jpg",  "alt":"image-alt", "width": 1200, "height": 677 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/ni04.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/ni04.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/ni04.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/ni04.jpg", "alt":"image-alt", "width": 1200, "height": 1379 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/ni05.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/ni05.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/ni05.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/ni05.jpg", "alt":"image-alt", "width": 1200, "height": 1543 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/ni06.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/ni06.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/ni06.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/ni06.jpg", "alt":"image-alt", "width": 1200, "height": 927 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/ni07.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/ni07.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/ni07.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/ni07.jpg", "alt":"image-alt", "width": 1200, "height": 1566 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/ni08.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/ni08.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/ni08.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/ni08.jpg", "alt":"image-alt", "width": 1200, "height": 783 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/ni09.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/ni09.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/ni09.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/ni09.jpg", "alt":"image-alt", "width": 1200, "height": 1803 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/ni10.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/ni10.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/ni10.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/ni10.jpg", "alt":"image-alt", "width": 1200, "height": 1264 }
+      }
+    ]
+  },
+  {
+    "id": "tb-project",
+    "thumb": {
+      "avif": "images/portfolio/thumb-tb.avif",
+      "webp": "images/portfolio/thumb-tb.webp",
+      "jpg": "images/portfolio/thumb-tb.jpg",
+      "alt":"thumb-alt",
+      "width": 1000,
+      "height": 660
+    },
+    "figures": [
+      {
+        "type": "picture",
+        "class": "thumb",
+        "sources": [
+          { "srcset": "images/portfolio/thumb-tb.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/thumb-tb.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/thumb-tb.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/thumb-tb.jpg", "alt":"image-alt", "width": 1000, "height": 660 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/tb-1.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/tb-1.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/tb-1.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/tb-1.jpg",  "alt":"image-alt", "width": 1200, "height": 3878 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/tb-2.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/tb-2.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/tb-2.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/tb-2.jpg",  "alt":"image-alt", "width": 1200, "height": 1010 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/tb-3.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/tb-3.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/tb-3.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/tb-3.jpg",  "alt":"image-alt", "width": 1200, "height": 1574 }
+      }
+    ]
+  },
+  {
+    "id": "erm-project",
+    "thumb": {
+      "avif": "images/portfolio/thumb-erm.avif",
+      "webp": "images/portfolio/thumb-erm.webp",
+      "jpg": "images/portfolio/thumb-erm.jpg",
+      "alt":"thumb-alt",
+      "width": 1000,
+      "height": 660
+    },
+    "figures": [
+      {
+        "type": "picture",
+        "class": "thumb",
+        "sources": [
+          { "srcset": "images/portfolio/thumb-erm.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/thumb-erm.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/thumb-erm.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/thumb-erm.jpg", "alt":"image-alt", "width": 1000, "height": 660 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/erm-1.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/erm-1.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/erm-1.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/erm-1.jpg",  "alt":"image-alt", "width": 1200, "height": 1545 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/erm-2.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/erm-2.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/erm-2.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/erm-2.jpg",  "alt":"image-alt", "width": 1200, "height": 1545 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/erm-3.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/erm-3.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/erm-3.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/erm-3.jpg",  "alt":"image-alt", "width": 1200, "height": 2819 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/erm-4.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/erm-4.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/erm-4.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/erm-4.jpg", "alt":"image-alt", "width": 1200, "height": 968 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/erm-5.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/erm-5.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/erm-5.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/erm-5.jpg", "alt":"image-alt", "width": 1200, "height": 1107 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/erm-6.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/erm-6.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/erm-6.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/erm-6.jpg", "alt":"image-alt", "width": 1200, "height": 1288 }
+      }
+    ]
+  },
+  {
+    "id": "vdolw-project",
+    "thumb": {
+      "avif": "images/portfolio/thumb-vdolw.avif",
+      "webp": "images/portfolio/thumb-vdolw.webp",
+      "jpg": "images/portfolio/thumb-vdolw.jpg",
+      "alt":"thumb-alt",
+      "width": 1000,
+      "height": 660
+    },
+    "figures": [
+      {
+        "type": "picture",
+        "class": "thumb",
+        "sources": [
+          { "srcset": "images/portfolio/thumb-vdolw.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/thumb-vdolw.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/thumb-vdolw.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/thumb-vdolw.jpg", "alt":"image-alt", "width": 1000, "height": 660 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/vdolw-1.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/vdolw-1.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/vdolw-1.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/vdolw-1.jpg",  "alt":"image-alt", "width": 1200, "height": 3159 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/vdolw-2.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/vdolw-2.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/vdolw-2.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/vdolw-2.jpg",  "alt":"image-alt", "width": 1200, "height": 2384 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/vdolw-3.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/vdolw-3.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/vdolw-3.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/vdolw-3.jpg",  "alt":"image-alt", "width": 1200, "height": 2858 }
+      }
+    ]
+  },
+  {
+    "id": "mkdb-project",
+    "thumb": {
+      "avif": "images/portfolio/thumb-mkdb.avif",
+      "webp": "images/portfolio/thumb-mkdb.webp",
+      "jpg": "images/portfolio/thumb-mkdb.jpg",
+      "alt":"thumb-alt",
+      "width": 1000,
+      "height": 660
+    },
+    "figures": [
+      {
+        "type": "picture",
+        "class": "thumb",
+        "sources": [
+          { "srcset": "images/portfolio/thumb-mkdb.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/thumb-mkdb.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/thumb-mkdb.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/thumb-mkdb.jpg", "alt":"image-alt", "width": 1000, "height": 660 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mkdb-1.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mkdb-1.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mkdb-1.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mkdb-1.jpg",  "alt":"image-alt", "width": 1200, "height": 902 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mkdb-2.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mkdb-2.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mkdb-2.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mkdb-2.jpg",  "alt":"image-alt", "width": 1200, "height": 1211 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mkdb-3.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mkdb-3.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mkdb-3.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mkdb-3.jpg",  "alt":"image-alt", "width": 1200, "height": 810 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mkdb-4.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mkdb-4.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mkdb-4.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mkdb-4.jpg", "alt":"image-alt", "width": 585, "height": 827 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mkdb-5.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mkdb-5.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mkdb-5.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mkdb-5.jpg", "alt":"image-alt", "width": 585, "height": 827 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mkdb-6.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mkdb-6.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mkdb-6.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mkdb-6.jpg", "alt":"image-alt", "width": 570, "height": 807 }
+      },
+    {
+      "type": "picture",
+      "class": "",
+      "sources": [
+        { "srcset": "images/portfolio/mkdb-7.avif", "type": "image/avif" },
+        { "srcset": "images/portfolio/mkdb-7.webp", "type": "image/webp" },
+        { "srcset": "images/portfolio/mkdb-7.jpg", "type": "image/jpeg" }
+      ],
+      "img": { "src": "images/portfolio/mkdb-7.jpg", "alt":"image-alt", "width": 570, "height": 806 }
+    },
+    {
+      "type": "picture",
+      "class": "",
+      "sources": [
+        { "srcset": "images/portfolio/mkdb-8.avif", "type": "image/avif" },
+        { "srcset": "images/portfolio/mkdb-8.webp", "type": "image/webp" },
+        { "srcset": "images/portfolio/mkdb-8.jpg", "type": "image/jpeg" }
+      ],
+      "img": { "src": "images/portfolio/mkdb-8.jpg", "alt":"image-alt", "width": 570, "height": 806 }
+    },
+    {
+      "type": "picture",
+      "class": "",
+      "sources": [
+        { "srcset": "images/portfolio/mkdb-9.avif", "type": "image/avif" },
+        { "srcset": "images/portfolio/mkdb-9.webp", "type": "image/webp" },
+        { "srcset": "images/portfolio/mkdb-9.jpg", "type": "image/jpeg" }
+      ],
+      "img": { "src": "images/portfolio/mkdb-9.jpg", "alt":"image-alt", "width": 570, "height": 806 }
+    },
+    {
+      "type": "picture",
+      "class": "",
+      "sources": [
+        { "srcset": "images/portfolio/mkdb-10.avif", "type": "image/avif" },
+        { "srcset": "images/portfolio/mkdb-10.webp", "type": "image/webp" },
+        { "srcset": "images/portfolio/mkdb-10.jpg", "type": "image/jpeg" }
+      ],
+      "img": { "src": "images/portfolio/mkdb-10.jpg", "alt":"image-alt", "width": 570, "height": 806 }
+    },
+    {
+      "type": "picture",
+      "class": "",
+      "sources": [
+        { "srcset": "images/portfolio/mkdb-11.avif", "type": "image/avif" },
+        { "srcset": "images/portfolio/mkdb-11.webp", "type": "image/webp" },
+        { "srcset": "images/portfolio/mkdb-11.jpg", "type": "image/jpeg" }
+      ],
+      "img": { "src": "images/portfolio/mkdb-11.jpg", "alt":"image-alt", "width": 570, "height": 806 }
+    },
+    {
+      "type": "picture",
+      "class": "",
+      "sources": [
+        { "srcset": "images/portfolio/mkdb-12.avif", "type": "image/avif" },
+        { "srcset": "images/portfolio/mkdb-12.webp", "type": "image/webp" },
+        { "srcset": "images/portfolio/mkdb-12.jpg", "type": "image/jpeg" }
+      ],
+      "img": { "src": "images/portfolio/mkdb-12.jpg", "alt":"image-alt", "width": 570, "height": 806 }
+    },
+    {
+      "type": "picture",
+      "class": "",
+      "sources": [
+        { "srcset": "images/portfolio/mkdb-13.avif", "type": "image/avif" },
+        { "srcset": "images/portfolio/mkdb-13.webp", "type": "image/webp" },
+        { "srcset": "images/portfolio/mkdb-13.jpg", "type": "image/jpeg" }
+      ],
+      "img": { "src": "images/portfolio/mkdb-13.jpg", "alt":"image-alt", "width": 570, "height": 806 }
+    },
+    {
+      "type": "picture",
+      "class": "",
+      "sources": [
+        { "srcset": "images/portfolio/mkdb-14.avif", "type": "image/avif" },
+        { "srcset": "images/portfolio/mkdb-14.webp", "type": "image/webp" },
+        { "srcset": "images/portfolio/mkdb-14.jpg", "type": "image/jpeg" }
+      ],
+      "img": { "src": "images/portfolio/mkdb-14.jpg", "alt":"image-alt", "width": 570, "height": 806 }
+    },
+    {
+      "type": "picture",
+      "class": "",
+      "sources": [
+        { "srcset": "images/portfolio/mkdb-15.avif", "type": "image/avif" },
+        { "srcset": "images/portfolio/mkdb-15.webp", "type": "image/webp" },
+        { "srcset": "images/portfolio/mkdb-15.jpg", "type": "image/jpeg" }
+      ],
+      "img": { "src": "images/portfolio/mkdb-15.jpg", "alt":"image-alt", "width": 570, "height": 806 }
+    },
+    {
+      "type": "picture",
+      "class": "",
+      "sources": [
+        { "srcset": "images/portfolio/mkdb-16.avif", "type": "image/avif" },
+        { "srcset": "images/portfolio/mkdb-16.webp", "type": "image/webp" },
+        { "srcset": "images/portfolio/mkdb-16.jpg", "type": "image/jpeg" }
+      ],
+      "img": { "src": "images/portfolio/mkdb-16.jpg", "alt":"image-alt", "width": 570, "height": 806 }
+    },
+    {
+      "type": "picture",
+      "class": "",
+      "sources": [
+        { "srcset": "images/portfolio/mkdb-17.avif", "type": "image/avif" },
+        { "srcset": "images/portfolio/mkdb-17.webp", "type": "image/webp" },
+        { "srcset": "images/portfolio/mkdb-17.jpg", "type": "image/jpeg" }
+      ],
+      "img": { "src": "images/portfolio/mkdb-17.jpg", "alt":"image-alt", "width": 570, "height": 806 }
+    },
+    {
+      "type": "picture",
+      "class": "",
+      "sources": [
+        { "srcset": "images/portfolio/mkdb-18.avif", "type": "image/avif" },
+        { "srcset": "images/portfolio/mkdb-18.webp", "type": "image/webp" },
+        { "srcset": "images/portfolio/mkdb-18.jpg", "type": "image/jpeg" }
+      ],
+      "img": { "src": "images/portfolio/mkdb-18.jpg", "alt":"image-alt", "width": 570, "height": 806 }
+    },
+    {
+      "type": "picture",
+      "class": "",
+      "sources": [
+        { "srcset": "images/portfolio/mkdb-19.avif", "type": "image/avif" },
+        { "srcset": "images/portfolio/mkdb-19.webp", "type": "image/webp" },
+        { "srcset": "images/portfolio/mkdb-19.jpg", "type": "image/jpeg" }
+      ],
+      "img": { "src": "images/portfolio/mkdb-19.jpg", "alt":"image-alt", "width": 570, "height": 806 }
+      }
+    ]
+  },
+  {
+    "id": "bdwp-project",
+    "thumb": {
+      "avif": "images/portfolio/thumb-bdwp.avif",
+      "webp": "images/portfolio/thumb-bdwp.webp",
+      "jpg": "images/portfolio/thumb-bdwp.jpg",
+      "alt":"thumb-alt",
+      "width": 1000,
+      "height": 660
+    },
+    "figures": [
+      {
+        "type": "picture",
+        "class": "thumb",
+        "sources": [
+          { "srcset": "images/portfolio/thumb-bdwp.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/thumb-bdwp.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/thumb-bdwp.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/thumb-bdwp.jpg", "alt":"image-alt", "width": 1000, "height": 660 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/bdwp-1.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/bdwp-1.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/bdwp-1.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/bdwp-1.jpg",  "alt":"image-alt", "width": 1200, "height": 792 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/bdwp-2.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/bdwp-2.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/bdwp-2.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/bdwp-2.jpg",  "alt":"image-alt", "width": 1200, "height": 681 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/bdwp-3.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/bdwp-3.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/bdwp-3.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/bdwp-3.jpg",  "alt":"image-alt", "width": 1200, "height": 681 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/bdwp-4.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/bdwp-4.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/bdwp-4.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/bdwp-4.jpg", "alt":"image-alt", "width": 1200, "height": 681 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/bdwp-5.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/bdwp-5.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/bdwp-5.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/bdwp-5.jpg", "alt":"image-alt", "width": 1200, "height": 681 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/bdwp-6.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/bdwp-6.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/bdwp-6.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/bdwp-6.jpg", "alt":"image-alt", "width": 1200, "height": 681 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/bdwp-7.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/bdwp-7.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/bdwp-7.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/bdwp-7.jpg", "alt":"image-alt", "width": 1200, "height": 681 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/bdwp-8.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/bdwp-8.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/bdwp-8.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/bdwp-8.jpg", "alt":"image-alt", "width": 1200, "height": 681 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/bdwp-9.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/bdwp-9.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/bdwp-9.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/bdwp-9.jpg", "alt":"image-alt", "width": 1200, "height": 681 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/bdwp-10.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/bdwp-10.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/bdwp-10.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/bdwp-10.jpg", "alt":"image-alt", "width": 1200, "height": 681 }
+      }
+    ]
+  },
+  {
+    "id": "cfp-project",
+    "thumb": {
+      "avif": "images/portfolio/thumb-cfp.avif",
+      "webp": "images/portfolio/thumb-cfp.webp",
+      "jpg": "images/portfolio/thumb-cfp.jpg",
+      "alt":"thumb-alt",
+      "width": 1000,
+      "height": 660
+    },
+    "figures": [
+      {
+        "type": "picture",
+        "class": "thumb",
+        "sources": [
+          { "srcset": "images/portfolio/thumb-cfp.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/thumb-cfp.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/thumb-cfp.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/thumb-cfp.jpg", "alt":"image-alt", "width": 1000, "height": 660 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/cfp-1.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/cfp-1.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/cfp-1.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/cfp-1.jpg",  "alt":"image-alt", "width": 1200, "height": 754 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/cfp-2.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/cfp-2.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/cfp-2.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/cfp-2.jpg",  "alt":"image-alt", "width": 1200, "height": 1418 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/cfp-3.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/cfp-3.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/cfp-3.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/cfp-3.jpg",  "alt":"image-alt", "width": 1200, "height": 740 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/cfp-4.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/cfp-4.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/cfp-4.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/cfp-4.jpg", "alt":"image-alt", "width": 1200, "height": 898 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/cfp-5.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/cfp-5.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/cfp-5.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/cfp-5.jpg", "alt":"image-alt", "width": 1200, "height": 801 }
+      }
+    ]
+  },
+  {
+    "id": "wap-project",
+    "thumb": {
+      "avif": "images/portfolio/thumb-wap.avif",
+      "webp": "images/portfolio/thumb-wap.webp",
+      "jpg": "images/portfolio/thumb-wap.jpg",
+      "alt":"thumb-alt",
+      "width": 1000,
+      "height": 660
+    },
+    "figures": [
+      {
+        "type": "picture",
+        "class": "thumb",
+        "sources": [
+          { "srcset": "images/portfolio/thumb-wap.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/thumb-wap.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/thumb-wap.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/thumb-wap.jpg", "alt":"image-alt", "width": 1000, "height": 660 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/wap-1.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/wap-1.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/wap-1.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/wap-1.jpg",  "alt":"image-alt", "width": 1200, "height": 1534 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/wap-2.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/wap-2.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/wap-2.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/wap-2.jpg",  "alt":"image-alt", "width": 1200, "height": 1450 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/wap-3.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/wap-3.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/wap-3.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/wap-3.jpg",  "alt":"image-alt", "width": 1200, "height": 1314 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/wap-4.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/wap-4.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/wap-4.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/wap-4.jpg",  "alt":"image-alt", "width": 1200, "height": 817 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/wap-5.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/wap-5.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/wap-5.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/wap-5.jpg",  "alt":"image-alt", "width": 1200, "height": 982 }
+      }
+    ]
+  },
+  {
+    "id": "mima-project",
+    "thumb": {
+      "avif": "images/portfolio/thumb-mima.avif",
+      "webp": "images/portfolio/thumb-mima.webp",
+      "jpg": "images/portfolio/thumb-mima.jpg",
+      "alt":"thumb-alt",
+      "width": 1000,
+      "height": 660
+    },
+    "figures": [
+      {
+        "type": "picture",
+        "class": "thumb",
+        "sources": [
+          { "srcset": "images/portfolio/thumb-mima.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/thumb-mima.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/thumb-mima.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/thumb-mima.jpg", "alt":"image-alt", "width": 1000, "height": 660 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mima-1.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mima-1.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mima-1.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mima-1.jpg",  "alt":"image-alt", "width": 1024, "height": 659 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mima-2.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mima-2.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mima-2.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mima-2.jpg",  "alt":"image-alt", "width": 1024, "height": 659 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mima-3.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mima-3.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mima-3.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mima-3.jpg",  "alt":"image-alt", "width": 1024, "height": 659 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mima-4.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mima-4.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mima-4.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mima-4.jpg", "alt":"image-alt", "width": 1024, "height": 659 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mima-5.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mima-5.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mima-5.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mima-5.jpg", "alt":"image-alt", "width": 1024, "height": 659 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mima-6.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mima-6.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mima-6.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mima-6.jpg", "alt":"image-alt", "width": 1024, "height": 659 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mima-7.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mima-7.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mima-7.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mima-7.jpg", "alt":"image-alt", "width": 1024, "height": 659 }
+      },
+      {
+        "type": "picture",
+        "class": "",
+        "sources": [
+          { "srcset": "images/portfolio/mima-8.avif", "type": "image/avif" },
+          { "srcset": "images/portfolio/mima-8.webp", "type": "image/webp" },
+          { "srcset": "images/portfolio/mima-8.jpg", "type": "image/jpeg" }
+        ],
+        "img": { "src": "images/portfolio/mima-8.jpg", "alt":"image-alt", "width": 1024, "height": 659 }
+      }
+    ]
+  }
+]

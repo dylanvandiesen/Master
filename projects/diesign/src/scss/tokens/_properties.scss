@@ -1,0 +1,41 @@
+@property --panel-shell-block-size {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --panel-shell-inline-size {
+  syntax: '<length-percentage>';
+  inherits: false;
+  initial-value: 100%;
+}
+
+@property --panel-layer-fit-scale {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+@property --panel-layer-offset-x {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --panel-layer-offset-y {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --panel-overlay-opacity {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+@property --home-intro-progress {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
