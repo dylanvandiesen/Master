@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0.0",
+  "contracts": [
+    {
+      "variant": "hero.default",
+      "templatePath": "templates/modules/hero/default.php",
+      "requiredFields": ["headline"],
+      "optionalFields": ["body"],
+      "shape": {
+        "headline": "string",
+        "body": "string"
+      }
+    }
+  ]
+}

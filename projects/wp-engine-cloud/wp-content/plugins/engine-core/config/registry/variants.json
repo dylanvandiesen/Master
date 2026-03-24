@@ -1,0 +1,25 @@
+{
+  "$schema": "./schemas/variant.schema.json",
+  "schemaVersion": "1.0.0",
+  "variants": [
+    {
+      "id": "hero.default",
+      "label": "Hero / Default",
+      "module": "hero",
+      "contexts": ["singular", "archive", "search", "404"],
+      "fieldRefs": {
+        "headline": "headline",
+        "body": "body"
+      },
+      "defaults": {
+        "headline": "",
+        "body": ""
+      },
+      "capabilities": ["edit_posts"],
+      "templatePath": "templates/modules/hero/default.php",
+      "assetHandles": ["engine-module-hero"],
+      "version": "1.0.0",
+      "deprecated": false
+    }
+  ]
+}
