@@ -1,0 +1,46 @@
+{
+  "title": "WP Engine Cloud",
+  "slug": "wp-engine-cloud",
+  "styles": {
+    "entries": [
+      "src/scss/main.scss"
+    ],
+    "loadPaths": [
+      "src/scss"
+    ]
+  },
+  "scripts": {
+    "engine": "esbuild",
+    "entries": [
+      "src/js/main.js"
+    ],
+    "legacyEntries": [
+      "src/js/**/*.js",
+      "src/js/**/*.mjs"
+    ],
+    "legacyOutputName": "main.js",
+    "target": "es2019",
+    "format": "iife",
+    "platform": "browser"
+  },
+  "static": {
+    "html": [
+      "src/**/*.html"
+    ],
+    "fonts": [
+      "src/fonts/**/*"
+    ],
+    "docs": [
+      "src/docs/**/*"
+    ],
+    "misc": [
+      "src/static/**/*"
+    ]
+  },
+  "watch": {
+    "project": [
+      "**/*"
+    ],
+    "extra": []
+  }
+}

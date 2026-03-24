@@ -1,0 +1,45 @@
+{
+  "$schema": "./schemas/variant.schema.json",
+  "schemaVersion": "1.1.0",
+  "variants": [
+    {
+      "id": "hero.default",
+      "label": "Hero / Default",
+      "module": "hero",
+      "contexts": ["singular", "archive", "search", "404"],
+      "fieldRefs": { "headline": "headline", "body": "body", "cta_label": "cta_label", "cta_url": "cta_url" },
+      "defaults": { "headline": "", "body": "", "cta_label": "", "cta_url": "" },
+      "capabilities": ["edit_posts"],
+      "templatePath": "templates/modules/hero/default.php",
+      "assetHandles": ["engine-module-hero"],
+      "version": "1.1.0",
+      "deprecated": false
+    },
+    {
+      "id": "cta.default",
+      "label": "CTA / Default",
+      "module": "cta",
+      "contexts": ["singular", "archive"],
+      "fieldRefs": { "title": "title", "text": "text", "button_label": "button_label", "button_url": "button_url" },
+      "defaults": { "title": "", "text": "", "button_label": "", "button_url": "" },
+      "capabilities": ["edit_posts"],
+      "templatePath": "templates/modules/cta/default.php",
+      "assetHandles": ["engine-module-cta"],
+      "version": "1.0.0",
+      "deprecated": false
+    },
+    {
+      "id": "feature-grid.default",
+      "label": "Feature Grid / Default",
+      "module": "feature-grid",
+      "contexts": ["singular", "archive"],
+      "fieldRefs": { "title": "title", "items": "items" },
+      "defaults": { "title": "", "items": [] },
+      "capabilities": ["edit_posts"],
+      "templatePath": "templates/modules/feature-grid/default.php",
+      "assetHandles": ["engine-module-feature-grid"],
+      "version": "1.0.0",
+      "deprecated": false
+    }
+  ]
+}
