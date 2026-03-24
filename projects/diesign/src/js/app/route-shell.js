@@ -1,10 +1,15 @@
 const HOME_VIEW = 'home';
+const CONTACT_VIEW = 'contact';
 const PANEL_VIEWS = new Set(['work', 'about', 'contact']);
-const CENTERED_PANEL_VIEWS = new Set(['about', 'contact']);
+const HEIGHT_LOCKED_PANEL_VIEWS = new Set(['about', 'contact']);
+const TYPOGRAPHY_STABLE_VIEWS = new Set(['about', CONTACT_VIEW]);
+const ROUTE_REVEAL_VIEWS = new Set([CONTACT_VIEW]);
+const ROUTE_REVEALED_CLASS = 'is-route-revealed';
+const HOME_ASPECT_LOCK_CLASS = 'is-home-aspect-locked';
 const PANEL_SHELL_INLINE_SIZES = {
   work: '1200px',
   about: '1000px',
-  contact: '30rem'
+  contact: '472px'
 };
 const ROUTE_VIEWS = new Set([HOME_VIEW, ...PANEL_VIEWS]);
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
@@ -17,6 +22,17 @@ const LIVE_SETTLE_MS = 360;
 function getPrimaryRoute(pathname = location.pathname) {
   const [segment] = pathname.split('/').filter(Boolean);
   return PANEL_VIEWS.has(segment) ? segment : HOME_VIEW;
+}
+
+function getAspectRatio(width, height) {
+  const safeWidth = Number(width) || 0;
+  const safeHeight = Number(height) || 0;
+
+  if (!safeWidth || !safeHeight) {
+    return 0;
+  }
+
+  return safeWidth / safeHeight;
 }
 
 function afterNextPaint() {
@@ -69,6 +85,30 @@ function captureFormState(scope) {
       value: control.value
     };
   });
+}
+
+function primeRouteState(routeRoot, view) {
+  if (!(routeRoot instanceof HTMLElement)) {
+    return;
+  }
+
+  routeRoot.classList.remove(ROUTE_REVEALED_CLASS);
+
+  if (TYPOGRAPHY_STABLE_VIEWS.has(view)) {
+    // Keep layout-affecting route typography active from the first measurement/mount.
+    routeRoot.classList.add('is-settled');
+    return;
+  }
+
+  routeRoot.classList.remove('is-settled');
+}
+
+function revealRouteContent(routeRoot, view) {
+  if (!(routeRoot instanceof HTMLElement) || !ROUTE_REVEAL_VIEWS.has(view)) {
+    return;
+  }
+
+  routeRoot.classList.add(ROUTE_REVEALED_CLASS);
 }
 
 function applyFormState(scope, state) {
@@ -203,8 +243,36 @@ export function setupPanelRouteTransition({
   let scrollRestoreToken = 0;
   let transitionScaleFrame = 0;
   let syncTimer = 0;
+  let contactViewportFrame = 0;
+  let contactBlurTimer = 0;
+  let focusedContactControl = null;
   let isTransitionRunning = false;
   let queuedView = null;
+  let queuedScrollTop = null;
+
+  function setMeasureShellView(view) {
+    if (measure.shell instanceof HTMLElement) {
+      measure.shell.dataset.panelView = view;
+    }
+  }
+
+  function clearMeasureShellView() {
+    if (measure.shell instanceof HTMLElement) {
+      delete measure.shell.dataset.panelView;
+      measure.shell.style.removeProperty('--panel-shell-inline-size');
+    }
+  }
+
+  function setShellHomeAspectRatio(ratio) {
+    if (Number.isFinite(ratio) && ratio > 0) {
+      shell.classList.add(HOME_ASPECT_LOCK_CLASS);
+      shell.style.setProperty('--panel-shell-home-aspect-ratio', `${ratio}`);
+      return;
+    }
+
+    shell.classList.remove(HOME_ASPECT_LOCK_CLASS);
+    shell.style.removeProperty('--panel-shell-home-aspect-ratio');
+  }
 
   function setTransitionState({
     currentView = activeView,
@@ -223,7 +291,7 @@ export function setupPanelRouteTransition({
     root.dataset.routeCurrent = currentView;
     root.dataset.routeNext = nextView;
     root.dataset.headerBrand = isRunning
-      ? (currentView !== HOME_VIEW && nextView !== HOME_VIEW ? 'visible' : 'hidden')
+      ? (currentView !== HOME_VIEW ? 'visible' : 'hidden')
       : (nextView === HOME_VIEW ? 'hidden' : 'visible');
     root.classList.toggle('is-route-transition-running', isRunning);
   }
@@ -233,7 +301,140 @@ export function setupPanelRouteTransition({
       return false;
     }
 
-    return involvesHome || CENTERED_PANEL_VIEWS.has(view);
+    return involvesHome || PANEL_VIEWS.has(view);
+  }
+
+  function isContactControl(target) {
+    return target instanceof HTMLElement
+      && target.matches('input, textarea, select')
+      && Boolean(target.closest(`[data-route-view="${CONTACT_VIEW}"]`));
+  }
+
+  function getViewportMetrics() {
+    const visualViewport = window.visualViewport;
+    const viewportHeight = visualViewport?.height || window.innerHeight;
+    const viewportTop = visualViewport?.offsetTop || 0;
+    const viewportBottom = viewportHeight + viewportTop;
+    const scrollRect = scrollHost.getBoundingClientRect();
+    const obscuredBottom = Math.max(0, scrollRect.bottom - viewportBottom);
+
+    return {
+      viewportHeight,
+      viewportTop,
+      viewportBottom,
+      obscuredBottom
+    };
+  }
+
+  function syncContactViewportState() {
+    const { viewportHeight, viewportTop, obscuredBottom } = getViewportMetrics();
+    const isContactActive = activeView === CONTACT_VIEW;
+    const focusInset = isContactActive ? obscuredBottom : 0;
+
+    root.style.setProperty('--contact-viewport-height', `${viewportHeight}px`);
+    root.style.setProperty('--contact-viewport-offset-top', `${viewportTop}px`);
+    root.style.setProperty('--contact-keyboard-inset', `${focusInset}px`);
+    root.style.setProperty('--contact-obscured-bottom', `${focusInset}px`);
+    root.style.setProperty('--contact-focus-safe-area', `${focusInset + 24}px`);
+    root.dataset.contactKeyboard = isContactActive && focusInset > 0 ? 'open' : 'closed';
+  }
+
+  function ensureContactControlVisibility(control, { immediate = false } = {}) {
+    if (activeView !== CONTACT_VIEW || !isContactControl(control) || !control.isConnected) {
+      return;
+    }
+
+    const controlRect = control.getBoundingClientRect();
+    const scrollRect = scrollHost.getBoundingClientRect();
+    const { viewportBottom, obscuredBottom } = getViewportMetrics();
+    const visibleTop = scrollRect.top + 18;
+    const visibleBottom = Math.min(scrollRect.bottom - Math.max(12, obscuredBottom), viewportBottom - 18);
+
+    let delta = 0;
+
+    if (controlRect.bottom > visibleBottom) {
+      delta = controlRect.bottom - visibleBottom;
+    } else if (controlRect.top < visibleTop) {
+      delta = controlRect.top - visibleTop;
+    }
+
+    if (Math.abs(delta) < 1) {
+      return;
+    }
+
+    const nextScrollTop = Math.max(0, scrollHost.scrollTop + delta);
+    routeScrollState.set(CONTACT_VIEW, nextScrollTop);
+
+    if (immediate || scrollHost.classList.contains('is-settling-live') || scrollHost.classList.contains('is-restoring-scroll')) {
+      scrollHost.classList.add('is-restoring-scroll');
+      scrollHost.scrollTop = nextScrollTop;
+      void afterNextPaint().then(() => {
+        if (!scrollHost.classList.contains('is-settling-live')) {
+          scrollHost.classList.remove('is-restoring-scroll');
+        }
+      });
+      return;
+    }
+
+    scrollHost.scrollTo({
+      top: nextScrollTop,
+      behavior: 'smooth'
+    });
+  }
+
+  function scheduleContactViewportSync({ target = focusedContactControl, immediate = false } = {}) {
+    window.cancelAnimationFrame(contactViewportFrame);
+    contactViewportFrame = window.requestAnimationFrame(() => {
+      contactViewportFrame = 0;
+      const liveTarget = isContactControl(target) && target.isConnected ? target : null;
+
+      if (!liveTarget && focusedContactControl && !focusedContactControl.isConnected) {
+        focusedContactControl = null;
+      }
+
+      syncContactViewportState();
+
+      if (liveTarget) {
+        ensureContactControlVisibility(liveTarget, { immediate });
+      }
+    });
+  }
+
+  function shouldBypassSyncForContactViewport() {
+    if (activeView !== CONTACT_VIEW) {
+      return false;
+    }
+
+    const { obscuredBottom } = getViewportMetrics();
+    return Boolean(focusedContactControl && focusedContactControl.isConnected) || obscuredBottom > 0;
+  }
+
+  function handleContactFocusIn(event) {
+    if (!isContactControl(event.target)) {
+      return;
+    }
+
+    window.clearTimeout(contactBlurTimer);
+    focusedContactControl = event.target;
+    scheduleContactViewportSync({ target: focusedContactControl, immediate: true });
+    window.setTimeout(() => {
+      if (focusedContactControl === event.target) {
+        scheduleContactViewportSync({ target: event.target });
+      }
+    }, 180);
+  }
+
+  function handleContactFocusOut(event) {
+    if (!isContactControl(event.target)) {
+      return;
+    }
+
+    window.clearTimeout(contactBlurTimer);
+    contactBlurTimer = window.setTimeout(() => {
+      const activeElement = document.activeElement;
+      focusedContactControl = isContactControl(activeElement) ? activeElement : null;
+      scheduleContactViewportSync({ target: focusedContactControl, immediate: true });
+    }, 80);
   }
 
   function setShellSize({ inlineSize = currentShellInlineSize, blockSize = currentShellContentHeight } = {}, { immediate = false } = {}) {
@@ -268,9 +469,10 @@ export function setupPanelRouteTransition({
       return 0;
     }
 
+    setMeasureShellView(view);
     measure.shell.style.setProperty('--panel-shell-inline-size', inlineSize);
     const width = measure.shell.getBoundingClientRect().width || 0;
-    measure.shell.style.removeProperty('--panel-shell-inline-size');
+    clearMeasureShellView();
     return width;
   }
 
@@ -340,7 +542,7 @@ export function setupPanelRouteTransition({
     }
 
     routeRoot.dataset.routeView = view;
-    routeRoot.classList.remove('is-settled');
+    primeRouteState(routeRoot, view);
     applyFormState(routeRoot, routeFormState.get(view));
 
     return { fragment, routeRoot };
@@ -441,7 +643,7 @@ export function setupPanelRouteTransition({
     return bodyHost.querySelector(`.panel-content.is-current [data-route-view="${view}"]`);
   }
 
-  function rememberActivePanelState() {
+  function rememberActivePanelState({ scrollTop = scrollHost.scrollTop } = {}) {
     if (!PANEL_VIEWS.has(activeView)) {
       return;
     }
@@ -452,7 +654,7 @@ export function setupPanelRouteTransition({
       return;
     }
 
-    routeScrollState.set(activeView, scrollHost.scrollTop);
+    routeScrollState.set(activeView, Math.max(0, Math.round(scrollTop)));
     const formState = captureFormState(liveWrapper);
 
     if (formState?.length) {
@@ -460,7 +662,7 @@ export function setupPanelRouteTransition({
     }
   }
 
-  function mountPanelView(view, { restoreScroll = true } = {}) {
+  function mountPanelView(view, { restoreScroll = true, scrollTopOverride = null } = {}) {
     bodyHost.replaceChildren();
 
     if (!PANEL_VIEWS.has(view)) {
@@ -476,7 +678,9 @@ export function setupPanelRouteTransition({
 
     bodyHost.append(liveLayer.wrapper);
 
-    const scrollTop = routeScrollState.get(view) ?? 0;
+    const scrollTop = Number.isFinite(scrollTopOverride)
+      ? Math.max(0, Math.round(scrollTopOverride))
+      : Math.max(0, Math.round(routeScrollState.get(view) ?? 0));
     if (restoreScroll) {
       void restoreScrollPosition(scrollTop);
     }
@@ -494,6 +698,7 @@ export function setupPanelRouteTransition({
   function measureRouteContentHeight(view) {
     if (!PANEL_VIEWS.has(view)) {
       measure.body.replaceChildren();
+      clearMeasureShellView();
       return 0;
     }
 
@@ -501,18 +706,20 @@ export function setupPanelRouteTransition({
 
     if (!liveLayer || !measure.body || !measure.shell) {
       measure.body.replaceChildren();
+      clearMeasureShellView();
       return 0;
     }
 
+    setMeasureShellView(view);
     measure.body.replaceChildren(liveLayer.wrapper);
 
     const shellSlotRect = shellSlot.getBoundingClientRect();
-    const shellChromeHeight = getShellChromeHeight(shell);
+    const shellChromeHeight = getShellChromeHeight(measure.shell);
     const shellSlotChromeHeight = getShellChromeHeight(shellSlot);
     const maxShellBlockSize = Math.max(0, Math.floor(shellSlotRect.height - shellSlotChromeHeight));
     const routeRoot = liveLayer.routeRoot;
     const routeRectHeight = routeRoot.getBoundingClientRect().height || 0;
-    const measuredHeight = CENTERED_PANEL_VIEWS.has(view)
+    const measuredHeight = HEIGHT_LOCKED_PANEL_VIEWS.has(view)
       ? routeRectHeight
       : Math.max(
           measure.body.scrollHeight || 0,
@@ -522,6 +729,7 @@ export function setupPanelRouteTransition({
         );
 
     measure.body.replaceChildren();
+    clearMeasureShellView();
     return Math.min(measuredHeight + shellChromeHeight, maxShellBlockSize);
   }
 
@@ -529,11 +737,15 @@ export function setupPanelRouteTransition({
     view,
     { shellInlineSize = 0, shellBlockSize = 0, freezeToShellViewport = false } = {}
   ) {
-    if (!PANEL_VIEWS.has(view) || (!freezeToShellViewport && !CENTERED_PANEL_VIEWS.has(view))) {
+    if (!PANEL_VIEWS.has(view) || !freezeToShellViewport) {
       return null;
     }
-    const chromeWidth = getShellChromeWidth(shell);
-    const chromeHeight = getShellChromeHeight(shell);
+
+    setMeasureShellView(view);
+    const chromeWidth = getShellChromeWidth(measure.shell);
+    const chromeHeight = getShellChromeHeight(measure.shell);
+    clearMeasureShellView();
+
     if (!shellInlineSize || !shellBlockSize) {
       return null;
     }
@@ -581,7 +793,7 @@ export function setupPanelRouteTransition({
   }
 
   function freezeLayerSize(layer, source) {
-    if (!(layer instanceof HTMLElement) || !CENTERED_PANEL_VIEWS.has(layer.dataset.view)) {
+    if (!(layer instanceof HTMLElement) || !PANEL_VIEWS.has(layer.dataset.view)) {
       return;
     }
 
@@ -638,13 +850,14 @@ export function setupPanelRouteTransition({
     swapHost.classList.remove('is-home-route-transition');
     shell.classList.remove('is-shell-transitioning');
     shell.classList.remove('is-expanding-from-home', 'is-collapsing-to-home');
+    setShellHomeAspectRatio(0);
     setTransitionState({ currentView: activeView, nextView: activeView, isRunning: false });
     if (!preserveSettlingLive) {
       scrollHost.classList.remove('is-settling-live');
     }
   }
 
-  function prepareLiveHandoff(layer, referenceRect, { lockScroll = true } = {}) {
+  function prepareLiveHandoff(layer, referenceRect, { lockScroll = true, transformOrigin = '50% 50%' } = {}) {
     if (!(layer instanceof HTMLElement) || !referenceRect) {
       return false;
     }
@@ -669,7 +882,7 @@ export function setupPanelRouteTransition({
     }
     layer.classList.add('is-settling');
     layer.style.transition = 'none';
-    layer.style.transformOrigin = '50% 0%';
+    layer.style.transformOrigin = transformOrigin;
     layer.style.transform = needsScaleHandoff
       ? `translate(${deltaX}px, ${deltaY}px) scale(${scaleX}, ${scaleY})`
       : `translate(${deltaX}px, ${deltaY}px)`;
@@ -749,6 +962,7 @@ export function setupPanelRouteTransition({
 
       const routeRoot = getLiveRouteRoot(view);
       routeRoot?.classList.add('is-settled');
+      revealRouteContent(routeRoot, view);
     });
   }
 
@@ -758,25 +972,37 @@ export function setupPanelRouteTransition({
 
     if (queuedView && queuedView !== activeView) {
       const queuedNextView = queuedView;
+      const queuedNextScrollTop = queuedScrollTop;
       queuedView = null;
-      void transitionTo(queuedNextView);
+      queuedScrollTop = null;
+      void transitionTo(queuedNextView, { queuedScrollTopOverride: queuedNextScrollTop });
       return;
     }
 
     queuedView = null;
+    queuedScrollTop = null;
   }
 
-  async function transitionTo(view, { immediate = false } = {}) {
+  async function transitionTo(view, { immediate = false, queuedScrollTopOverride = null } = {}) {
     const nextView = PANEL_VIEWS.has(view) ? view : HOME_VIEW;
 
     if (isTransitionRunning || scrollHost.classList.contains('is-settling-live')) {
       queuedView = nextView;
+      queuedScrollTop = PANEL_VIEWS.has(nextView)
+        ? Math.max(0, Math.round(routeScrollState.get(nextView) ?? 0))
+        : 0;
       return;
     }
 
     const currentView = activeView;
     const involvesHome = currentView === HOME_VIEW || nextView === HOME_VIEW;
-    const shouldScaleWithShell = involvesHome;
+    const shouldScaleWithShell = PANEL_VIEWS.has(currentView) || PANEL_VIEWS.has(nextView);
+    const currentScrollTop = PANEL_VIEWS.has(currentView)
+      ? Math.max(0, Math.round(routeScrollState.get(currentView) ?? scrollHost.scrollTop))
+      : 0;
+    const nextScrollTop = PANEL_VIEWS.has(nextView)
+      ? Math.max(0, Math.round(queuedScrollTopOverride ?? routeScrollState.get(nextView) ?? 0))
+      : 0;
 
     if (nextView === currentView) {
       return;
@@ -793,17 +1019,17 @@ export function setupPanelRouteTransition({
       mountHomeView({ reset: true });
     }
 
-    rememberActivePanelState();
+    rememberActivePanelState({ scrollTop: currentScrollTop });
 
     const token = ++transitionToken;
     const currentWrapper = bodyHost.querySelector('.panel-content.is-current');
     const currentRouteRoot = currentWrapper?.querySelector('[data-route-view]');
-    const currentWrapperRect = currentWrapper?.getBoundingClientRect();
+    const currentVisibleViewportRect = swapHost.getBoundingClientRect();
     const homeExitLayer = currentView === HOME_VIEW
       ? createHomeExitLayer()
       : null;
     const exitLayer = PANEL_VIEWS.has(currentView)
-      ? createFrozenLayer(currentWrapper, currentView, scrollHost.scrollTop, 'is-exiting')
+      ? createFrozenLayer(currentWrapper, currentView, currentScrollTop, 'is-exiting')
       : null;
     const startHeight = currentShellContentHeight;
 
@@ -814,7 +1040,10 @@ export function setupPanelRouteTransition({
         collapsed: nextView === HOME_VIEW,
         currentView
       });
-      mountPanelView(nextView);
+      const liveLayer = mountPanelView(nextView, {
+        scrollTopOverride: nextScrollTop
+      });
+      revealRouteContent(liveLayer?.routeRoot, nextView);
       activeView = nextView;
       setShellSize({
         inlineSize: measureShellInlineSize(nextView),
@@ -841,11 +1070,11 @@ export function setupPanelRouteTransition({
 
     if (exitLayer) {
       if (shouldFreezeForTransition(currentView, { involvesHome })) {
-        freezeLayerSize(exitLayer, currentWrapperRect ?? currentWrapper ?? currentRouteRoot);
+        freezeLayerSize(exitLayer, currentVisibleViewportRect ?? currentWrapper ?? currentRouteRoot);
       }
       exitLayer.classList.add('is-visible');
       overlayHost.append(exitLayer);
-      pinFrozenLayerToRect(exitLayer, currentWrapperRect);
+      pinFrozenLayerToRect(exitLayer, currentVisibleViewportRect);
     }
 
     setRouteState(nextView, {
@@ -855,24 +1084,40 @@ export function setupPanelRouteTransition({
     });
     const endWidth = measureShellInlineSize(nextView);
     const endHeight = measureRouteContentHeight(nextView);
+    const homeAspectRatio = currentView === HOME_VIEW
+      ? getAspectRatio(endWidth, endHeight)
+      : getAspectRatio(currentShellInlineSize, startHeight);
+
+    if (involvesHome) {
+      setShellHomeAspectRatio(homeAspectRatio);
+    }
+
     const nextRouteSize = measureRouteLayerSize(nextView, {
       shellInlineSize: endWidth,
       shellBlockSize: endHeight,
-      freezeToShellViewport: involvesHome
+      freezeToShellViewport: shouldScaleWithShell
     });
     setShellSize({ inlineSize: currentShellInlineSize, blockSize: startHeight }, { immediate: true });
-    const liveLayer = mountPanelView(nextView, { restoreScroll: false });
+    const liveLayer = mountPanelView(nextView, {
+      restoreScroll: false,
+      scrollTopOverride: nextScrollTop
+    });
     activeView = nextView;
+    if (nextView !== CONTACT_VIEW) {
+      focusedContactControl = null;
+    }
 
     liveLayer?.routeRoot?.classList.add('is-settled');
+    revealRouteContent(liveLayer?.routeRoot, nextView);
 
     const enterLayer = PANEL_VIEWS.has(nextView) && liveLayer
-      ? createFrozenLayer(liveLayer.wrapper, nextView, liveLayer.scrollTop, 'is-entering')
+      ? createFrozenLayer(liveLayer.wrapper, nextView, nextScrollTop, 'is-entering')
       : null;
 
-    const nextFreezeSource = nextRouteSize ?? liveLayer?.routeRoot;
+    const liveViewport = liveLayer?.wrapper?.querySelector('.panel-live-viewport');
+    const nextFreezeSource = nextRouteSize ?? liveViewport ?? liveLayer?.routeRoot;
 
-    const shouldFreezeLiveLayer = false;
+    const shouldFreezeLiveLayer = PANEL_VIEWS.has(nextView);
     const shouldHideLiveLayerUntilHandoff = PANEL_VIEWS.has(nextView);
 
     if (shouldFreezeLiveLayer) {
@@ -912,35 +1157,42 @@ export function setupPanelRouteTransition({
       }
 
       const liveReferenceRect = enterLayer?.getBoundingClientRect() ?? liveLayer?.wrapper?.getBoundingClientRect();
-      const shouldReleaseLiveFreezeBeforeReveal = shouldFreezeLiveLayer && PANEL_VIEWS.has(nextView) && !involvesHome;
+      const shouldReleaseLiveFreezeBeforeReveal = false;
 
       if (shouldReleaseLiveFreezeBeforeReveal) {
         clearLayerFreeze(liveLayer?.wrapper);
         liveLayer?.wrapper?.getBoundingClientRect();
       }
 
-      const shouldPrepareLiveHandoff = shouldFreezeLiveLayer;
+      const shouldPrepareLiveHandoff = PANEL_VIEWS.has(nextView);
       const shouldLockLiveScroller = shouldPrepareLiveHandoff
         && PANEL_VIEWS.has(nextView)
         && shouldFreezeForTransition(nextView, { involvesHome });
       const preparedLiveHandoff = shouldPrepareLiveHandoff
-        ? prepareLiveHandoff(liveLayer?.wrapper, liveReferenceRect, { lockScroll: shouldLockLiveScroller })
+        ? prepareLiveHandoff(liveLayer?.wrapper, liveReferenceRect, {
+            lockScroll: shouldLockLiveScroller,
+            transformOrigin: '50% 50%'
+          })
         : false;
 
       if (shouldLockLiveScroller) {
         scrollHost.classList.add('is-settling-live');
       }
 
-      if (preparedLiveHandoff) {
-        await animateLiveHandoff(liveLayer?.wrapper, {
-          releaseScrollLock: !shouldLockLiveScroller
-        });
-      }
-
       if (shouldHideLiveLayerUntilHandoff) {
         liveLayer?.wrapper?.classList.add('is-handoff-reveal');
         liveLayer?.wrapper?.classList.remove('is-live-hidden');
         liveLayer?.wrapper?.getBoundingClientRect();
+        if (enterLayer) {
+          enterLayer.style.transitionDelay = '0ms';
+          enterLayer.classList.remove('is-visible');
+        }
+      }
+
+      if (preparedLiveHandoff) {
+        await animateLiveHandoff(liveLayer?.wrapper, {
+          releaseScrollLock: !shouldLockLiveScroller
+        });
       }
 
       clearOverlay({ preserveSettlingLive: shouldLockLiveScroller });
@@ -950,7 +1202,15 @@ export function setupPanelRouteTransition({
       }
 
       if (PANEL_VIEWS.has(nextView)) {
-        await restoreScrollPosition(liveLayer?.scrollTop ?? routeScrollState.get(nextView) ?? 0);
+        const shouldReleaseLiveFreezeForScrollRestore = shouldFreezeLiveLayer && nextScrollTop > 0;
+
+        if (shouldReleaseLiveFreezeForScrollRestore) {
+          clearLayerFreeze(liveLayer?.wrapper);
+          liveLayer?.wrapper?.getBoundingClientRect();
+          await afterNextPaint();
+        }
+
+        await restoreScrollPosition(nextScrollTop);
         if (shouldLockLiveScroller) {
           await afterNextPaint();
           scrollHost.classList.remove('is-settling-live');
@@ -962,8 +1222,10 @@ export function setupPanelRouteTransition({
       }
 
       await scheduleSettle(nextView);
-      if (shouldFreezeLiveLayer && !shouldReleaseLiveFreezeBeforeReveal) {
+      scheduleContactViewportSync({ target: focusedContactControl, immediate: true });
+      if (shouldFreezeLiveLayer && !shouldReleaseLiveFreezeBeforeReveal && nextScrollTop <= 0) {
         clearLayerFreeze(liveLayer?.wrapper);
+        liveLayer?.wrapper?.getBoundingClientRect();
       }
       liveLayer?.wrapper?.classList.remove('is-handoff-reveal');
       finalizeTransitionQueue();
@@ -993,7 +1255,7 @@ export function setupPanelRouteTransition({
       return;
     }
 
-    routeScrollState.set(activeView, scrollHost.scrollTop);
+    routeScrollState.set(activeView, Math.max(0, Math.round(scrollHost.scrollTop)));
   }
 
   function syncCurrentState() {
@@ -1011,7 +1273,11 @@ export function setupPanelRouteTransition({
       && liveWrapper?.dataset.view === activeView;
 
     if (!shouldReuseLivePanel) {
-      mountPanelView(activeView, { restoreScroll: false });
+      const liveLayer = mountPanelView(activeView, {
+        restoreScroll: false,
+        scrollTopOverride: routeScrollState.get(activeView) ?? scrollHost.scrollTop ?? 0
+      });
+      revealRouteContent(liveLayer?.routeRoot, activeView);
     }
 
     if (PANEL_VIEWS.has(activeView)) {
@@ -1024,6 +1290,7 @@ export function setupPanelRouteTransition({
       blockSize: measureRouteContentHeight(activeView)
     }, { immediate: true });
     scrollHost.classList.remove('is-restoring-scroll');
+    scheduleContactViewportSync({ target: focusedContactControl, immediate: true });
     void scheduleSettle(activeView);
   }
 
@@ -1037,6 +1304,11 @@ export function setupPanelRouteTransition({
         return;
       }
 
+      if (shouldBypassSyncForContactViewport()) {
+        scheduleContactViewportSync({ target: focusedContactControl, immediate: true });
+        return;
+      }
+
       syncCurrentState();
     }, 140);
   }
@@ -1047,7 +1319,11 @@ export function setupPanelRouteTransition({
   }
 
   function handleScroll() {
-    if (scrollHost.classList.contains('is-restoring-scroll')) {
+    if (
+      scrollHost.classList.contains('is-restoring-scroll')
+      || isTransitionRunning
+      || scrollHost.classList.contains('is-settling-live')
+    ) {
       return;
     }
 
@@ -1067,20 +1343,27 @@ export function setupPanelRouteTransition({
   scrollHost.addEventListener('scroll', handleScroll, { passive: true });
   bodyHost.addEventListener('input', persistCurrentFormState, true);
   bodyHost.addEventListener('change', persistCurrentFormState, true);
+  bodyHost.addEventListener('focusin', handleContactFocusIn, true);
+  bodyHost.addEventListener('focusout', handleContactFocusOut, true);
   window.addEventListener('resize', requestSyncCurrentState, { passive: true });
   window.addEventListener('orientationchange', requestSyncCurrentState, { passive: true });
   window.visualViewport?.addEventListener('resize', requestSyncCurrentState, { passive: true });
+  scheduleContactViewportSync({ immediate: true });
 
   return {
     destroy() {
       settleToken += 1;
       clearOverlay();
       window.clearTimeout(syncTimer);
+      window.clearTimeout(contactBlurTimer);
+      window.cancelAnimationFrame(contactViewportFrame);
       measure.host.remove();
       window.removeEventListener('routechange', handleRouteChange);
       scrollHost.removeEventListener('scroll', handleScroll);
       bodyHost.removeEventListener('input', persistCurrentFormState, true);
       bodyHost.removeEventListener('change', persistCurrentFormState, true);
+      bodyHost.removeEventListener('focusin', handleContactFocusIn, true);
+      bodyHost.removeEventListener('focusout', handleContactFocusOut, true);
       window.removeEventListener('resize', requestSyncCurrentState);
       window.removeEventListener('orientationchange', requestSyncCurrentState);
       window.visualViewport?.removeEventListener('resize', requestSyncCurrentState);

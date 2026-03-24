@@ -48,6 +48,7 @@ export default class CanvasRipple {
     this.running = false;
     this.perlin = Perlin();
     this._attachedCanvases = [];
+    this._listeners = new Map();
   }
 
   attachTo(elements) {
@@ -64,9 +65,9 @@ export default class CanvasRipple {
       this._attachedCanvases.push(canvas);
 
       const triggerEl = canvas.parentElement ?? canvas;
-      triggerEl.addEventListener(this.trigger, e =>
-        this._createRipple(e, canvas)
-      );
+      const listener = (event) => this._createRipple(event, canvas);
+      triggerEl.addEventListener(this.trigger, listener);
+      this._listeners.set(canvas, { triggerEl, listener });
     });
   }
 
@@ -187,6 +188,12 @@ export default class CanvasRipple {
 
   destroy() {
     for (const canvas of this._attachedCanvases) {
+      const listenerEntry = this._listeners.get(canvas);
+      if (listenerEntry) {
+        listenerEntry.triggerEl.removeEventListener(this.trigger, listenerEntry.listener);
+        this._listeners.delete(canvas);
+      }
+      delete canvas.dataset.canvasRippleAttached;
       this.disconnectRipple(canvas);
     }
     this._attachedCanvases = [];

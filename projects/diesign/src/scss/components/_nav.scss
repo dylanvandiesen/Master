@@ -126,6 +126,14 @@
           opacity: 0;
         }
 
+        &::before,
+        .icon,
+        .icon::before,
+        .ripple.wrapper {
+          -webkit-backface-visibility: hidden;
+                  backface-visibility: hidden;
+        }
+
         span {
           pointer-events: none;
           display: flex;
@@ -223,7 +231,8 @@
       .nav-link span,
       .nav-link span::before,
       .nav-link .icon,
-      .nav-link .icon::before {
+      .nav-link .icon::before,
+      .nav-link .ripple.wrapper {
         transition-duration: 1s;
         transition-timing-function: cubic-bezier(0.785, 0.135, 0.15, 0.86);
       }

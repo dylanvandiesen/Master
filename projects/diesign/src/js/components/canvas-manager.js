@@ -75,11 +75,9 @@ export function observeCanvasSize(
     resizeTimeout = setTimeout(resizeCanvas, debounceDelay);
   };
 
-  const ro = isExcluded
-    ? null
-    : new ResizeObserver(() => {
-        if (visible && initialized) debounceResize();
-      });
+  const ro = new ResizeObserver(() => {
+    if (visible && initialized) debounceResize();
+  });
 
   const io = new IntersectionObserver(
     ([entry]) => {

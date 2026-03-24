@@ -16,6 +16,8 @@ Shared, persistent task board for this repository.
 - [ ] Add rate-limit and account lockout metrics dashboard for remote panel auth endpoints.
 
 ## Archived
+- [x] Refine diesign home/shell easing, stabilize small-viewport about/contact transitions, fix queued route fade/scroll continuity, remove contact shell gap, and soften logo home-return fade (`projects/diesign/**`).
+- [x] Fix diesign non-home route-shell transitions to use centered frozen panel handoff, preserve smooth route fades, and keep contact mobile viewport/ripple/icon behavior stable (`projects/diesign/**`).
 - [x] Aligned Codex config to `.codex/config.toml`, moved repo-scoped MCP wiring out of global config, and updated bootstrap/docs/skills to use the canonical Codex config path.
 - [x] Finalized commander subdomain routing, agent-profile storage split, and replayable panel launch planning (`remote-console/**`, `scripts/remote/**`, `.env.example`, docs).
 - [x] Consolidated launcher/control-plane flow into environment-first startup and Commander session management (`package.json`, `scripts/env/**`, `remote-console/**`, docs).

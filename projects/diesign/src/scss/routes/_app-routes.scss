@@ -190,6 +190,7 @@
         width: 450px;
         min-width: auto;
         max-width: calc(100vw - 2rem);
+        background: linear-gradient(0deg, var(--primary-darker) 0%, var(--primary-dark-90) 100%);
 
         .contact-option {
           display: flex;
@@ -205,8 +206,29 @@
           border-right: 1px solid var(--primary-light);
           border-bottom: 1px solid var(--primary-light);
           text-decoration: none;
-          transition: all .3s ease-in-out;
+          overflow: hidden;
+          isolation: isolate;
+          contain: content;
+          background: linear-gradient(0deg, var(--primary-darker) 0%, var(--primary-dark-90) 100%);
+          transition:
+            color .35s ease-in-out,
+            background-color .35s ease-in-out,
+            box-shadow .35s ease-in-out,
+            text-shadow .35s ease-in-out;
           text-shadow: 0 0 5px var(--primary);
+
+          &::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-color: var(--primary);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 0;
+            transition: opacity 1s cubic-bezier(0.785, 0.135, 0.15, 0.86);
+            -webkit-backface-visibility: hidden;
+                    backface-visibility: hidden;
+          }
 
           &:last-child {
             border-right: none;
@@ -216,31 +238,71 @@
             margin: 0;
             line-height: 1;
             text-align: center;
-            display: block;
+            display: flex;
+            flex-flow: column nowrap;
+            align-self: center;
             z-index: 1;
             pointer-events: none;
+            position: relative;
+            color: var(--white);
+            filter: drop-shadow(0 0 0 var(--white));
+            -webkit-backface-visibility: hidden;
+                    backface-visibility: hidden;
+            transition:
+              transform 1s cubic-bezier(0.785, 0.135, 0.15, 0.86),
+              filter 1s cubic-bezier(0.785, 0.135, 0.15, 0.86);
 
             @include container-query(xs) { font-size: .75rem; }
             @include container-query(lg) { font-size: .875rem; }
 
+            &:not(.icon) {
+              flex-grow: 1;
+              padding-top: 4px;
+              transform: scale(1);
+              transform-origin: 50% 50%;
+              will-change: transform;
+            }
+
             &.icon {
               margin-bottom: var(--spacing-ms);
               max-width: 2.5rem;
+              filter: drop-shadow(0 0 0 var(--white));
+              transform: perspective(12dvh) rotateY(0deg) scale(1);
+              will-change: transform;
 
               @include container-query(xs) { margin-bottom: var(--spacing-sm); }
               @include container-query(lg) { margin-bottom: var(--spacing-ms); }
             }
           }
 
-          span.ripple.wrapper {
+          .ripple.wrapper {
             z-index: 0;
             pointer-events: auto;
+            -webkit-backface-visibility: hidden;
+                    backface-visibility: hidden;
           }
 
-          &:hover {
+          &:hover,
+          &:focus-visible,
+          &:active {
             color: var(--white);
             text-shadow: 0 0 5px rgba(255, 255, 255, 1);
             background: var(--primary-40) !important;
+            box-shadow: 0 0 20px 0 var(--primary), inset 0 0 20px 0 var(--primary);
+
+            &::before {
+              opacity: .5;
+            }
+
+            span:not(.icon) {
+              transform: scale(1.05);
+              filter: drop-shadow(0 0 5px var(--white));
+            }
+
+            .icon {
+              filter: drop-shadow(0 0 5px var(--white)) brightness(3.7);
+              transform: perspective(12dvh) rotateY(360deg) scale(1.1);
+            }
           }
         }
       }
@@ -570,29 +632,75 @@
           border: none;
           border-top: 1px solid var(--primary-light);
           border-radius: 0;
-          transition: all .3s ease-in-out;
           text-shadow: 0 0 5px var(--primary);
           background: var(--primary-dark-30);
           display: block;
           width: 100%;
           cursor: pointer;
+          overflow: hidden;
+          isolation: isolate;
+          font-weight: 500;
+          transition:
+            color .35s ease-in-out,
+            background-color .35s ease-in-out,
+            box-shadow .35s ease-in-out,
+            text-shadow .35s ease-in-out;
+
+          &::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-color: var(--primary);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 0;
+            transition: opacity 1s cubic-bezier(0.785, 0.135, 0.15, 0.86);
+            -webkit-backface-visibility: hidden;
+                    backface-visibility: hidden;
+          }
+
+          .ripple.wrapper,
+          i,
+          i::before {
+            -webkit-backface-visibility: hidden;
+                    backface-visibility: hidden;
+          }
+
+          i {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            margin-inline-start: .375rem;
+            transform: perspective(12dvh) rotateY(0deg) scale(1);
+            transition: transform 1s cubic-bezier(0.785, 0.135, 0.15, 0.86);
+          }
 
           @include container-query(xs) {
             padding: var(--spacing-md);
           }
 
-          &:hover {
+          &:hover,
+          &:focus-visible,
+          &:active {
             color: var(--white);
             text-shadow: 0 0 5px rgba(255, 255, 255, 1);
             background: var(--primary-30) !important;
             box-shadow: inset 0 0 50px 0 var(--primary), 0 0 20px 0 var(--primary);
+
+            &::before {
+              opacity: .5;
+            }
+
+            i {
+              transform: perspective(12dvh) rotateY(360deg) scale(1.1);
+            }
           }
         }
       }
     }
   }
 
-  .panel-route-view[data-route-view="contact"].is-settled {
+  .panel-route-view[data-route-view="contact"].is-route-revealed {
     #contact-tab .content-wrapper {
       .contact-options,
       .contact-option,

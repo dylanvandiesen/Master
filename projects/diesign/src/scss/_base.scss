@@ -73,8 +73,8 @@ body .bg-container {
   flex-direction: column; justify-content: space-between; align-items: center;
   --panel-shell-radius: 1rem;
   --panel-resize-duration: 760ms;
-  --panel-shell-expand-easing: cubic-bezier(0.16, 1, 0.3, 1);
-  --panel-shell-collapse-easing: cubic-bezier(0.7, 0, 0.84, 0);
+  --panel-shell-expand-easing: cubic-bezier(0.19, 1, 0.22, 1);
+  --panel-shell-collapse-easing: cubic-bezier(0.95, 0.05, 0.795, 0.035);
   --panel-resize-easing: cubic-bezier(0.87, 0, 0.13, 1);
   --panel-fade-duration: 880ms;
   --panel-exit-fade-duration: 520ms;
@@ -106,7 +106,7 @@ body .bg-container {
 
 	.logo-container { z-index:1;
     @extend .flicker-fix;
-		position: relative; display: flex; overflow: hidden; width: 100%;
+		position: relative; display: flex; overflow: visible; width: 100%;
     align-self: stretch;
     justify-content: center;
     flex: 0 0 auto; 
@@ -271,6 +271,11 @@ body .bg-container {
     }
 
     .panel-route-shell-slot {
+      --contact-viewport-height: 100dvh;
+      --contact-viewport-offset-top: 0px;
+      --contact-keyboard-inset: 0px;
+      --contact-obscured-bottom: 0px;
+      --contact-focus-safe-area: 0px;
       box-sizing: border-box;
       position: relative;
       flex: 1 1 auto;
@@ -322,6 +327,11 @@ body .bg-container {
       margin: 0 !important;
     }
 
+    .panel-route-measure-shell[data-panel-view="contact"],
+    .panel-route-shell[data-panel-view="contact"] {
+      padding: 0 !important;
+    }
+
     .panel-route-measure-body {
       position: relative;
       width: 100%;
@@ -344,7 +354,7 @@ body .bg-container {
       backface-visibility: hidden;
       transform-style: preserve-3d;
       transform-origin: 50% 50%;
-      transform: perspective(95dvh) rotateX(-10deg) scale(.94);
+      transform: perspective(95dvh) rotateX(-4deg) scale(.96);
       will-change: auto;
       transition:
         inline-size var(--panel-resize-duration) var(--panel-resize-easing),
@@ -356,8 +366,17 @@ body .bg-container {
       will-change: inline-size, block-size, width, height, transform;
     }
 
+    .panel-route-shell.is-home-aspect-locked {
+      aspect-ratio: var(--panel-shell-home-aspect-ratio);
+      block-size: auto;
+      transition:
+        inline-size var(--panel-resize-duration) var(--panel-resize-easing),
+        transform var(--panel-resize-duration) var(--panel-resize-easing);
+    }
+
     .panel-route-shell.is-shell-transitioning.is-collapsing-to-home {
       --panel-resize-easing: var(--panel-shell-collapse-easing);
+      transform: perspective(95dvh) rotateX(-4deg) scale(.96);
     }
 
     .panel-route-shell.is-shell-transitioning.is-expanding-from-home {
@@ -372,14 +391,6 @@ body .bg-container {
     .panel-route-shell:not(.is-collapsed) {
       pointer-events: auto;
       transform: perspective(95dvh) rotateX(0deg) scale(1);
-    }
-
-    .panel-route-shell.is-shell-transitioning.is-expanding-from-home {
-      animation: panel-shell-home-expand var(--panel-resize-duration) var(--panel-shell-expand-easing) both;
-    }
-
-    .panel-route-shell.is-shell-transitioning.is-collapsing-to-home {
-      animation: panel-shell-home-collapse var(--panel-resize-duration) var(--panel-shell-collapse-easing) both;
     }
 
     .panel-route-shell.is-collapsed:not(.is-shell-transitioning) {
@@ -454,6 +465,11 @@ body .bg-container {
       }
     }
 
+    .panel-route-shell[data-panel-view="contact"] .panel-scroll {
+      scroll-padding-block-start: calc(var(--spacing-md) + 8px);
+      scroll-padding-block-end: calc(var(--contact-focus-safe-area, 0px) + var(--spacing-lg));
+    }
+
     .panel-scroll.is-restoring-scroll {
       scroll-behavior: auto !important;
     }
@@ -485,6 +501,7 @@ body .bg-container {
       width: 100%;
       grid-area: 1 / 1;
       opacity: 0;
+      visibility: hidden;
       will-change: opacity;
       transition: opacity var(--panel-fade-duration) var(--panel-fade-easing);
     }
@@ -492,15 +509,18 @@ body .bg-container {
     .panel-content.is-current {
       min-height: 100%;
       opacity: 1;
+      visibility: visible;
     }
 
     .panel-content.is-live-hidden {
       opacity: 0 !important;
+      visibility: hidden !important;
     }
 
     .panel-content.is-handoff-reveal {
       transition: none !important;
       opacity: 1 !important;
+      visibility: visible !important;
     }
 
     &[data-route-transition-mode="panel"].is-route-transition-running {
@@ -515,6 +535,7 @@ body .bg-container {
 
     .panel-content.is-visible {
       opacity: 1;
+      visibility: visible;
     }
 
     .panel-content.is-settling {
@@ -522,7 +543,7 @@ body .bg-container {
     }
 
     .panel-content.is-entering {
-      transition-delay: var(--panel-fade-delay);
+      transition-delay: 0ms;
       z-index: 1;
     }
 
@@ -544,7 +565,7 @@ body .bg-container {
 
     .panel-overlay .panel-content[data-freeze-size="true"] {
       justify-self: center;
-      align-self: start;
+      align-self: center;
       min-height: 0;
       inline-size: var(--panel-layer-inline-size, auto);
       block-size: var(--panel-layer-block-size, auto);
@@ -561,7 +582,7 @@ body .bg-container {
       --panel-freeze-shift-x: 0px;
       --panel-freeze-shift-y: 0px;
       transform: translate(var(--panel-freeze-shift-x), var(--panel-freeze-shift-y));
-      transform-origin: 50% 0%;
+      transform-origin: 50% 50%;
       will-change: transform;
       transition: transform var(--panel-resize-duration) var(--panel-resize-easing);
     }
@@ -596,7 +617,7 @@ body .bg-container {
       --panel-layer-offset-x: 0px;
       --panel-layer-offset-y: 0px;
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: center;
       width: auto;
       inline-size: var(--panel-layer-inline-size, auto);
@@ -604,10 +625,10 @@ body .bg-container {
       max-inline-size: none;
       margin: 0;
       justify-self: center;
-      align-self: start;
+      align-self: center;
       min-height: 0;
       transform: translate(var(--panel-layer-offset-x), var(--panel-layer-offset-y)) scale(var(--panel-layer-fit-scale, 1));
-      transform-origin: 50% 0%;
+      transform-origin: 50% 50%;
       will-change: transform, opacity;
       overflow: hidden;
     }
@@ -807,7 +828,7 @@ body .bg-container {
   }
 
   &[data-route="work"] {
-    --panel-shell-inline-size: 1000px;
+    --panel-shell-inline-size: 1200px;
   }
 
   &[data-route="about"] {
@@ -815,17 +836,7 @@ body .bg-container {
   }
 
   &[data-route="contact"] {
-    --panel-shell-inline-size: 30rem;
-  }
-
-  @media screen and (pointer: coarse) {
-    .panel-route-shell[data-panel-view="contact"] .panel-scroll:has(input:focus, textarea:focus) {
-      padding-bottom: 32dvh;
-    }
-
-    .panel-route-shell[data-panel-view="contact"] .panel-scroll:has(input[type="tel"]:focus) {
-      padding-bottom: 26.25dvh;
-    }
+    --panel-shell-inline-size: 472px;
   }
 
   .tab-panes #home,

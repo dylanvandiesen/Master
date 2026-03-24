@@ -1,0 +1,78 @@
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.61 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.02 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 3696 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.62 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.04 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 202 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.62 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.04 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 152 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.64 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.06 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 1014 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.65 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.06 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 139 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.65 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.06 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 774 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.65 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.06 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 170 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.65 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.06 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 722 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.65 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.06 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 186 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.65 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.06 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 530 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.65 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.06 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 537 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.65 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.06 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 419 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.65 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.06 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 183 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.65 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.06 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 82 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.65 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.06 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 89 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.65 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.06 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 69 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.65 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.07 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 104 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.65 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.07 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 703 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.65 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.07 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 678 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.65 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.07 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 624 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.66 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.07 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 674 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.66 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.07 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 95 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.66 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.07 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 111 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.66 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.07 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 78 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.66 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.07 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 68 ms
+Entrypoint [1mpreloader[39m[22m [1m[33m[big][39m[22m 644 KiB (1.12 KiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/preloader.js[39m[22m 42 KiB 1 auxiliary asset
+Entrypoint [1mmain[39m[22m [1m[33m[big][39m[22m 1.66 MiB (2.64 MiB) = [1m[32mjs/runtime.js[39m[22m 14.3 KiB [1m[32mjs/vendors.js[39m[22m 587 KiB [1m[32mjs/main.js[39m[22m 1.07 MiB 36 auxiliary assets
+webpack 5.97.1 compiled [1m[32msuccessfully[39m[22m in 65 ms
